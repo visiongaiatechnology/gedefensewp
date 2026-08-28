@@ -1,0 +1,115 @@
+/* =========================================================================================
+     VGT APEX STYLES (Integrity Pattern)
+     ========================================================================================= */
+    .vgt-apex-ui {
+        --vgt-bg-base: #020617;
+        --vgt-bg-panel: rgba(15, 23, 42, 0.5);
+        --vgt-border: rgba(255, 255, 255, 0.08);
+        --vgt-border-hover: rgba(255, 255, 255, 0.2);
+        --vgt-text-main: #f8fafc;
+        --vgt-text-dim: #94a3b8;
+        --vgt-text-muted: #64748b;
+        --vgt-neon-purple: #a855f7;
+        --vgt-neon-green: #10b981;
+        --vgt-neon-red: #ef4444;
+        --vgt-neon-blue: #3b82f6;
+        --vgt-neon-orange: #f59e0b;
+        
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: var(--vgt-text-main);
+        box-sizing: border-box;
+        margin-top: 20px;
+        margin-right: 20px;
+    }
+
+    .vgt-apex-ui * { box-sizing: border-box; }
+
+    /* SVG ICON ENGINE */
+    .vgt-icon {
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    .vgt-glass-panel {
+        background: var(--vgt-bg-panel);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--vgt-border);
+        border-radius: 12px;
+        box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .vgt-module-header {
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(90deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.8) 100%);
+        /* border-left is handled dynamically in PHP */
+    }
+    
+    .vgt-module-title { display: flex; align-items: center; gap: 15px; }
+    .vgt-module-title h2 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.5px; display:flex; align-items:center; gap:12px; border:none; padding:0;}
+    .vgt-integrity-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .vgt-integrity-actions form { margin: 0; }
+    .vgt-integrity-actions .vgt-icon { width: 16px; height: 16px; }
+    
+    .vgt-status-pulse { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
+    .vgt-is-active .vgt-status-pulse { animation: vgt-pulse 2s infinite; color: var(--vgt-neon-green); }
+    .vgt-is-alert .vgt-status-pulse { animation: vgt-pulse-alert 1s infinite; color: var(--vgt-neon-red); }
+    .vgt-is-standby .vgt-status-pulse { color: var(--vgt-text-muted); }
+
+    .vgt-state-clean { text-align: center; padding: 60px 20px; }
+    .vgt-state-clean-icon { width: 80px; height: 80px; color: var(--vgt-neon-green); filter: drop-shadow(0 0 30px rgba(16, 185, 129, 0.5)); margin-bottom: 20px; }
+    .vgt-state-clean h3 { color: #fff; font-size: 24px; letter-spacing: 1px; margin-bottom: 12px; border:none; }
+    .vgt-state-clean p { color: var(--vgt-text-dim); max-width: 500px; margin: 0 auto; line-height: 1.6; }
+
+    .vgt-state-alert-header {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .vgt-table-container { padding: 0; overflow-x: auto; }
+    .vgt-data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    .vgt-data-table th { padding: 16px 24px; font-size: 11px; font-weight: 700; color: var(--vgt-text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--vgt-border); background: rgba(0,0,0,0.2); }
+    .vgt-data-table td { padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
+    .vgt-data-table tbody tr { transition: background 0.2s ease; }
+    .vgt-data-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+    .vgt-text-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11.5px; }
+
+    .vgt-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 8px 16px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+        text-transform: uppercase; cursor: pointer; transition: all 0.2s ease; text-decoration: none; border: none;
+    }
+    .vgt-btn-ghost { background: rgba(255,255,255,0.03); color: var(--vgt-text-main); border: 1px solid var(--vgt-border); }
+    .vgt-btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: var(--vgt-border-hover); }
+    .vgt-btn-neon { background: rgba(59, 130, 246, 0.1); color: var(--vgt-neon-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
+    
+    .vgt-btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--vgt-neon-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .vgt-badge {
+        padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 800; letter-spacing: 1px;
+        text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; border: 1px solid transparent;
+    }
+    .vgt-badge-active { background: rgba(16, 185, 129, 0.1); color: var(--vgt-neon-green); border-color: rgba(16, 185, 129, 0.3); }
+    .vgt-badge-alert { background: rgba(239, 68, 68, 0.1); color: var(--vgt-neon-red); border-color: rgba(239, 68, 68, 0.3); }
+    .vgt-badge-warning { background: rgba(245, 158, 11, 0.1); color: var(--vgt-neon-orange); border-color: rgba(245, 158, 11, 0.3); }
+    .vgt-badge-neutral { background: rgba(255, 255, 255, 0.05); color: var(--vgt-text-dim); border-color: var(--vgt-border); }
+
+    @keyframes vgt-pulse { 0% { box-shadow: 0 0 0 0 currentColor; } 70% { box-shadow: 0 0 0 6px rgba(0,0,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }
+    @keyframes vgt-pulse-alert { 0% { box-shadow: 0 0 0 0 currentColor; } 70% { box-shadow: 0 0 0 10px rgba(0,0,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }

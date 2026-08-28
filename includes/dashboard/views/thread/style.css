@@ -1,0 +1,100 @@
+/* =========================================================================================
+     VGT APEX THREAD STYLES (OVERDRIVE V2)
+     ========================================================================================= */
+    .vgt-apex-ui {
+        --vgt-bg-base: #020617;
+        --vgt-bg-panel: rgba(15, 23, 42, 0.6);
+        --vgt-border: rgba(255, 255, 255, 0.08);
+        --vgt-text-main: #f8fafc;
+        --vgt-text-dim: #94a3b8;
+        --vgt-text-muted: #475569;
+        --vgt-neon-purple: #a855f7;
+        --vgt-neon-green: #10b981;
+        --vgt-neon-red: #ef4444;
+        --vgt-neon-blue: #00f2ff;
+        --vgt-neon-orange: #f59e0b;
+        --vgt-neon-pink: #ec4899;
+        
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: var(--vgt-text-main);
+        box-sizing: border-box;
+        margin-top: 20px;
+        margin-right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        position: relative;
+    }
+
+    .vgt-apex-ui * { box-sizing: border-box; }
+
+    /* Holographic Grid & Scanlines */
+    .vgt-apex-ui::before {
+        content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+        background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+
+    .vgt-glass-panel {
+        background: var(--vgt-bg-panel);
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--vgt-border);
+        border-radius: 12px; position: relative; overflow: hidden; z-index: 1;
+        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+    }
+
+    /* Kpi Grid (Now Auto-Fit for 5 Columns) */
+    .vgt-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .vgt-kpi-card { 
+        padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; 
+        background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.4) 100%);
+        transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+    .vgt-kpi-card:hover { transform: translateY(-2px); }
+    .vgt-kpi-val { font-size: 30px; font-family: 'Fira Code', monospace; font-weight: 900; line-height: 1; margin-bottom: 6px; text-shadow: 0 0 20px currentColor; }
+    .vgt-kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--vgt-text-dim); font-weight: 800; }
+    .vgt-kpi-icon { padding: 12px; border-radius: 10px; position: relative; }
+    .vgt-kpi-icon::after { content: ''; position: absolute; inset: 0; border-radius: 10px; box-shadow: 0 0 20px currentColor; opacity: 0.3; }
+
+    /* Thread Layout */
+    .vgt-thread-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    @media (max-width: 1200px) { .vgt-thread-layout { grid-template-columns: 1fr; } }
+
+    .vgt-module-header { padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--vgt-border); background: rgba(0,0,0,0.4); }
+    .vgt-module-title { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; text-shadow: 0 0 10px rgba(255,255,255,0.1); }
+
+    /* Data Tables */
+    .vgt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .vgt-table th { text-align: left; padding: 14px 24px; color: var(--vgt-text-dim); font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid var(--vgt-border); font-size: 10px; background: rgba(0,0,0,0.2); }
+    .vgt-table td { padding: 14px 24px; border-bottom: 1px solid rgba(255,255,255,0.02); vertical-align: middle; transition: background 0.2s; }
+    .vgt-table tr:hover td { background: rgba(255,255,255,0.03); }
+    .vgt-table tr:last-child td { border-bottom: none; }
+
+    .vgt-critical-row { background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%) !important; }
+    .vgt-critical-row td:first-child { border-left: 3px solid var(--vgt-neon-red); }
+
+    .vgt-mono { font-family: 'Fira Code', monospace; }
+    .vgt-badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; }
+    
+    /* Terminal Payload Box */
+    .vgt-terminal-box {
+        font-size: 11px; margin-top: 8px; max-width: 380px; background: rgba(0, 0, 0, 0.6); 
+        padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); 
+        font-family: 'Fira Code', monospace; position: relative; overflow: hidden;
+    }
+    .vgt-terminal-box::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: currentColor; opacity: 0.5; }
+    .vgt-term-prompt { font-weight: bold; margin-right: 6px; }
+
+    /* Bans & Intel */
+    .vgt-ban-card {
+        background: linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(239, 68, 68, 0.05) 100%);
+        border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 6px; padding: 12px 16px; 
+        display: flex; gap: 16px; align-items: center; position: relative; overflow: hidden;
+    }
+    .vgt-ban-card:hover { border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 15px rgba(239, 68, 68, 0.1); }
+    
+    /* Animations */
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+    .vgt-animate-row { animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; opacity: 0; }
+    .vgt-radar-spin { animation: radar-spin 3s linear infinite; }
+    @keyframes radar-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

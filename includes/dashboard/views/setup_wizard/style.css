@@ -1,0 +1,189 @@
+/* =========================================================================================
+   VGT APEX STYLES (Setup Wizard Pattern)
+   ========================================================================================= */
+.vgt-apex-ui {
+    --vgt-bg-base: #020617;
+    --vgt-bg-panel: rgba(15, 23, 42, 0.5);
+    --vgt-border: rgba(255, 255, 255, 0.08);
+    --vgt-border-hover: rgba(255, 255, 255, 0.2);
+    --vgt-text-main: #f8fafc;
+    --vgt-text-dim: #94a3b8;
+    --vgt-text-muted: #64748b;
+    --vgt-neon-purple: #a855f7;
+    --vgt-neon-green: #10b981;
+    --vgt-neon-red: #ef4444;
+    --vgt-neon-blue: #3b82f6;
+    --vgt-neon-orange: #f59e0b;
+    --vgt-neon-cyan: #00f2ff;
+    
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--vgt-text-main);
+    box-sizing: border-box;
+    margin-top: 20px;
+    margin-right: 20px;
+}
+
+.vgt-apex-ui * { box-sizing: border-box; }
+
+.vgt-icon {
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.vgt-glass-panel { 
+    background: var(--vgt-bg-panel); 
+    backdrop-filter: blur(12px); 
+    border: 1px solid var(--vgt-border); 
+    border-radius: 12px; 
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2); 
+    position: relative; 
+    overflow: hidden; 
+    margin-bottom: 24px; 
+    padding: 30px;
+}
+
+.vgt-step-indicator { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 35px; 
+    border-bottom: 1px solid var(--vgt-border); 
+    padding-bottom: 20px; 
+}
+
+.vgt-step-dot { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    font-size: 13px; 
+    color: var(--vgt-text-muted); 
+    padding: 6px 12px; 
+    border-radius: 6px; 
+    transition: all 0.3s ease; 
+}
+
+.vgt-step-dot.active { 
+    color: #fff; 
+    background: rgba(59, 130, 246, 0.1); 
+    border: 1px solid rgba(59, 130, 246, 0.3); 
+    font-weight: bold; 
+}
+
+.vgt-step-dot.completed { 
+    color: var(--vgt-neon-green); 
+}
+
+.vgt-step-num { 
+    width: 24px; 
+    height: 24px; 
+    border-radius: 50%; 
+    border: 1px solid currentColor; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 11px; 
+    font-family: monospace; 
+}
+
+.vgt-step-dot.completed .vgt-step-num {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.vgt-form-group { 
+    margin-bottom: 20px; 
+}
+
+.vgt-form-group label { 
+    display: block; 
+    font-size: 12px; 
+    font-weight: 600; 
+    color: var(--vgt-text-dim); 
+    margin-bottom: 8px; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+}
+
+.vgt-input, .vgt-select { 
+    width: 100%; 
+    padding: 12px 16px; 
+    background: rgba(0, 0, 0, 0.3); 
+    border: 1px solid var(--vgt-border); 
+    border-radius: 8px; 
+    color: #fff; 
+    font-family: ui-monospace, monospace; 
+    font-size: 13px; 
+    transition: border-color 0.2s, box-shadow 0.2s; 
+}
+
+.vgt-input:focus, .vgt-select:focus { 
+    border-color: var(--vgt-neon-blue); 
+    outline: none; 
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.1); 
+}
+
+.vgt-btn { 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 8px; 
+    padding: 12px 24px; 
+    border-radius: 6px; 
+    font-size: 12px; 
+    font-weight: 700; 
+    letter-spacing: 1px; 
+    text-transform: uppercase; 
+    cursor: pointer; 
+    transition: all 0.2s ease; 
+    border: none; 
+    text-decoration: none;
+}
+
+.vgt-btn-primary { 
+    background: rgba(59, 130, 246, 0.1); 
+    color: var(--vgt-neon-blue); 
+    border: 1px solid rgba(59, 130, 246, 0.3); 
+}
+
+.vgt-btn-primary:hover { 
+    background: rgba(59, 130, 246, 0.2); 
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); 
+}
+
+.vgt-btn-neon { 
+    background: rgba(168, 85, 247, 0.1); 
+    color: var(--vgt-neon-purple); 
+    border: 1px solid rgba(168, 85, 247, 0.3); 
+}
+
+.vgt-btn-neon:hover { 
+    background: rgba(168, 85, 247, 0.2); 
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.2); 
+}
+
+.vgt-wizard-actions { 
+    display: flex; 
+    justify-content: space-between; 
+    border-top: 1px solid var(--vgt-border); 
+    padding-top: 25px; 
+    margin-top: 30px; 
+}
+
+/* Switches */
+.vgt-switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0;}
+.vgt-switch input { opacity: 0; width: 0; height: 0; }
+.vgt-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.05); transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 30px; border: 1px solid var(--vgt-border); }
+.vgt-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--vgt-text-muted); transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 50%; }
+.vgt-switch input:checked + .vgt-slider { background-color: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); }
+.vgt-switch input:checked + .vgt-slider:before { transform: translateX(22px); background-color: var(--vgt-neon-green); box-shadow: 0 0 10px var(--vgt-neon-green); }
+
+/* Step visibility rules */
+.vgt-wizard-step { display: none; }
+.vgt-wizard-step.active { display: block; animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
