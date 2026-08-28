@@ -1,0 +1,61 @@
+/* =========================================================================================
+   VGT APEX STYLES (Modules Management Pattern)
+   ========================================================================================= */
+.vgt-apex-ui {
+    --vgt-bg-base: #020617;
+    --vgt-bg-panel: rgba(15, 23, 42, 0.5);
+    --vgt-border: rgba(255, 255, 255, 0.08);
+    --vgt-border-hover: rgba(255, 255, 255, 0.2);
+    --vgt-text-main: #f8fafc;
+    --vgt-text-dim: #94a3b8;
+    --vgt-text-muted: #64748b;
+    --vgt-neon-purple: #a855f7;
+    --vgt-neon-green: #10b981;
+    --vgt-neon-red: #ef4444;
+    --vgt-neon-blue: #3b82f6;
+    --vgt-neon-orange: #f59e0b;
+    --vgt-neon-cyan: #00f2ff;
+    
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--vgt-text-main);
+    box-sizing: border-box;
+    margin-top: 20px;
+    margin-right: 20px;
+}
+
+.vgt-apex-ui * { box-sizing: border-box; }
+
+.vgt-icon {
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.vgt-glass-panel { 
+    background: var(--vgt-bg-panel); 
+    backdrop-filter: blur(12px); 
+    border: 1px solid var(--vgt-border); 
+    border-radius: 12px; 
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2); 
+    position: relative; 
+    overflow: hidden; 
+    margin-bottom: 24px; 
+}
+
+.vgt-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* Switches & Toggles */
+.vgt-switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0;}
+.vgt-switch input { opacity: 0; width: 0; height: 0; }
+.vgt-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.05); transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 30px; border: 1px solid var(--vgt-border); }
+.vgt-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--vgt-text-muted); transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 50%; }
+.vgt-switch input:checked + .vgt-slider { background-color: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); }
+.vgt-switch input:checked + .vgt-slider:before { transform: translateX(22px); background-color: var(--vgt-neon-green); box-shadow: 0 0 10px var(--vgt-neon-green); }

@@ -1,0 +1,111 @@
+/* =========================================================================================
+     VGT APEX STYLES (Morpheus Hypervisor Pattern)
+   ========================================================================================= */
+    .vgt-morpheus-container, .vgt-morpheus-container * { box-sizing: border-box; }
+    .vgt-morpheus-container { 
+        display: flex; flex-direction: column; gap: 24px; color: #f0f0f5; 
+        max-width: 1200px; width: 100%; margin: 0; padding-right: 20px; font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .vgt-icon { stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: inline-block; vertical-align: middle; }
+    
+    .vgt-morpheus-header {
+        background: rgba(18, 18, 22, 0.6); border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px; padding: 24px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); position: relative; overflow: hidden;
+        transition: border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .vgt-header-glow { position: absolute; top: 0; left: 0; width: 100%; height: 2px; transition: all 0.5s ease; }
+    
+    .audit-active { border-color: rgba(0, 229, 255, 0.2); }
+    .audit-active .vgt-header-glow { background: linear-gradient(90deg, transparent, #00e5ff, transparent); box-shadow: 0 0 20px #00e5ff; }
+    
+    .strict-active { border-color: rgba(255, 0, 60, 0.25); }
+    .strict-active .vgt-header-glow { background: linear-gradient(90deg, transparent, #ff003c, transparent); box-shadow: 0 0 20px #ff003c; }
+
+    .vgt-morpheus-title h2 { margin: 0 0 8px 0; font-size: 1.5rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 12px; border: none; padding: 0;}
+    .vgt-morpheus-title p { margin: 0; color: #8b8b9e; font-size: 0.9rem; line-height: 1.5; }
+    
+    .vgt-header-actions { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+
+    .vgt-status-pill { padding: 8px 16px; border-radius: 20px; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; transition: all 0.4s ease; white-space: nowrap; }
+    .status-strict { background: rgba(255, 0, 60, 0.1); border: 1px solid rgba(255, 0, 60, 0.3); color: #ff003c; }
+    .status-audit { background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3); color: #00e5ff; }
+    .vgt-status-pill .indicator { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .status-strict .indicator { background: #ff003c; box-shadow: 0 0 8px #ff003c; animation: vgt-pulse-red 2s infinite; }
+    .status-audit .indicator { background: #00e5ff; box-shadow: 0 0 8px #00e5ff; animation: vgt-pulse-blue 2s infinite; }
+
+    .vgt-mode-control { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.4); padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+    .vgt-mode-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #555; transition: color 0.3s; }
+    .label-audit.active { color: #00e5ff; }
+    .label-strict.active { color: #ff003c; }
+    .vgt-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+    .vgt-switch input { opacity: 0; width: 0; height: 0; }
+    .vgt-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #222; transition: .4s; border-radius: 34px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+    .vgt-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background: #555; transition: .4s; border-radius: 50%; }
+    input:checked + .vgt-slider:before { transform: translateX(20px); background: #ff003c; box-shadow: 0 0 10px #ff003c; }
+    input:not(:checked) + .vgt-slider:before { background: #00e5ff; box-shadow: 0 0 10px #00e5ff; }
+
+    .vgt-section { background: rgba(18, 18, 22, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+    .vgt-section-header { padding: 16px 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; align-items: center; gap: 10px; }
+    .vgt-section-header h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: 0.5px; border: none; padding: 0; }
+    .vgt-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; font-family: monospace; }
+    .bg-blue { background: rgba(0, 229, 255, 0.15); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.3); }
+    .bg-yellow { background: rgba(255, 189, 46, 0.15); color: #ffbd2e; border: 1px solid rgba(255, 189, 46, 0.3); }
+    .bg-green { background: rgba(39, 201, 63, 0.15); color: #27c93f; border: 1px solid rgba(39, 201, 63, 0.3); }
+
+    .vgt-row { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; }
+    .vgt-row:last-child { border-bottom: none; }
+    .vgt-row:hover { background: rgba(255,255,255,0.02); }
+    .vgt-col-main { flex: 1; }
+    .vgt-plugin-name { font-weight: 700; font-size: 1rem; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .vgt-plugin-meta { font-family: ui-monospace, monospace; font-size: 0.75rem; color: #888; margin-top: 4px; }
+    
+    .vgt-progress-container { width: 200px; margin-left: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .vgt-progress-text { font-family: monospace; font-size: 0.75rem; color: #aaa; }
+    .vgt-progress-bar { width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
+    .vgt-progress-fill { height: 100%; background: linear-gradient(90deg, #00e5ff, #0088ff); border-radius: 3px; transition: width 0.5s ease; }
+
+    .vgt-actions { display: flex; gap: 10px; margin-left: 20px; }
+    .vgt-btn { background: #222; color: #fff; border: 1px solid #333; padding: 8px 16px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+    .vgt-btn:hover { background: #333; border-color: #555; }
+    .vgt-btn-approve { background: rgba(39, 201, 63, 0.1); border-color: rgba(39, 201, 63, 0.3); color: #27c93f; }
+    .vgt-btn-approve:hover { background: rgba(39, 201, 63, 0.2); box-shadow: 0 0 15px rgba(39, 201, 63, 0.2); }
+    .vgt-btn-reject { background: rgba(255, 77, 77, 0.1); border-color: rgba(255, 77, 77, 0.3); color: #ff4d4d; }
+    .vgt-btn-reject:hover { background: rgba(255, 77, 77, 0.2); box-shadow: 0 0 15px rgba(255, 77, 77, 0.2); }
+    
+    .vgt-btn-ai { background: rgba(188, 19, 254, 0.15); color: #bc13fe; border-color: rgba(188, 19, 254, 0.4); }
+    .vgt-btn-ai:hover { background: rgba(188, 19, 254, 0.25); box-shadow: 0 0 15px rgba(188, 19, 254, 0.3); }
+    .vgt-btn-ai.pulse { animation: vgt-pulse-purple 2s infinite; }
+
+    .vgt-permissions-preview { display: flex; gap: 15px; margin-top: 8px; flex-wrap: wrap; }
+    .perm-group { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+    .perm-icon { color: #888; display: flex; align-items: center; }
+    .perm-val { font-family: ui-monospace, monospace; font-size: 0.7rem; color: #00ff88; }
+    .perm-val.empty { color: #555; }
+
+    .vgt-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 99999; display: none; align-items: center; justify-content: center; }
+    .vgt-modal { background: #050507; border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 12px; width: 90%; max-width: 800px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); overflow: hidden; }
+    .vgt-modal-header { padding: 15px 20px; background: #111; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+    .vgt-modal-title { font-family: monospace; color: #888; font-size: 0.85rem; }
+    .vgt-close-btn { cursor: pointer; color: #fff; background: none; border: none; font-size: 1.5rem; line-height: 1; padding: 0; }
+    .vgt-modal-body { padding: 20px; }
+    .vgt-json-preview { background: transparent; color: #00ff88; font-family: ui-monospace, 'Cascadia Code', monospace; font-size: 0.85rem; line-height: 1.5; margin: 0; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; }
+    .vgt-json-preview::-webkit-scrollbar { width: 6px; }
+    .vgt-json-preview::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    .vgt-modal-footer { padding: 15px 20px; background: #111; border-top: 1px solid #222; display: flex; justify-content: flex-end; gap: 10px; }
+
+    .vgt-ai-terminal-box { background: #050507; border: 1px solid rgba(188, 19, 254, 0.2); border-radius: 12px; padding: 20px; font-family: ui-monospace, 'Cascadia Code', monospace; position: relative; overflow: hidden; width: 100%; margin-top: 10px; }
+    .vgt-ai-terminal-box::before { content: "VGT ORACLE TERMINAL (GROQ API)"; position: absolute; top: 0; left: 0; background: rgba(188, 19, 254, 0.15); color: #bc13fe; font-size: 0.6rem; font-weight: 900; padding: 4px 12px; border-bottom-right-radius: 8px; border-bottom: 1px solid rgba(188, 19, 254, 0.3); border-right: 1px solid rgba(188, 19, 254, 0.3); }
+    .vgt-terminal-stream { height: 160px; overflow-y: auto; font-size: 0.75rem; line-height: 1.6; color: #ccc; margin-top: 15px; display: flex; flex-direction: column; gap: 4px; }
+    .vgt-terminal-stream::-webkit-scrollbar { width: 4px; }
+    .vgt-terminal-stream::-webkit-scrollbar-thumb { background: rgba(188, 19, 254, 0.4); border-radius: 2px; }
+
+    .vgt-empty-state { padding: 40px 20px; text-align: center; color: #666; font-size: 0.9rem; font-style: italic; }
+
+    @keyframes vgt-pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 0, 60, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 0, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 0, 60, 0); } }
+    @keyframes vgt-pulse-blue { 0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(0, 229, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); } }
+    @keyframes vgt-pulse-purple { 0% { box-shadow: 0 0 0 0 rgba(188, 19, 254, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(188, 19, 254, 0); } 100% { box-shadow: 0 0 0 0 rgba(188, 19, 254, 0); } }
+    @keyframes vgt-spin { 100% { transform: rotate(360deg); } }
+    .spin { animation: vgt-spin 1s linear infinite; }

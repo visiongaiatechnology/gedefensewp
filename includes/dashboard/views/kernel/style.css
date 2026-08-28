@@ -1,0 +1,130 @@
+/* =========================================================================================
+     VGT COMPONENT STYLES (Kernel Pattern)
+   ========================================================================================= */
+    :root {
+        --vis-bg-dark: #0f1115;
+        --vis-bg-card: #181b21;
+        --vis-bg-code: #090a0c;
+        --vis-text-primary: #f8fafc;
+        --vis-text-secondary: #94a3b8;
+        --vis-success: #10b981;
+        --vis-danger: #ef4444;
+        --vis-warning: #f59e0b;
+        --vis-border: rgba(255,255,255,0.08);
+        --vis-border-hover: rgba(255,255,255,0.15);
+    }
+
+    /* SVG GLOBAL ENGINE */
+    .vgt-icon {
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    .vis-aegis-module {
+        background: var(--vis-bg-card);
+        border-radius: 12px;
+        color: var(--vis-text-primary);
+        font-family: system-ui, -apple-system, sans-serif;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .vis-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--vis-border);
+    }
+
+    .vis-body { padding: 24px; }
+    
+    .vis-badge {
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        padding: 4px 10px;
+        border-radius: 100px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--vis-border);
+    }
+
+    .vis-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .vis-dot-green { background: var(--vis-success); box-shadow: 0 0 10px var(--vis-success); }
+    .vis-dot-red { background: var(--vis-danger); box-shadow: 0 0 10px var(--vis-danger); }
+    .vis-dot-yellow { background: var(--vis-warning); box-shadow: 0 0 10px var(--vis-warning); }
+    .vis-dot-gray { background: var(--vis-text-secondary); }
+
+    .vis-blink-anim { animation: visBlinker 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes visBlinker { 50% { opacity: 0.3; } }
+    .vis-pulse-anim { animation: visPulser 2s infinite; }
+    @keyframes visPulser { 
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .vis-code-wrapper {
+        position: relative;
+        background: var(--vis-bg-code);
+        border: 1px solid var(--vis-border);
+        border-radius: 8px;
+        margin: 15px 0 25px 0;
+    }
+    .vis-code-wrapper pre {
+        margin: 0;
+        padding: 20px;
+        overflow-x: auto;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        color: #e2e8f0;
+    }
+    .vis-copy-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--vis-text-primary);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .vis-copy-btn:hover { background: rgba(255,255,255,0.15); }
+    .vis-copy-btn.copied { background: var(--vis-success); border-color: var(--vis-success); color: #000; }
+
+    .vis-step-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--vis-text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 25px;
+    }
+    .vis-step-num {
+        background: rgba(255,255,255,0.1);
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 12px;
+    }

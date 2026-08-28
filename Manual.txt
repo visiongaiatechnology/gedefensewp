@@ -1,0 +1,254 @@
+VGT Dokumentation
+DEPLOYMENT MANUAL: GEDEFENSE WP V7 (ZERO-TRUST WAF)
+
+
+Architektur: Zero-Trust / Defense-in-Depth
+System-Voraussetzung: VGT_OS Kernel (Hypervisor Base)
+Dieses Handbuch definiert die operativen Direktiven für das Deployment der GeDefense-WP-Architektur. GeDefense WP ist keine herkömmliche Security-Erweiterung, sondern ein autarkes Immunsystem, das sich vor den Applikations-Kernel schaltet. Die strikte Einhaltung dieser Phasen garantiert die Erreichung des VAI-Sicherheitsstatus.
+
+
+                              
+
+
+PHASE 1: SYSTEM-INITIALISIERUNG & KRYPTOGRAPHISCHE ENTSCHLÜSSELUNG
+Bevor Sentinel V7 operieren kann, muss die Träger-Architektur (VGT OS) etabliert und das verschlüsselte Sentinel-Modul in den Kernel geladen werden. VGT OS fungiert hierbei als isolierter Hypervisor, der die Ausführung der Sicherheitsmodule überwacht und vor Manipulationen durch Drittanbieter-Plugins schützt.
+1. Träger-System installieren: Laden Sie die neueste Version des VGT OS aus dem offiziellen Repository herunter und installieren Sie es als primäres WordPress-Plugin. Es bildet das logische Fundament.
+Repository: https://github.com/visiongaiatechnology/vgtos
+2. Sentinel Deployment:
+Navigieren Sie in das VGT OS Interface. Laden Sie das verschlüsselte VGT Sentinel V7 Paket hoch. Dieses Paket liegt im Ruhezustand (Data-at-Rest) in verschlüsselter Form vor, um Reverse-Engineering im Falle eines Server-Diebstahls zu verhindern.
+
+
+  
+
+   3. Kryptographische Entsperrung:
+Geben Sie Ihren dedizierten Secret Key ein. Durch diesen Schlüssel wird die Payload in-Memory entschlüsselt und direkt in die Ausführungspipeline des Systems integriert (Zero-Footprint auf der Festplatte). Erst nach diesem Schritt sind die Module funktionsfähig.
+PHASE 2: BASELINE SHIELD ACTIVATION (ZERO-TRUST CORE)
+Die sofortige Aktivierung der primären Filter-Engines ist essenziell, um das System gegen unmittelbare Layer-7-Scans (wie DirBuster, SQLMap oder automatisierte Exploit-Ketten) abzusichern.
+2.1 AEGIS (Deep Packet Inspection)
+AEGIS ist der primäre Stream-Scanner. Es parst den gesamten eingehenden HTTP-Traffic auf Byte-Ebene und nutzt deterministische, atomare Regex-Gruppen (O(1) Komplexität), um selbst stark obfuskierte Angriffe in Millisekunden zu vernichten.
+      1. Whitelist konfigurieren (Kritisch): Tragen Sie sofort Ihre eigene, physische IPv4/IPv6-Adresse in die Whitelist ein (Ihre externe IP finden Sie z.B. unter whoer.net). Dies verhindert, dass Sie bei der Einrichtung fehlerhafter Endpunkte selbst vom System ausgesperrt werden.
+      2. Modus wählen (Operational State):
+      * Learning Mode (Empfohlen für Tag 1-3): Das System blockiert Angriffe und verzeichnet sie im Log, führt aber noch keine permanenten Bans durch Cerberus aus. Dieser Modus ist ideal, um die Architektur in Produktionsumgebungen einzugewöhnen, legitime (aber unsauber programmierte) Drittanbieter-APIs zu identifizieren und die strikte Whitelist-Disziplin zu testen.
+      * Strict Mode: Kompromissloses Zero-Trust. Jeder Regelverstoß (egal ob mutmaßlich SQLi, LFI oder ein fehlerhafter User-Agent) führt zum sofortigen TCP-Verbindungsabbruch und einem permanenten Bann.
+  
+
+2.2 PROMETHEUS (Heuristische Limitierung & Volumetrie)
+Während AEGIS die Qualität der Anfragen prüft, kontrolliert Prometheus die Quantität und asynchrone Frequenz. Prometheus sitzt tief im Startprozess und zerschlägt Brute-Force- und Sub-Second-Burst-Attacken.
+      1. Whitelist: Tragen Sie auch hier Ihre eigene IP-Adresse ein, um nicht durch schnelles Navigieren im Backend als Bot klassifiziert zu werden.
+      2. Konfiguration: Die Standard-Schwellenwerte für IP-Events (Score-Eskalation bei 404-Fehlern, Burst-Rate Thresholds) sind mathematisch für maximale Sicherheit vorkonfiguriert. Passen Sie diese Parameter nur an, wenn Sie über fundierte Telemetrie-Daten ausweisen können, dass legitimer Traffic (wie starke externe API-Pings) fälschlicherweise gedrosselt wird.
+Mit der Aktivierung von AEGIS und PROMETHEUS ist der infrastrukturelle Basisschutz (Baseline) erreicht und das System immun gegen 98% des automatisierten Rauschens im IPv4-Raum.
+  Die Konfiguration für die Whitelist befindet im bei Prometheus unten. Danach wieder auf “Config Save”
+PHASE 3: TACTICAL HARDENING & STEALTH ARCHITECTURE
+Nachdem der Traffic gefiltert ist, wird in dieser Phase die physische Angriffsfläche minimiert und die digitale Topographie des Systems verschleiert. Was ein Angreifer nicht "sehen" kann, kann er nicht angreifen.
+3.1 TITAN (Kernel Hardening & Execution Prevention)
+Titan zielt darauf ab, die Ausführung von Schadcode auf Betriebssystem-Ebene zu unterbinden, selbst falls es zu einem erfolgreichen Datei-Upload kommen sollte.
+      1. Aktivieren Sie das Titan Shield. Dies generiert physische Firewalls (.htaccess Ebene), die direkten Zugriff auf sensible Log-Dateien, Konfigurationen und versteckte Verzeichnisse hart blockieren (HTTP 403).
+      2. Nginx-Hybrid Server Setup: Apache-Regeln greifen bei Nginx nicht für statische Auslieferungen. Kopieren Sie zwingend die generierte include-URL aus dem Titan-Dashboard und fügen Sie diese in Ihren Nginx server {} Block ein. Laden Sie Nginx neu (nginx -s reload). Dies synchronisiert die Abwehr über beide Server-Layer.
+      3. Identity Camouflage: Optional aktivierbar. Modifiziert X-Powered-By und Server-Header. Durch das Vorspiegeln falscher Frameworks zwingen wir automatisierte Scanner dazu, ineffiziente und nutzlose Exploit-Pfade zu verfolgen.
+      4. Heartbeat Flatline: Die WordPress Heartbeat-API generiert massiven CPU-Overhead durch konstante AJAX-Pings. Wenn Ihr Frontend keine Live-Updates (wie Chat-Systeme) benötigt, deaktivieren Sie die Heartbeat-API. Dies schützt vor asynchroner Ressourcen-Erschöpfung (Resource Exhaustion Attacks).
+  3.2 HADES (Ghost Protocol / Routing Verschleierung)
+Hades entzieht der Applikation ihre sichtbare Struktur, indem Standard-Pfade (wie wp-admin oder wp-content) algorithmisch maskiert werden.
+      1. Aktivieren Sie den Stealth Mode.
+      2. Admin Access Matrix (Pre-Auth Gatekeeper): Legen Sie Ihre geheimen Parameter fest (z.B. ?vgt_access=omega). Dieser kryptographische Slug agiert vor der eigentlichen Authentifizierung. Ohne diesen exakten URL-Parameter existiert der Login-Bereich für Scanner nicht – es wird ein nativer 404 Not Found Error simuliert. Dies ist exponentiell sicherer als 2FA, da der Angreifer den Login-Screen gar nicht erst laden kann.
+      3. KRITISCHER SCHRITT
+Nach jeder Aktivierung/Deaktivierung von Hades müssen Sie zwingend in WordPress unter Einstellungen -> Permalinks auf Speichern klicken. Dies zwingt das System, die internen Rewrite-Regeln zu flushen und die neuen Stealth-Routen im Core zu verankern. (Bei reinen Nginx-Setups: Die generierten Routing-Regeln manuell in die Server-Config eintragen).
+      4. VGT Empfehlung für Administration: Hades ist kompromisslos. Wenn sich Ihre IP durch Mobilfunknetze ändert, droht der Lockdown. Nutzen Sie Wireguard oder ein dediziertes VPN auf Ihrem Router, um stets mit einer statischen, autorisierten IP-Signatur im Backend zu agieren.
+  ZEUS (Pre-Boot WAF & L4/L7 Rate Limiter)
+ZEUS ist der Torwächter der Infrastruktur. Es operiert auf einer extrem niedrigen Ebene und blockiert groben Müll, Skript-Kiddies und volumetrische Scans, bevor AEGIS die Tiefeninspektion startet. Für Zeus wird APCU benötigt, besitzt aber auch ein Fallback. 
+         1. Konfiguration: Belassen Sie alle Parameter initial auf den Standardeinstellungen. Die VGT-Standardkonfiguration gilt aktuell als die mathematisch sicherste Balance zwischen strikter Abwehr und Performance-Erhalt.
+         2. Login Route Renaming: Ändern Sie hier die Standard-Login-Route (z. B. auf /wp-login.php?MeinGeheimnis). Automatisierte Brute-Force-Bots, die blind auf /wp-admin zielen, werden so sofort in einen 404-Error oder Tarpit geleitet.
+         3. Cryptographic Magic Cookie: Dieses Feature ist ausschließlich für erfahrene Administratoren. Es validiert Sitzungen über ein asymmetrisch signiertes Cookie, das vor Replay-Attacken schützt.
+         4. Emergency Bypass URL (Kritisch!): Bevor Sie das Modul kompilieren, scrollen Sie an den Anfang der Seite und speichern Sie sich die Emergency Bypass URL. Legen Sie diese URL verschlüsselt auf einem Offline-Laufwerk oder in einem Passwortmanager ab. Dies ist Ihr einziger Rettungsschirm, falls Sie sich durch eine IP-Änderung aus dem System ausschließen.
+         5. Kompilierung & Whitelisting: Klicken Sie auf Kompilieren, melden Sie sich ab und loggen Sie sich neu ein.
+WARNUNG:Beim Kompilieren der ZEUS WAF wird Ihre aktuelle öffentliche IP-Adresse inklusive der kompletten /24 Subnetz-Range (z.B. 192.168.1.0/24) tief im Kernel als sicher ("Whitelisted") verankert. Dies verhindert, dass Ihr eigener Router Sie bei dynamischen Reconnects aussperrt. Erweiterungen dieser Whitelist sind aus Sicherheitsgründen derzeit nicht über das Dashboard möglich und erfordern manuelle Eingriffe in die Systemdateien (siehe erweiterte Dokumentation).
+  
+
+AIRLOCK (Upload Vault & Obfuscation)
+Der Datei-Upload ist einer der kritischsten Vektoren für Remote Code Execution (RCE) und Web-Shell-Platzierungen. Airlock übernimmt die absolute Kontrolle über alle Daten, die in das Dateisystem geschrieben werden.
+            1. Aktivierung & Limitierung: Airlock ist standardmäßig aktiviert. Definieren Sie die maximale Upload-Größe präzise nach den Bedürfnissen der Redakteure. Übergroße Dateien werden auf Stream-Ebene verworfen, bevor sie den Server-RAM belasten (Denial-of-Service Abwehr).
+            2. Kryptographische Verschleierung: Aktivieren Sie die Dateinamen-Verschleierung. Wenn ein Redakteur bild.jpg hochlädt (oder ein Angreifer eine getarnte shell.php.jpg), benennt Airlock die Datei physikalisch in einen unberechenbaren SHA-256 Hash um.
+Der Effekt: Selbst wenn ein Angreifer erfolgreich eine Web-Shell durch einen Plugin-Fehler in das Upload-Verzeichnis schleust, kann er diese Shell niemals im Browser aufrufen, da er den neuen, verschleierten Dateinamen nicht kennt. Der Angriffsvektor verpufft im Nichts.
+  
+
+NEMESIS (Scraper Defense & Honeytokens)
+Nemesis schützt Ihre Unternehmensdaten vor bösartigen Bots und unautorisiertem Data-Mining.
+            1. E-Mail Obfuscation: Nemesis maskiert E-Mail-Adressen auf der Website dynamisch im DOM. Für menschliche Besucher bleiben sie lesbar, während automatisierte Scraper nur nutzlose Zeichenfolgen extrahieren.
+            2. Canary Tokens (Digitale Wasserzeichen): Nemesis injiziert unsichtbare Trace-Tokens in jede generierte Seite. Wenn Ihre Inhalte automatisiert geklaut und auf fremden Plattformen publiziert werden, ermöglichen diese Tokens eine eindeutige forensische Rückverfolgung zum Ursprung.
+            3. Tarpitting (Ressourcen-Bindung): Wenn Nemesis aggressive Bots erkennt, die gezielt nach verborgenen Systemdateien suchen (z.B. /api/v1/users, .env), blockiert das System diese nicht einfach. Stattdessen werden die Bots in eine künstliche Latenz-Warteschlange (Tarpit) gestellt. Der Server hält die TCP-Verbindung offen, antwortet aber nur extrem langsam (1 Byte pro Sekunde). Dies führt dazu, dass die Server und Threads des Angreifers kollabieren, während Ihr System unbelastet bleibt.
+WARNUNG (EXPERIMENTAL PROTOCOLS): Am Ende der Nemesis-Konfiguration finden Sie experimentelle "Offensive-Defense" Features. Diese dürfen ausschließlich in isolierten Testumgebungen aktiviert werden. Aktive Gegenangriffe ("Hack-Back") oder das absichtliche Crashen von Angreifer-Systemen (Zip-Bombs) sind in Deutschland und vielen anderen Jurisdiktionen rechtlich unzulässig. Nutzung auf eigene Gefahr.
+  
+
+
+
+PRIVACY & SHADOWNET (Datensouveränität)
+Für hochsichere Umgebungen (GovTech, Kritis, LegalTech) ist es inakzeptabel, dass Sicherheits-Skripte oder Fonts von externen CDNs (wie Google, Cloudflare) geladen werden, da dies Tracking durch Dritte ermöglicht.
+Local Asset Deployment: Laden Sie im Privacy-Dashboard alle benötigten 84 Assets physisch auf Ihren Server herunter (ca. 20 MB). Das System operiert fortan völlig Air-Gapped vom restlichen Internet. Es gibt keine ausgehenden Pings mehr an Drittanbieter.
+
+WICHTIGE INTERAKTION : Um den massenhaften Download dieser 84 Dateien in wenigen Sekunden durchzuführen, müssen Sie das Modul STYX temporär deaktivieren. Styx wertet 84 simultane Downloads von der eigenen IP als "Unerlaubter Outbound/Inbound" und wird den Prozess andernfalls blockieren.
+  PHASE 4: KOGNITIVE INFERENZ (ORACLE NEURAL LINK)
+Herkömmliche WAFs scheitern an Zero-Day-Exploits oder hochkomplexen semantischen Obfuskationen (Prompt Injections). AEGIS Oracle löst dieses Problem durch die Delegation von unklaren Payloads an eine KI-gestützte Semantik-Analyse.
+               1. Navigieren Sie im Interface zu V.PRIVACY -> Key Vault.
+               2. Unter "NEUEN KEY VERSCHLÜSSELN" hinterlegen Sie die Authentifizierungsdaten für die KI-Inferenz. Füllen Sie folgende Parameter exakt aus:
+               * Key Name: vis_aegis_ai_key
+               * Key Value: Fügen Sie hier Ihren RAW API KEY von Groq ein. (Groq wird wegen der extrem niedrigen LPU-Latenz bevorzugt, um den Request-Overhead unter 200ms zu halten).
+               3. Klicken Sie auf In Vault Versiegeln. Der API-Schlüssel wird nun mit AES-256 verschlüsselt gespeichert. Er liegt niemals im Klartext in der Datenbank und wird erst im Moment der Inferenz durch das Aegis-Modul im Arbeitsspeicher entschlüsselt.
+               4. Validierung: Navigieren Sie zurück zum "Aegis Firewall" Dashboard. Unter "ORACLE NEURAL LINK" muss nun der Status SYSTEM ONLINE grün leuchten. Die WAF besitzt nun semantisches Bewusstsein.
+
+
+  INTEGRITY MONITOR (Hash Filesystem Scanner)
+Der Integrity Monitor ist die letzte Bastion. Er prüft, ob ein Angreifer (z. B. durch einen gestohlenen FTP-Zugang) Dateien modifiziert hat.
+               1. Funktionsweise: Der Scanner generiert SHA-256 Hashes von allen Systemdateien. Sobald ein Hacker auch nur ein einziges Leerzeichen oder einen Punkt (z.B. in der index.php) hinzufügt, ändert sich der kryptographische Hash und der Monitor schlägt Alarm.
+               2. Baseline Generierung: Beim ersten Start gibt es zwei Szenarien:
+Szenario A: Das System ist frisch. Sie erstellen eine saubere Baseline. Alles ist grün.
+Szenario B (Wahrscheinlich): Sentinel hat im Hintergrund via Cronjob bereits heimlich eine erste Baseline erstellt, bevor Sie alle Module konfiguriert haben. Durch die Aktivierung von TITAN, HADES und ZEUS wurden Core-Dateien wie die .htaccess oder wp-config.php vollkommen legitim vom System verändert. Der Monitor meldet diese Änderungen nun als "Gefahr".
+               3. Aktion: Prüfen Sie beim ersten Aufruf die gemeldeten Dateien kurz. Wenn es sich um die durch Sentinel modifizierten Konfigurationsdateien handelt, akzeptieren Sie die Änderungen einfach und generieren Sie eine neue, finale Baseline.
+  
+
+
+
+
+
+PHASE 5: SYSTEM-AUDIT & FINAL HARDENING
+Nachdem die Kernarchitektur etabliert ist, erfolgt in dieser Phase die Feinjustierung der Integritätsmechanismen (Hardening Fortsetzen). Ziel ist es, absolute Stille im Oracle Scanner Audit zu erreichen.
+5.1 Oracle Scanner & Privacy Audit
+Navigieren Sie in den Bereich I. INTELLIGENCE (Oracle Scanner) und V. PRIVACY. Prüfen Sie, ob alle Systemindikatoren "Grün" (PASS) anzeigen. Sentinel führt hier tiefgreifende Prüfungen auf Dateirechte, SSL-Stati und offene Angriffsvektoren durch.
+5.2 Directory Browsing Fallbacks
+Abhängig von der Konfiguration Ihres Webhosting-Panels (z. B. Plesk, cPanel) meldet der Oracle Scanner möglicherweise, dass eine index.php im Uploads-Ordner fehlt.
+               * Technische Realität: Faktisch ist Ihr System durch TITAN bereits abgesichert. Titan generiert eine strikte .htaccess sowie die vgt-titan-shield.conf, die Directory Browsing auf Protokoll-Ebene (Nginx/Apache) hart blockieren.
+               * Best Practice: Dennoch diktiert das Prinzip der "Defense-in-Depth", dass Sie idealerweise manuell eine leere index.php in diesen Verzeichnissen ablegen. Dies dient als Fallback-Mechanismus, falls die Server-Regeln jemals durch ein fehlerhaftes Host-Update überschrieben werden sollten.
+5.3 User Enumeration Kill vs. Ghosting
+Es ist möglich, dass der Scanner im Audit einen FAIL beim Punkt "User ID 1 Ghosting" meldet.
+               * Hintergrund: Angreifer scannen oft nach der URL /?author=1, um den Administrator-Benutzernamen für Brute-Force-Attacken zu extrahieren.
+               * Die VGT-Lösung: Wenn Sie im TITAN-Modul die Funktion "USER ENUMERATION KILL" aktiviert haben, wird dieser Scan-Versuch bereits auf WAF-Ebene abgefangen und hart terminiert (HTTP 403). Der Angriffsvektor ist damit de facto inexistent. Zukünftige Updates des Oracle Scanners werden diese Synergie zwischen Titan und Oracle semantisch korrelieren und den Fehler-Status automatisch auf "PASS" setzen. Bis dahin können Sie diese Meldung bei aktivem Enumeration Kill ignorieren.
+
+
+PHASE 6: TELEMETRIE, KONTROLLE & THREAT MANAGEMENT
+Sicherheit ist kein Zustand, sondern ein Prozess. Die dauerhafte Überwachung der Systeme und die schnelle Reaktion auf Anomalien erfolgt über die integrierten Analyse- und Kontroll-Module.
+6.1 CERBERUS (Ban Engine)
+Cerberus ist das Exekutivorgan des Systems. Hier aggregiert das System alle durch AEGIS blockierten und durch PROMETHEUS gebannten IP-Adressen inklusive dem exakten Angriffs-Vektor.
+               * State Tracking: Cerberus arbeitet primär über atomare Dateisystem-Locks, um die MySQL-Datenbank bei massiven Brute-Force-Wellen nicht zu überlasten (Null DB-Hits während eines Angriffs).
+               * Management: Administratoren, die sich durch fehlerhafte Zugriffe versehentlich selbst ausgesperrt haben, können hier über einen alternativen Zugang (oder direkt via WP-CLI) manuell entsperrt werden.
+  
+
+
+
+
+
+
+
+
+
+6.2 STYX CONTROLLER (Layer-7 Traffic Analyse)
+Styx ist kein gewöhnliches Access-Log, sondern bietet einen ungefilterten Echtzeit-Blick auf den Layer-7-Traffic, die auf Ihre Webseite einwirken. Man sieht, welches Plugin nach Hause telefonieren will. 
+               1. Initialisierung: Starten Sie Styx in den ersten Tagen im Audit Mode, um zu validieren, wie der Traffic durch die Server-Ebenen fließt.
+               2. KRITISCHER SCHRITT FÜR ORACLE AI : Wenn AEGIS Oracle (Phase 4) aktiviert wurde, tätigt Ihr Server selbstständige ausgehende Verbindungen zur KI. Sie müssen in der Styx-Whitelist zwingend die Domain api.groq.com (oder die entsprechende Modell-API) eintragen. Andernfalls erkennt Styx den eigenen Outbound-Traffic als Anomalie und blockiert die API-Verbindungen zur KI-Inferenz (Self-Denial-of-Service).
+
+
+  
+
+
+
+
+
+
+6.3 KERNEL UPLINK (Server Integrity Monitoring)
+Dieses Modul richtet sich exklusiv an Administratoren mit tiefem Systemverständnis und SSH-Root-Zugriff.
+Richten Sie den Kernel Uplink gemäß den kryptographischen Anweisungen im Dashboard direkt über die Kommandozeile (SSH) des Host-Systems ein. Sentinel validiert fortan in festgelegten Intervallen die physische Integrität des Betriebssystems (Prüfsummen kritischer Binaries und Config-Dateien). Sollte ein Angreifer einen Container-Escape durchführen oder das OS auf Kernel-Ebene modifizieren (Rootkits), sendet das System sofortige, asynchrone Alerts an den Administrator, selbst wenn die WordPress-Ebene kompromittiert sein sollte.
+  
+
+Der Uplink wird als Experimentell bezeichnet. Es kann theoretisch auch hierdurch eine Angriffsfläche entstehen. 
+
+
+
+
+
+
+
+
+
+
+
+
+ Morpheus Sandbox (Plugin Hypervisor & Isolation)
+Morpheus ist kein klassischer Traffic-Filter, sondern ein tiefgreifender Laufzeit-Hypervisor für Drittanbieter-Plugins. Es handelt sich um ein aktuell noch als experimentell eingestuftes Feature, das den Zero-Trust-Gedanken konsequent auf die interne Architektur der Applikation ausweitet.
+               * Das Problem der Supply-Chain: In einer Standard-Architektur teilen sich alle aktivierten Plugins dieselben Privilegien. Ein einzelnes, schlecht programmiertes oder kompromittiertes Plugin eines Drittanbieters hat potenziell Vollzugriff auf die gesamte Datenbank und das gesamte Netzwerk. Ein Fehler in einer Galerie-Erweiterung kann somit die komplette Server-Infrastruktur kompromittieren.
+               * Die Lösung durch Sandbox-Isolation: Morpheus beendet dieses monolithische Risiko, indem es Drittanbieter-Plugins in eine strikte, virtuelle Sandbox zwingt. Die Ausführung wird radikal reglementiert:
+               * Datenbank-Confinement: Ein Plugin erhält ausschließlich Lese- und Schreibzugriff auf seine eigenen, ihm zugewiesenen Datenbanktabellen. Der Zugriff auf sensible Core-Tabellen (wie wp_users oder wp_options) ist strengstens untersagt. Versucht ein Plugin (z.B. durch eine Zero-Day-SQLi), seine Berechtigungen zu eskalieren (Privilege Escalation) und Admin-Hashes auszulesen, blockiert Morpheus den Query intern.
+               * Network Outbound Firewall: Plugins senden oftmals massenhaft Telemetrie- oder Tracking-Daten an externe Server. Morpheus initiiert einen "Default Deny" für das Netzwerk. Es blockiert alle ausgehenden Verbindungen (Outbounds) aus der Plugin-Sandbox heraus. Lediglich Verbindungen, die für die Kernfunktion des Plugins absolut notwendig sind und explizit genehmigt wurden, werden zugelassen. Selbst wenn ein Angreifer eine Remote-Code-Execution (RCE) in einem Plugin erlangt, kann er keine Daten exfiltrieren (Data Exfiltration), da Morpheus die Netzwerkbrücke nach draußen physisch kappt.
+               * Aktivierungs-Warnung: Aktivieren Sie Morpheus niemals direkt nach dem ersten Deployment. Da Drittanbieter-Plugins oftmals weitreichende Berechtigungen "erwarten", würde ein sofortiger Sandbox-Zwang die Website-Funktionalität (DOM-Rendering) umgehend brechen. Dieses Modul erfordert eine rigorose Profiling-Phase. Sentinel muss im Vorfeld detailliert evaluieren, welche Tabellen und Outbounds ein legitimes Plugin benötigt, um eine exakte, restriktive Whitelist zu generieren.
+
+
+
+
+
+
+GHOST TRAP (L7 Deception / Proaktives Honeypot-Netzwerk)
+Ghost Trap ist eine der effektivsten Komponenten des Sentinel-Ökosystems. Es basiert auf dem Prinzip der aktiven Täuschung. Während herkömmliche Firewalls passiv reagieren, legt Ghost Trap "digitale Stolperdrähte" im gesamten Root-Verzeichnis aus.
+               * Funktionsweise: Ghost Trap generiert eine Vielzahl von Dummy-Dateien, die für menschliche Besucher unsichtbar sind, aber von automatisierten Scannern (wie DirBuster, GoBuster oder Shodan) sofort gefunden werden. Diese Dateien wirken wie extrem wertvolle Ziele (z. B. Backup-Archive, Datenbank-Dumps oder Server-Konfigurationen).
+               * Der Kill-Mechanismus: Sobald ein Bot oder ein menschlicher Hacker versucht, eine dieser Dateien auch nur lesend abzutasten ("Probing"), triggert Sentinel einen Immediate Network-Level Ban. Die IP wird augenblicklich durch Cerberus auf der untersten Ebene gesperrt.
+               * Konfiguration im Dashboard:
+               * Anzahl der Fallen: Sie können bis zu 50 Fallen gleichzeitig scharf schalten. Je mehr Fallen, desto dichter das Minenfeld.
+               * Polymorphe Dateiendungen: Ghost Trap nutzt wechselnde Endungen, um statische Signaturen zu umgehen.
+               * Name Generator: Das System nutzt einen intelligenten Generator, der gezielt Namen vergibt, die für Angreifer unwiderstehlich sind (z. B. config.sql, phpinfo.old, db_backup.zip, .env.bak).
+               * Strategischer Vorteil: Ghost Trap blockiert Angreifer, noch bevor sie eine einzige echte Schwachstelle auf Ihrer WordPress-Seite gefunden haben. Es beendet den Angriff in der Informationsbeschaffungsphase.
+  
+
+
+
+
+CHRONOS (Autonomous Scheduler & Intelligence Orchestrator)
+CHRONOS ist der autonome Taktgeber des Sentinel-Systems. Während der Integrity Monitor (Phase 7.2) das Werkzeug zur Prüfung ist, bildet CHRONOS die Hand, die dieses Werkzeug im Hintergrund führt, ohne die Server-Performance zu beeinträchtigen.
+               * Autonomous Orchestration: CHRONOS orchestriert den OMEGA Scanner-Kernel vollständig automatisiert im Hintergrund. Dies bedeutet, dass Sie keine manuellen Scans mehr anstoßen müssen. Das System wacht ständig über die Dateisystem-Integrität und führt tiefe Vergleiche der SHA-256-Hashes durch.
+               * Konfigurations-Matrix:
+               * Scan-Intervall: Legen Sie präzise fest, wie oft CHRONOS das System durchleuchten soll (z. B. stündlich, täglich oder in benutzerdefinierten Zyklen). Für Hochsicherheits-Umgebungen empfiehlt VGT ein kurzes Intervall, um die "Dwell Time" (Verweildauer) eines Angreifers auf dem System zu minimieren.
+               * Empfänger-Konfiguration: Definieren Sie die E-Mail-Adressen, an die CHRONOS Statusberichte und kritische Integritäts-Warnungen senden soll.
+               * Email Template Customization: Passen Sie das Benachrichtigungs-Template an Ihre Bedürfnisse an. Ob klinisch-technische Berichte für Ihr SOC oder zusammenfassende Status-Updates in HTML-Form – CHRONOS informiert Sie exakt so, wie Sie es wünschen.
+               * Strategische Implikation: Durch CHRONOS erreichen Sie einen "Set-and-Forget"-Sicherheitsstatus. Sobald eine Datei unautorisiert modifiziert wird (z. B. durch einen FTP-Hinterhalt oder einen Dateisystem-Exploit), wird CHRONOS dies beim nächsten Zyklus detektieren und Sie umgehend alarmieren.
+  
+
+VISIONLEGALPRO (VLP) SUITE 2.0 - COMPLIANCE & DATENSOUVERÄNITÄT
+Im Kontext einer Zero-Trust-Architektur sind Datenschutz und IT-Sicherheit untrennbar miteinander verbunden. Die VisionLegalPro (VLP) Suite 2.0 ist kein herkömmliches Legal-Plugin, sondern das Exekutiv-Modul für Datensouveränität. Es reglementiert rigoros, wie Daten das System verlassen und wer sie konsumieren darf. Um die VLP Suite zu initialisieren, navigieren Sie im Admin-Menü zu "VisionLegalPro".
+9.1 Mission Control & Privacy Matrix (Asset Shielding)
+Die Mission Control bildet das strategische Lagezentrum der Suite. Hier wird das Prinzip "Data Sovereignty by Default" angewandt.
+               * Shield Vectoren: In der VLP-Terminologie ist jedes externe Asset (z. B. ein Google Font, ein reCAPTCHA-Script oder eine eingebettete Karte) ein potenzieller "Shield Vector" – ein Einfallstor für Data-Leaks und Drittanbieter-Tracking.
+               * Asymmetrisches Routing: Die Übersicht zeigt präzise an, welche Shield Vectoren aktuell abgedeckt sind. Die VLP-Engine blockiert standardmäßig alle Aufrufe an externe Content Delivery Networks (CDNs).
+               * Interne Spiegelung (Mirroring): Assets werden nicht verboten, sondern in die interne Infrastruktur gespiegelt und von dort aus ausgeliefert. Dies unterbindet Metadaten-Abfluss (IP-Adressen, User-Agents) an Dritte. Ausnahmen müssen in der Privacy Matrix explizit durch den Administrator genehmigt (whitelisted) werden.
+  
+
+Lingua Nexus (Neural Compiler & Translation Engine)
+Lingua Nexus ist die kognitive Übersetzungsbrücke, die exklusiv für die Symbiose mit VGT Architect (unserem nativen HTML-Frontend-Builder) entwickelt wurde. Es eliminiert die Notwendigkeit für performance-fressende Übersetzungs-Plugins (wie WPML), die Datenbanken mit redundanten String-Tabellen fluten.
+               * Der Neural-Workflow: Lingua Nexus liest die generierten Frontend-Seitenstruktur ein und sendet die Daten-Pakete via API an das Groq-Netzwerk (LPU-Inferenz) zur hochpräzisen, kontextuellen Übersetzung.
+               * Human-in-the-Loop (HITL): Autonomie erfordert Kontrolle. Bevor eine KI-generierte Übersetzung live geschaltet wird, zwingt Lingua Nexus die Daten in einen Review-State. Ein menschlicher Operator muss die Nuancen verifizieren und freigeben.
+               * O(1) RAM-Kompilierung & Storage Isolation: Nach der Freigabe wird das übersetzte HTML-Gerüst nicht in die zentrale WordPress-Datenbank gepumpt. Stattdessen wird es in einem dedizierten Backend-Storage abgelegt und bei Aufruf in O(1)-Zeitkomplexität direkt in den RAM kompiliert. Dies verhindert "Database Bloat" und garantiert Ladezeiten im Millisekundenbereich.
+               * ARCHITEKTUR-ABHÄNGIGKEIT : Lingua Nexus ist untrennbar mit dem VGT-Ökosystem verschmolzen. Das Modul erfordert zwingend den kryptographischen Key, der im VGT GEO Architect hinterlegt wurde. Ohne die Validierung dieses Keys verweigert Lingua Nexus den Dienst vollständig (Fail-Closed).
+  
+
+
+
+
+Banner Customizer (Frontend Consent Gateway)
+Der Cookie-Banner ist die erste juristische Interaktionsschicht zwischen System und Nutzer. Der Customizer erlaubt eine tiefe Anpassung, ohne die strikten juristischen Leitplanken zu verlassen.
+               * Visuelle & Strukturelle Identität: Administratoren können die Farbgebung (Hex-Codes) an die Corporate Identity (CI) anpassen.
+               * HTML-Integration: Für komplexe rechtliche Disclaimer oder Verlinkungen zu Privacy Policys erlaubt der Customizer native HTML-Injektionen in den Textfeldern, wodurch maximale gestalterische und juristische Flexibilität gewahrt bleibt.
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Telemetry Vault (Zero-Knowledge Analytics Engine)
+Herkömmliche Tracking-Systeme (wie Google Analytics) verletzen das Zero-Trust-Paradigma, da sie externe Entitäten mit sensiblen Besucherdaten füttern. Die Telemetry Vault ist die VGT-Antwort: Eine hochgradig gesicherte, interne Statistik-Engine, die auf dem "Zero-Knowledge"-Prinzip basiert.
+               * Kryptographische Isolation: Jeder Besucher, der über den Consent-Banner seine Zustimmung erteilt, wird getrackt – jedoch vollkommen anonymisiert. Die Telemetry Vault speichert niemals Klartext-IP-Adressen oder identifizierbare Hardware-Signaturen. Alle Datenpunkte werden vor dem Schreiben auf die Festplatte via AES-Verschlüsselung unkenntlich gemacht.
+               * Verifizierte Entitäten & Flow-Analyse: Das Dashboard entschlüsselt die Datenströme nur aggregiert und visualisiert den echten Wert: Wie interagieren Nutzer mit dem System? Sie sehen exakt, welche URIs aufgerufen wurden, wie hoch die Verweildauer ist und wie viele verifizierte Entitäten (eindeutige, anonymisierte Nutzer-Cluster) in das System eingetreten sind.
+               * Compliance Export: Für Datenschutzbeauftragte (DPOs) oder juristische Audits (z.B. im Rahmen von DSGVO-Auskunftsersuchen) bietet die Vault einen sofortigen Export-Mechanismus. Die sauberen, IP-freien Metriken können mit einem Klick als strukturierte CSV-Datei oder als revisionssicheres PDF-Dokument extrahiert werden.

@@ -1,0 +1,140 @@
+/* =========================================================================================
+     VGT APEX STYLES (NOC System Status Pattern)
+   ========================================================================================= */
+    .vgt-noc-ui {
+        --vgt-bg-base: #020617;
+        --vgt-bg-panel: rgba(15, 23, 42, 0.5);
+        --vgt-border: rgba(255, 255, 255, 0.08);
+        --vgt-border-hover: rgba(255, 255, 255, 0.2);
+        --vgt-text: #f8fafc;
+        --vgt-text-muted: #94a3b8;
+        
+        color: var(--vgt-text);
+        font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    /* Security Scoring Panel */
+    .vgt-score-card {
+        background: var(--vgt-bg-panel);
+        border: 1px solid var(--vgt-border);
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        align-items: center;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border-top: 3px solid #10b981;
+    }
+    .vgt-score-left {
+        flex: 1;
+        min-width: 160px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .vgt-score-right {
+        flex: 3;
+        min-width: 300px;
+    }
+    .vgt-score-circle-container {
+        position: relative;
+        width: 150px;
+        height: 150px;
+    }
+    .vgt-score-circle-bg {
+        fill: none;
+        stroke: rgba(255,255,255,0.03);
+        stroke-width: 12;
+    }
+    .vgt-score-circle-val {
+        fill: none;
+        stroke-width: 12;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dashoffset 0.8s ease;
+    }
+    .vgt-score-number {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: 'Fira Code', monospace;
+        font-size: 32px;
+        font-weight: 800;
+        color: #fff;
+    }
+    .vgt-score-title {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        font-family: 'Orbitron', -apple-system, sans-serif;
+    }
+    .vgt-score-desc {
+        font-size: 13px;
+        color: var(--vgt-text-muted);
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+    .vgt-score-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+    }
+    .vgt-score-item {
+        background: rgba(0,0,0,0.25);
+        border: 1px solid var(--vgt-border);
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-family: 'Fira Code', monospace;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .vgt-score-item.active {
+        color: #fff;
+        border-color: rgba(16, 185, 129, 0.15);
+    }
+    .vgt-score-item.inactive {
+        color: var(--vgt-text-muted);
+        opacity: 0.5;
+    }
+    .vgt-status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    /* Module Grid */
+    .vgt-module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    .vgt-module-card { background: rgba(0,0,0,0.2); border: 1px solid var(--vgt-border); border-radius: 10px; padding: 20px; transition: all 0.3s ease; display: flex; flex-direction: column; height: 100%; position: relative; }
+    .vgt-module-card:hover { border-color: var(--vgt-border-hover); background: rgba(255,255,255,0.02); transform: translateY(-2px); }
+    
+    .vgt-module-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .vgt-module-icon-box { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); }
+    .vgt-module-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    
+    .vgt-module-title { font-size: 15px; font-weight: 700; margin: 0 0 6px 0; color: #fff; letter-spacing: 0.5px; }
+    .vgt-module-desc { font-size: 13px; color: var(--vgt-text-muted); line-height: 1.5; margin: 0; flex-grow: 1; }
+    
+    .vgt-module-footer { margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    .vgt-module-meta { font-family: 'Fira Code', monospace; color: var(--vgt-text-muted); }
+
+    /* Badges */
+    .vgt-status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: 1px solid transparent; }
+    .vgt-status-active { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+    .vgt-status-attention { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.3); animation: pulse-border 2s infinite; }
+    .vgt-status-offline { background: rgba(100, 116, 139, 0.1); color: #64748b; border-color: rgba(100, 116, 139, 0.3); }
+
+    @keyframes pulse-border {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
