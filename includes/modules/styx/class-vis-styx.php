@@ -126,14 +126,12 @@ final class VIS_Styx {
     }
 
     private function check_host(string $host): bool {
-        if (defined('WP_HTTP_BLOCK_EXTERNAL') && !WP_HTTP_BLOCK_EXTERNAL) return true;
-        
         // O(1) Exact Match
         if (isset($this->exact_hosts[$host])) return true;
         
-        // Wildcard Fallback Iteration
+        // Strict Wildcard Subdomain Matching (*.example.com matches sub.example.com and example.com, but NOT evil-example.com)
         foreach ($this->wildcard_hosts as $domain) {
-            if (str_ends_with($host, $domain)) return true;
+            if ($host === $domain || str_ends_with($host, '.' . $domain)) return true;
         }
         
         return false;

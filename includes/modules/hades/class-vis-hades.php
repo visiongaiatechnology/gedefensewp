@@ -84,8 +84,10 @@ final class VIS_Hades {
             $zeus_slug   = $zeus_config['brute_rename_login'] ?? '';
             $has_zeus_slug = !empty($zeus_slug) && isset($_GET[$zeus_slug]);
 
-            $has_param = (isset($_GET[$this->admin_param]) && $_GET[$this->admin_param] === $this->admin_secret) || $has_zeus_slug;
-            $has_cookie = isset($_COOKIE['vgt_hades_gate']);
+            $has_param = (isset($_GET[$this->admin_param]) && is_string($_GET[$this->admin_param]) && hash_equals($this->admin_secret, (string)$_GET[$this->admin_param])) || $has_zeus_slug;
+            $has_cookie = class_exists('VIS_Security')
+                ? VIS_Security::validate_hades_gate($this->admin_secret)
+                : (isset($_COOKIE['vgt_hades_gate']) && is_string($_COOKIE['vgt_hades_gate']) && hash_equals(hash_hmac('sha256', $this->admin_secret, wp_salt('auth')), (string)$_COOKIE['vgt_hades_gate']));
 
             if ($has_param) {
                 $hash = hash_hmac('sha256', $this->admin_secret, wp_salt('auth'));

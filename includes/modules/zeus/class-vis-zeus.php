@@ -100,19 +100,10 @@ class VIS_Zeus {
     }
 
     private function extract_deterministic_ip(): string {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        $cf_ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '';
-
-        if ( $cf_ip !== '' && filter_var( $cf_ip, FILTER_VALIDATE_IP ) ) {
-            if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) !== false ) {
-                return $cf_ip; 
-            }
+        if (class_exists('VIS_Security')) {
+            return VIS_Security::client_ip();
         }
-
-        if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) !== false ) {
-            return $ip;
-        }
-        
-        return '127.0.0.1';
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '127.0.0.1';
     }
 }
