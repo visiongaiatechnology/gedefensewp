@@ -20,6 +20,9 @@
 
 ---
 
+<img width="2332" height="1183" alt="image" src="https://github.com/user-attachments/assets/b97ed4da-f7a1-4343-a46d-ab8bb1e3feb9" />
+
+
 ## Overview
 
 **GeDefense WP — Open Core** is a modular, zero-dependency WordPress security platform designed as a **multi-tier security kernel and active defense matrix** for PHP 8.1–8.4 and WordPress 6.0+.
