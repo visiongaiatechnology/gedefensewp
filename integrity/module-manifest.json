@@ -5,71 +5,55 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "7225fb0fc35e685394ca93b4942de46ff019d8799b0b381e2282b447b4a060cb"
+            "root_hash": "586c5197cbec6a5482d39f2103a65bc107343067a13a500190802f48619da96f"
         },
         "assets": {
             "files": 5,
-            "root_hash": "2f0debe8285bbb11f2b3f615990df20b7a6c95779fdc0473981789e8d587e82b"
-        },
-        "bridge": {
-            "files": 1,
-            "root_hash": "5741332118e51d957726e19b8500f800eea3f2c556f8f76fc33fb129f50b86d7"
-        },
-        "builder": {
-            "files": 15,
-            "root_hash": "d49371017966d763b80a229b8f3b6dc1cec87619685a03d11ce969c5b9a6fa20"
+            "root_hash": "2da4f4d9655401c2979550b0f026d5b5e039f612d8e2e344f94c0476f7b6cadd"
         },
         "compatibility": {
             "files": 4,
-            "root_hash": "ba32d341f6919e219beb69ecc4802ef37fadce97f849608c7bd2238bd1b0f96d"
+            "root_hash": "178ff34fc8b19b5617b1fad47671e0308a613b8c94566ebcda40b13f751130b9"
         },
         "core": {
-            "files": 8,
-            "root_hash": "f7cdceba9a1e4e3b7bdaae4e7afac35aa3ff84408b408701bff4fd36e5993064"
+            "files": 9,
+            "root_hash": "a53955181bdafe90c8ba2b9cfe584d1e288b6acb215792b4081a3598346dd179"
         },
         "dashboard": {
             "files": 74,
-            "root_hash": "1c3f6994f1008bac26da90beb7684a60e7a134e4a8907007c8632f5102cab226"
+            "root_hash": "1b994a04e80b5abf13bcd4f919ac4b84f3ff44734a374782e71bcdf0754ea06d"
         },
         "scanner": {
             "files": 1,
-            "root_hash": "05ac3eb66f06f25e547bf698e967b9b2b259bccdae7dbd3592fb04cba21ab914"
-        },
-        "vlp": {
-            "files": 22,
-            "root_hash": "f69eb5d4c2bfec19e286f8b4132bb288fedb70f5804c280c5ab0988acc9e8bab"
-        },
-        "seo": {
-            "files": 24,
-            "root_hash": "6a54000cb03e36163de647e104c1d5e0ae9a87c4dcc48a61710e87affa194756"
+            "root_hash": "7f0358e828860073e45cf01513c195793c005f4df6fd5103a0f8c42ddd40bf3d"
         },
         "aegis": {
             "files": 2,
-            "root_hash": "5f6afac4f36d6e2d6bee65810eb317476ec0f97bbf95bf604e0ad47687575dc0"
+            "root_hash": "1e97a3b6ac398cc933c3b7eac71ca5737c27af981c66b3ffe74a539a547fd878"
         },
         "airlock": {
             "files": 4,
-            "root_hash": "7c0eb0aa39351b0d51d29cc3f3f4c522298083244e2e3c4b69208805cb52f396"
+            "root_hash": "4e0cf005d6db500ad74cdb965f056adb162ce84577183c576254b17c0a94d28e"
         },
         "cerberus": {
             "files": 1,
-            "root_hash": "0063e98295a11cc1c68e2867712c693b915ea88c23034c0e9e7737b2ed6acbef"
+            "root_hash": "5bcef230e7aea299109f06dd5ad69a7650f42f341c9f45b478ea0d86fcac1fbd"
         },
         "chronos": {
             "files": 5,
-            "root_hash": "ed81bce01bdef584a0a243a138f6bcace7c91a86dd365d8a2c8933d6634e06bd"
+            "root_hash": "61acd5da350370a80f99c4a81132c546984a620bd06d38bccd3a0736234373d3"
         },
         "filesystem": {
             "files": 1,
-            "root_hash": "2a88aa8779c2899b9718b47d69f694ed73a6cffe345f41fc8de2847120a957b9"
+            "root_hash": "1ae225bf0b86a4878f6775639d6776536ced944f1badb84a33c68af74e699cba"
         },
         "gorgon": {
             "files": 6,
-            "root_hash": "96fce45d70600fcaa0fb3459a5b0dda9b1546431b5e6d9d139b04801fe1ffd5a"
+            "root_hash": "05eba546437b6f42be0dcb0ad4a729f3499842cb22142b4c350c96bcfc5dc0dd"
         },
         "hades": {
             "files": 1,
-            "root_hash": "a91d04a932679caa5411abdaa8c958a32cb911e94b5597a6742ba77c5a8bf809"
+            "root_hash": "112ec32e9e20880c125a827917d0c605090f46d7c78d28a198f03c59e70b2524"
         },
         "kernel": {
             "files": 1,
@@ -77,23 +61,23 @@
         },
         "morpheus": {
             "files": 10,
-            "root_hash": "65b20626a220fcc41fa6b4510482102e77877ed508138d56325880b16e5d4442"
+            "root_hash": "b5aa5b2ee41773348b246085c0173dc40a3b60a77c1f19d84def2996051f061f"
         },
         "nemesis": {
             "files": 1,
-            "root_hash": "92bf1580046423223fd6933da58edae3c0f2e09ab79bd4c316d49b8ef805da1e"
+            "root_hash": "f28f5cba2795f8d98e3203bd399e10b18e5f76dc62320d47a87829828ebb491c"
         },
         "oracle": {
             "files": 1,
-            "root_hash": "f0257451abf35bf88893005da67ba658d8916e4c55b83fd994a987a3741fb492"
+            "root_hash": "cd35b55efd8ffab18a3f0e2cf42255b74a854ccbddc708bc20643226a7639eb9"
         },
         "prometheus": {
             "files": 1,
-            "root_hash": "a675a2c2e65d6c5c8c1fdc1d4bed94a799247be373c66e4df229ceeb50a4b42c"
+            "root_hash": "513286a3ad982000626e4a1d67768c866ead79ea0a7b86dcf543fb4a48b87b54"
         },
         "styx": {
             "files": 1,
-            "root_hash": "b379c58fe967ec88ed67e14d45a9b6e375cd4f7c11dbaf2ab9f18d02b72d2e1d"
+            "root_hash": "77b8ae9614fed4f41b5687a46eee05846935ce44c201bdc8590541e37a44e3bf"
         },
         "titan": {
             "files": 1,
@@ -101,15 +85,15 @@
         },
         "trap": {
             "files": 3,
-            "root_hash": "b0ba547af26e80f3737cb1806f938fa9e2e8b88e31d753e72c1262143de05e9b"
+            "root_hash": "37357079fe2e3d313df05f38c42b2a25e96de49ee99366f83c97dd9e9a9549ed"
         },
         "vault": {
             "files": 1,
-            "root_hash": "083098928dae7689f9ec6475569c01de7a7a546ee7e8942dc12e437534b80d00"
+            "root_hash": "b71b016876c300a21664ad05c042ed05c6cd44507524404d9649f5bee9f83aea"
         },
         "zeus": {
             "files": 4,
-            "root_hash": "bf85589508ab55e24b24de51996622559ab7d04f3370b83950d4b2830a5c9c43"
+            "root_hash": "b41ae605476d18d080d33a6621ee107540a4ab58e24a19f09e5a2556e0a09d4f"
         }
     }
 }

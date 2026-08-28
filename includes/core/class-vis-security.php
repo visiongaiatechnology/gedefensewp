@@ -202,6 +202,58 @@ final class VIS_Security {
         return ['headers' => $headers, 'body' => $body, 'response' => ['code' => $status, 'message' => '']];
     }
 
+    public const CF_RANGES = [
+        'v4' => [
+            '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22',
+            '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+            '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+            '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22'
+        ],
+        'v6' => [
+            '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32',
+            '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32'
+        ]
+    ];
+
+    public static function is_cloudflare_ip(string $ip): bool {
+        $ip_bin = @inet_pton($ip);
+        if ($ip_bin === false) return false;
+
+        $is_v6 = (strlen($ip_bin) === 16);
+        $ranges = $is_v6 ? self::CF_RANGES['v6'] : self::CF_RANGES['v4'];
+
+        foreach ($ranges as $cidr) {
+            if (self::cidr_match_bin($ip_bin, $cidr)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static function cidr_match_bin(string $ip_bin, string $cidr): bool {
+        $parts = explode('/', $cidr);
+        if (count($parts) !== 2) return false;
+
+        $subnet_bin = @inet_pton($parts[0]);
+        if ($subnet_bin === false) return false;
+
+        $bits = (int)$parts[1];
+        $bytes = $bits >> 3;
+        $bits_remainder = $bits & 7;
+
+        if ($bytes > 0) {
+            if (substr($ip_bin, 0, $bytes) !== substr($subnet_bin, 0, $bytes)) return false;
+        }
+
+        if ($bits_remainder > 0) {
+            $mask = 0xff << (8 - $bits_remainder);
+            if (!isset($ip_bin[$bytes]) || !isset($subnet_bin[$bytes])) return false;
+            if ((ord($ip_bin[$bytes]) & $mask) !== (ord($subnet_bin[$bytes]) & $mask)) return false;
+        }
+
+        return true;
+    }
+
     public static function is_public_ip(string $ip): bool {
         return (bool) filter_var(
             $ip,
@@ -211,8 +263,22 @@ final class VIS_Security {
     }
 
     public static function client_ip(): string {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
+        $remote_addr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && self::is_cloudflare_ip($remote_addr)) {
+            $cf_ip = filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP);
+            if ($cf_ip !== false && self::is_public_ip((string)$cf_ip)) {
+                return (string)$cf_ip;
+            }
+        }
+        return filter_var($remote_addr, FILTER_VALIDATE_IP) ? (string)$remote_addr : '0.0.0.0';
+    }
+
+    public static function validate_hades_gate(string $admin_secret): bool {
+        if (!isset($_COOKIE['vgt_hades_gate']) || !is_string($_COOKIE['vgt_hades_gate'])) {
+            return false;
+        }
+        $expected = hash_hmac('sha256', $admin_secret, wp_salt('auth'));
+        return hash_equals($expected, (string)$_COOKIE['vgt_hades_gate']);
     }
 
     public static function rate_limit(string $scope, int $limit, int $window_seconds): bool {

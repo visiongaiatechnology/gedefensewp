@@ -52,15 +52,9 @@ final class VIS_Airlock_Scanner {
             return $file;
         }
 
-        $handle = @fopen($path, 'rb');
-        if ($handle) {
-            $header = fread($handle, self::CHUNK_SIZE);
-            if (stripos($header, '<?php') !== false || stripos($header, '<script') !== false) {
-                fclose($handle);
-                $file['error'] = 'VGT_AIRLOCK_DENIED: Embedded script execution payload detected.';
-                return $file;
-            }
-            fclose($handle);
+        if ($this->has_embedded_executable_payload($path)) {
+            $file['error'] = 'VGT_AIRLOCK_DENIED: Embedded script execution payload detected.';
+            return $file;
         }
 
         if ($ext === 'svg' && !$this->scan_svg($path)) {
@@ -69,6 +63,32 @@ final class VIS_Airlock_Scanner {
         }
 
         return $file;
+    }
+
+    private function has_embedded_executable_payload(string $path): bool {
+        $handle = @fopen($path, 'rb');
+        if (!$handle) return false;
+
+        $overlap = 64;
+        $prev_tail = '';
+        $patterns = ['<?php', '<?=', '<script', 'eval(', 'assert(', '__halt_compiler()', 'passthru(', 'shell_exec('];
+
+        while (!feof($handle)) {
+            $chunk = fread($handle, 65536);
+            if ($chunk === false || $chunk === '') break;
+
+            $to_check = strtolower($prev_tail . $chunk);
+            foreach ($patterns as $pat) {
+                if (str_contains($to_check, $pat)) {
+                    fclose($handle);
+                    return true;
+                }
+            }
+            $prev_tail = substr($chunk, -$overlap);
+        }
+
+        fclose($handle);
+        return false;
     }
 
     private function scan_svg(string $path): bool {

@@ -1,2 +1,31 @@
+# Logs & Temporary Files
 *.log
 *.tmp
+*.bak
+*.swp
+*~
+
+# Environment & Secrets
+.env
+.env.*
+*.key
+*.pem
+
+# OS Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# IDE & Editor Configs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# PHP / Composer
+vendor/
+composer.lock
+
+# Test artifacts
+tests/_output/
+.phpunit.result.cache

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $entrypoints = [
-    $root . '/vision-integrity-sentinel.php',
+    $root . '/gedefense-wp.php',
     $root . '/0vision-integrity-sentinel.php',
+    $root . '/vision-integrity-sentinel.php',
 ];
 $entrypoint = null;
 foreach ($entrypoints as $candidate) {

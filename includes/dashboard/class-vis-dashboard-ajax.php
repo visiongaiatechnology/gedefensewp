@@ -303,13 +303,29 @@ final class VIS_Dashboard_Ajax {
             wp_send_json_error(['message' => __('ZIP-Archiv konnte nicht geöffnet werden oder ist beschädigt.', 'vgt-sentinel')]);
         }
 
-        // Security check: inspect all zip entries for Path Traversal or dangerous files
+        // Security check: inspect all zip entries for Path Traversal, dangerous symlinks, or zip bombs
+        $max_uncompressed = 52428800; // 50MB
+        $max_files = 500;
+        $total_uncompressed = 0;
+
+        if ($zip->numFiles > $max_files) {
+            $zip->close();
+            wp_send_json_error(['message' => __('Sicherheitsalarm: Zu viele Dateien im ZIP-Archiv.', 'vgt-sentinel')], 403);
+        }
+
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $stat = $zip->statIndex($i);
+            if (!$stat) continue;
             $entry_name = $stat['name'];
-            if (str_contains($entry_name, '..') || str_starts_with($entry_name, '/') || str_starts_with($entry_name, '\\')) {
+            if (str_contains($entry_name, '..') || str_starts_with($entry_name, '/') || str_starts_with($entry_name, '\\') || str_contains($entry_name, "\0")) {
                 $zip->close();
                 wp_send_json_error(['message' => __('Sicherheitsalarm: Unzulässige Pfadstruktur im ZIP-Archiv erkannt.', 'vgt-sentinel')], 403);
+            }
+
+            $total_uncompressed += (int)($stat['size'] ?? 0);
+            if ($total_uncompressed > $max_uncompressed) {
+                $zip->close();
+                wp_send_json_error(['message' => __('Sicherheitsalarm: Entpacktes Archiv überschreitet das 50MB Limit (Zip-Bomb Schutz).', 'vgt-sentinel')], 403);
             }
         }
 
