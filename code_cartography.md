@@ -1,111 +1,148 @@
-# Code Cartography: VGT Sentinel V7 (Core Map)
+# Code Cartography: GeDefense WP – Open Core (v7.6.0)
 
-This mapping document outlines the file layout and component associations across the standard plugin (`vgt`) and MU-plugin (`visiongaia-integrity`) configurations. It is designed to save context tokens and accelerate directory traversal.
-
----
-
-## 1. System Orchestration & Core Entrypoints
-
-These files bootstrap the plugin, hook into WordPress hooks, establish database schemas, and initialize the main configuration registry.
-
-*   **Plugin Bootstraps:**
-    *   [0vision-integrity-sentinel.php](file:///c:/Users/Masterboard/Downloads/vgt/0vision-integrity-sentinel.php) — Entry point for the standard plugin version. Registers namespaces and triggers the main bootstrapper.
-    *   [visiongaia-integrity.php](file:///C:/Users/Masterboard/Downloads/visiongaia-integrity/visiongaia-integrity.php) — Entry point for the MU-plugin version. Bootstraps in mu-plugins directory.
-*   **Orchestration:**
-    *   [class-vis-bootstrapper.php](file:///c:/Users/Masterboard/Downloads/vgt/class-vis-bootstrapper.php) (`VIS_Bootstrapper`) — The nervous system. Configures menu routes, enqueues styles/scripts, handles AJAX routes, and loads all active modules.
-    *   [class-vis-schema.php](file:///c:/Users/Masterboard/Downloads/vgt/class-vis-schema.php) (`VIS_Schema`) — Sets up and updates custom SQL database tables (e.g. alerts logs, threat levels).
-    *   [class-vis-vault.php](file:///c:/Users/Masterboard/Downloads/vgt/class-vis-vault.php) (`VIS_Vault`) — Core cryptography engine. Handles physical storage encryption, salt isolation, and secret binding.
-    *   `includes/core/class-vis-security.php` (`VIS_Security`) — Shared safe URL, path jail, rate-limit, and request security primitives.
-    *   `includes/core/class-vis-event-bus.php` (`VIS_Event_Bus`) — Normalized security event backbone backed by the Sentinel log table.
-    *   `includes/core/class-vis-security-health.php` (`VIS_Security_Health`) — Static invariant scanner for audit-critical hardening rules.
-    *   `includes/modules/gorgon/` (`Vis_Gorgon`) — Sole authoritative Gorgon/Nexus AJAX and sync controller.
+This document provides a comprehensive architectural map of the **GeDefense WP - Open Core** codebase. It outlines subsystem boundaries, class responsibilities, execution phases, and data flows to accelerate developer onboarding and code auditing.
 
 ---
 
-## 2. Active Defense & Deception Enclave (`includes/modules/`)
+## 🏛️ 1. Architecture Overview & Ignition Protocol
 
-This directory houses the autonomous protection packages. Each subdirectory represents a specialized security module.
+GeDefense WP operates as an operating-system-style security kernel with strict deterministic phases:
 
-*   **AEGIS Firewall & Oracle:**
-    *   [class-vis-aegis.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/modules/aegis/class-vis-aegis.php) — The Web Application Firewall (WAF). Intercepts HTTP headers, GET/POST payloads, queries, and filters out SQLi, XSS, and LFI attempts.
-    *   [class-vis-aegis-oracle.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/modules/aegis/class-vis-aegis-oracle.php) — Intelligent analysis framework for suspicious payloads, performing Zero-day heuristic checks.
-*   **PROMETHEUS Malware Engine:**
-    *   [class-vis-prometheus.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/modules/prometheus/class-vis-prometheus.php) — Real-time backend malware scanner. Matches PHP code hashes against signatures and blocks execution of quarantined files.
-*   **NEMESIS Deception Grid:**
-    *   [class-vis-nemesis.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/modules/nemesis/class-vis-nemesis.php) — Spoofs system information. Creates virtual honeypots, injects dummy login fields, and displays fake database/PHP errors to confuse scanners.
-*   **Other Shielding Modules:**
-    *   `cerberus/` — Manages IP ban lists and rate limits.
-    *   `airlock/` — Request isolation and sandbox wrappers.
-    *   `hades/` — Stealth utilities (hides WordPress headers, meta generators, and indicators).
-    *   `morpheus/` — Sandbox environment runner.
-    *   `titan/` — WordPress hardening (disables XML-RPC, REST endpoints, and themes/plugins modifications).
-    *   `kernel/` — Low-level interceptors and priority hook managers.
-    *   `styx/` — Directory security and path restrictions.
-
----
-
-## 3. Intelligence Matrix & Command Dashboard (`includes/dashboard/`)
-
-Renders the glassmorphic administration panels, controls active switches, handles AJAX states, and displays analytics.
-
-*   **Dashboard Logic & Assets:**
-    *   [class-vis-dashboard-view.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/dashboard/class-vis-dashboard-view.php) — Renders the sidebar navigation, layout wrappers, and injects dynamic views.
-    *   [class-vis-dashboard-core.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/dashboard/class-vis-dashboard-core.php) — Registers submenus and setups admin pages structure.
-    *   [class-vis-dashboard-ajax.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/dashboard/class-vis-dashboard-ajax.php) — Back-end targets for dashboard actions (e.g. toggles, database cleanups, manual scans).
-    *   [assets/css/vis-dashboard.css](file:///c:/Users/Masterboard/Downloads/vgt/assets/css/vis-dashboard.css) — Stylesheet containing design variables, layouts, and animations.
-    *   [assets/js/vis-dashboard.js](file:///c:/Users/Masterboard/Downloads/vgt/assets/js/vis-dashboard.js) — Interface event listeners (accordion toggles, Ajax hooks).
-*   **Views & Panels (`includes/dashboard/views/`):**
-    *   `view-overview.php` — Command Center. Threat feeds, system health grids, and Zero-day accordion panels.
-    *   `view-systatus.php` — System Status. Displays diagnostic telemetry, memory constraints, and CPU limits.
-    *   `view-thread.php` — Threat Matrix visualization dashboard.
-    *   `view-oracle.php` — Settings and triggers for the Aegis Oracle scanners.
-    *   `view-logs.php` — Visual log parser and log export interface.
+```
+[ Incoming Request ]
+        │
+  [ Phase 1: Pre-Flight Kernel (Early Execution) ]
+        ├── Cerberus    (L0 Perimeter Drop, O(1) Memory Lookup vor DB)
+        ├── Zeus        (Pre-Boot 6G WAF, Bot Blacklist & Sanitization)
+        ├── AEGIS       (Deep Packet Inspection: SQLi, XSS, RCE, LFI, Deserialization)
+        ├── Prometheus  (Behavioral Heuristics, IP/Subnet Threat Scoring & Decay)
+        ├── Nemesis     (Deception Grid, Micro-Tarpits & Decoy Routing)
+        ├── Morpheus    (Runtime Application Self-Protection / RASP Stack Hypervisor)
+        └── Gorgon      (Encrypted Telemetry & Node Synchronization)
+        │
+  [ Hook: plugins_loaded ]
+        │
+  [ Phase 2: Invariant & Hardening Subsystems ]
+        ├── Self-Integrity  (Merkle-Tree Verification via VIS_MANIFEST_DIGEST)
+        ├── Titan           (Hardening: User 1 Ghosting, XML-RPC Lock, Editor Disable)
+        ├── Hades           (Identity Stealth, Path Cloaking & 404 Mimicry)
+        ├── Airlock         (Ingress File Streaming & Polyglot Payload Inspection)
+        ├── Ghost Trap      (Dynamic Decoy Honeypots & Perimeter Trigger)
+        ├── Styx            (Zero-Trust Egress Whitelist & Outbound Interception)
+        ├── Chronos         (Autonomous Background Scheduler & File Integrity Scanner)
+        ├── Key Vault       (Hardware/Software Libsodium & AES-256-GCM Cryptographic Vault)
+        ├── Integration Bus (Normalized Security Event Backbone & Event Bus)
+        ├── Module Registry (Open Core Dynamic Add-On Hub for VLP, Builder & SEO)
+        └── Dashboard       (Glassmorphic Admin UI & Real-Time Telemetry Matrix)
+```
 
 ---
 
-## 4. VisionGaia SEO & GEO Suite (`includes/VisionGaiaSEO/`)
+## 📁 2. File & Directory Cartography
 
-Implements landing page optimization, location targeting, automated search console indexation, and vanity redirect routing.
-
-*   **Subsystem Bootstrap:**
-    *   [visiongaia-seo-architect.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/visiongaia-seo-architect.php) — Loads components.
-    *   [class-vg-seo-settings.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/class-vg-seo-settings.php) — Option loader and default settings builder.
-*   **SEO & GEO Engines (`includes/VisionGaiaSEO/includes/`):**
-    *   [class-vg-geo-injector.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/includes/class-vg-geo-injector.php) — Matches visitor locations to output custom titles, location snippets, coordinates, and regional pages.
-    *   [class-vgt-meta.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/includes/class-vgt-meta.php) — Gutenberg integration. Registers post/page meta boxes for titles, keywords, coordinates, and landing page details.
-    *   [class-vgt-redirect.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/includes/class-vgt-redirect.php) — Redirect engine, matching regex strings and routing vanity URLs.
-    *   [class-vg-vault-bridge.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/includes/class-vg-vault-bridge.php) — Integrates cryptographically locked key states to SEO settings.
-    *   [class-vgt-sitemap.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/includes/class-vgt-sitemap.php) — Dynamic XML sitemap generator.
-*   **SEO Administration (`includes/VisionGaiaSEO/includes/Dashboard/`):**
-    *   [Dashboardui.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/includes/Dashboard/Dashboardui.php) — Frame layout for the SEO dashboard.
-    *   [Redirects.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/includes/Dashboard/Redirects.php) — Redirect rules GUI.
-    *   [Sitemap.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VisionGaiaSEO/includes/Dashboard/Sitemap.php) — Sitemap generation and search engine ping manager.
+### 2.1 Root Bootstrap & Kernel Core
+*   **`gedefense-wp.php`** — Primary plugin entrypoint. Declares constants, double-load guards, product metadata (`AGPL-3.0-or-later`), and the cryptographic trust anchor `VIS_MANIFEST_DIGEST`.
+*   **`class-vis-bootstrapper.php`** (`VIS_Bootstrapper`) — Master kernel orchestrator. Executes `engage_phase_1()` and `engage_phase_2()`, mounts autoloader, fail-close guards, and UI menus.
+*   **`class-vis-schema.php`** (`VIS_Schema`) — Database schema manager. Creates and migrates `vis_apex_bans`, `vis_omega_logs`, and telemetry tables with zero-overhead indexing.
+*   **`class-vis-vault.php`** (`VIS_Vault`) — Core Libsodium / AES-256-GCM encryption manager with HKDF key derivation and authenticated data binding.
 
 ---
 
-## 5. Vision Legal Pro (VLP) Subsystem (`includes/VLP/`)
-
-Configures legal declarations, automated cookie consents, privacy-shield blockers, and translation frameworks.
-
-*   [vision-legal-pro.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VLP/vision-legal-pro.php) — Main VLP loader.
-*   **Admin Dashboard:**
-    *   [class-vlp-admin-dashboard.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VLP/includes/admin/class-vlp-admin-dashboard.php) — Policy builder interface and scans analyzer.
-*   **Translation Engine (`includes/VLP/includes/modules/lingua/`):**
-    *   [class-vlp-lingua-groq.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VLP/includes/modules/lingua/class-vlp-lingua-groq.php) — Translates legal documents using cloud-hosted LLM endpoints.
-    *   [class-vlp-lingua-nexus.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/VLP/includes/modules/lingua/class-vlp-lingua-nexus.php) — Manages translated text nodes and links them back to appropriate languages.
+### 2.2 Core Utilities & Shared Foundations (`includes/core/`)
+*   **`class-vis-security.php`** (`VIS_Security`) — Zero-trust primitives:
+    *   `pinned_https_get()`: DNS-rebinding-resistant HTTPS transport with `CURLOPT_RESOLVE` and post-handshake peer IP verification.
+    *   `client_ip()`: Hardened deterministic IP resolver with Cloudflare IPv4/IPv6 CIDR validation.
+    *   `validate_hades_gate()`: Timing-safe HMAC-SHA256 cookie validation for stealth gates.
+    *   `jailed_path()`: Filesystem sandbox enforcing strict path jail boundaries.
+*   **`class-vis-module-integrity.php`** (`VIS_Module_Integrity`) — Cryptographic invariant checker calculating SHA-256 Merkle-style root hashes over all 23 core components.
+*   **`class-vis-module-registry.php`** (`VIS_Module_Registry`) — Open-Core extension manager. Resolves, checks, and manages dynamic Add-On modules (VLP, Builder, SEO).
+*   **`class-vis-i18n.php`** (`VIS_I18n`) — Native Zero-Overhead Multi-Language Translation Matrix (German / English) with top-bar switcher.
+*   **`class-vis-event-bus.php`** (`VIS_Event_Bus`) — High-throughput event emitter recording standardized threat records.
+*   **`class-vis-security-health.php`** (`VIS_Security_Health`) — Audit-critical invariant engine evaluating host environment stability.
+*   **`class-vis-security-center.php`** (`VIS_Security_Center`) — Central self-test and operational snapshot reporter.
+*   **`class-vis-ai-gateway.php`** (`VIS_AI_Gateway`) — Isolated transport adapter for Groq LLM API queries with bounded memory buffers.
 
 ---
 
-## 6. VGT Landing Page Builder (`includes/builder/`)
+### 2.3 Defense Enclave & Subsystem Modules (`includes/modules/`)
 
-A drag-and-drop landing page editor providing layout options, templating mechanisms, and automated server migration.
+#### Layer 0 / Pre-Boot Filtering:
+*   **`cerberus/`** (`VIS_Cerberus`) — Zero-Cost L0 Perimeter Firewall:
+    *   Runs at `plugins_loaded` priority `-9999` before WordPress DB initialization.
+    *   L1 Memory Cache lookups deliver **0.08 ms** request drops for banned IPs.
+    *   Compiles and exports OS-level firewall rules (`nginx_deny.conf`, `nftables_drop.map`, `htaccess_deny.conf`).
+*   **`zeus/`** (`VIS_Zeus`) — Pre-Boot 6G WAF & Request Sanitizer:
+    *   Filters malformed query strings, rogue user-agents, and author enumeration before application boot.
 
-*   [builder.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/builder/builder.php) — Builder loader.
-*   **Builder Engines (`includes/builder/inc/`):**
-    *   [class-vgt-admin.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/builder/inc/class-vgt-admin.php) — Builder dashboard settings, page registrations, and templates selector.
-    *   [class-vgt-ajax.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/builder/inc/class-vgt-ajax.php) — Save, delete, load, and edit routines.
-    *   [class-vgt-frontend.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/builder/inc/class-vgt-frontend.php) — Shortcode interpreter and style assembler.
-    *   [class-vgt-migration.php](file:///c:/Users/Masterboard/Downloads/vgt/includes/builder/inc/class-vgt-migration.php) — Importer/exporter of complete layout databases.
-*   **Builder Views (`includes/builder/views/`):**
-    *   `editor-ui.php` — Visual editor canvas interface.
-    *   `dashboard.php` — Grid list of available layout blueprints.
+#### Layer 2-3 / Ingress Inspection:
+*   **`aegis/`** (`VIS_Aegis`, `VIS_Aegis_Oracle`) — Deep Packet Inspection (DPI) WAF:
+    *   Two-Phase Pipeline: Fast atomic signature DFA matching followed by recursive normalization.
+    *   Inspects GET, POST, JSON, Multi-Part, and HTTP Headers up to 15 levels deep.
+    *   Normalizes SQL comment collapsers, Unicode homoglyphs, and quote-slash slicing.
+*   **`prometheus/`** (`VIS_Prometheus`) — Cognitive Behavioral Profiler:
+    *   Dynamically scores IP and `/24` subnet entropy.
+    *   Implements real-time score decay algorithms and atomic MySQL `GET_LOCK` spin-locks.
+    *   Real-time malware signature engine intercepting PHP webshell patterns.
+
+#### Layer 4-5 / Hardening & Stealth:
+*   **`titan/`** (`VIS_Titan`) — WordPress Kernel Hardening:
+    *   Masks User ID 1, blocks REST API user enumeration, enforces `DISALLOW_FILE_EDIT`, strips version headers.
+*   **`hades/`** (`VIS_Hades`) — Admin Cloaking & Route Concealment:
+    *   Hides `/wp-admin` and `wp-login.php` behind cryptographic handshake parameters.
+    *   Answers unauthorized access with authentic Nginx/Apache 404 error responses.
+
+#### Layer 6-7 / RASP & Active Deception:
+*   **`morpheus/`** (`Vis_Morpheus`, `Morpheus_Hypervisor`) — Runtime Application Self-Protection (RASP):
+    *   Tracks live PHP call-stacks to verify executing plugin context.
+    *   Isolates SQL DML operations on `wp_users` and blocks network SSRF on cloud metadata IPs (`169.254.169.254`).
+*   **`nemesis/`** (`VIS_Nemesis`) — Asymmetric Cyber Deception Grid:
+    *   Returns bounded decoy responses without retaining PHP workers.
+    *   Injects cryptographic HMAC-SHA256 canary tracking tokens and polymorphic frontend poisoning.
+    *   Enforces a defensive-only response boundary with no response bombs or hack-back payloads.
+*   **`trap/`** (`VIS_Ghost_Trap`) — Dynamic Decoy Honeypots:
+    *   Serves dynamic bait files (`.env`, `.sql`, `.bak`) and triggers instant Cerberus perimeter bans.
+*   **`airlock/`** (`VIS_Airlock`, `VIS_Airlock_Scanner`) — Ingress Upload Sanity Guard:
+    *   Verifies binary magic bytes, cleans SVG XML against XSS/XXE, and scans entire file streams for polyglot PHP payloads.
+*   **`styx/`** (`VIS_Styx`) — Outbound Exfiltration Shield:
+    *   Intercepts `pre_http_request` with a strict Zero-Trust destination whitelist.
+
+#### Automation, Vault & Audit:
+*   **`chronos/`** (`VIS_Chronos`) — Autonomous Background Integrity Daemon.
+*   **`vault/`** (`VIS_Key_Vault`) — Authenticated Libsodium KMS for API secrets.
+*   **`oracle/`** (`VIS_Oracle`) — 12-vector system security audit engine.
+*   **`filesystem/`** (`VIS_Filesystem_Guard`) — Static file permission and CHMOD auditor.
+
+---
+
+### 2.4 Command Dashboard & Telemetry Matrix (`includes/dashboard/`)
+*   **`class-vis-dashboard-view.php`** — Master view renderer, topbar SVG injector, and tab controller.
+*   **`class-vis-dashboard-settings.php`** — Configuration sanitization engine with strict whitelist validation.
+*   **`class-vis-dashboard-ajax.php`** — AJAX endpoint hub (scan bridges, IP unbanning, hardened Add-On ZIP uploader).
+*   **`views/`** — Modular dashboard templates:
+    *   `view-overview.php` (Command Center)
+    *   `view-aegis.php` (WAF & DPI Matrix)
+    *   `view-prometheus.php` (Cognitive AI & Threat Horizon)
+    *   `view-trinity.php` (Defense Interlock Matrix)
+    *   `view-morpheus.php` (RASP Sandboxing)
+    *   `view-nemesis.php` (Bounded Defensive Deception)
+    *   `view-modules.php` (Add-On Hub & ZIP Package Manager)
+    *   `view-setup_wizard.php` (7-Step Interactive Setup Wizard)
+
+---
+
+### 2.5 Test Harness & Regression Suite (`scripts/`)
+*   **`generate-module-manifest.php`** — Calculates SHA-256 Merkle-tree root hashes over all components to build `integrity/module-manifest.json`.
+*   **`integrity-regression.php`** — Verifies cryptographic trust anchor against current codebase.
+*   **`security-regression.php`** — Lints all PHP sources and validates strict type compliance.
+*   **`aegis-regression.php`** — Validates WAF payload normalization and attack vectors.
+*   **`morpheus-regression.php`** — Tests RASP AST parsing and SQL isolation policies.
+*   **`sentinel-threat-benchmark.php`** — Runs 87+ real-world attack vectors against the defense matrix.
+
+---
+
+## 🔒 3. Design Invariants & Security Principles
+
+1.  **Zero-Dependency Philosophy:** 0 Composer libraries, 0 external JS CDNs. 100% GDPR compliant and pure PHP 8.1+.
+2.  **Fail-Closed Architecture:** Critical subsystems panic with HTTP 503 instead of degrading to an insecure bypass state.
+3.  **Memory-First Execution:** IP bans and regular expression DFA lookups resolve from RAM (APCu / Object Cache) with minimal database I/O.
+4.  **Constant-Time Cryptography:** All secret and token comparisons use `hash_equals()` to eliminate timing side-channel attacks.

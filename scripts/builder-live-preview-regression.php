@@ -3,11 +3,16 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+$optionalBuilder = $root . '/includes/builder/builder.php';
+if (!is_file($optionalBuilder)) {
+    fwrite(STDOUT, "VGT BUILDER LIVE PREVIEW: SKIP (optional Open-Core module not installed)\n");
+    exit(0);
+}
 $engine = file_get_contents($root . '/includes/builder/assets/js/vgt-engine.js');
 $admin = file_get_contents($root . '/includes/builder/assets/vgt-admin.js');
 $view = file_get_contents($root . '/includes/builder/views/editor-ui.php');
 $vault = file_get_contents($root . '/class-vis-vault.php');
-$builder = file_get_contents($root . '/includes/builder/builder.php');
+$builder = file_get_contents($optionalBuilder);
 
 $failures = [];
 foreach ([

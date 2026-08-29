@@ -90,6 +90,7 @@ final class VIS_Cerberus {
         
         // LAYER 5: Hardening
         add_filter('xmlrpc_enabled', '__return_false');
+        add_action('vis_cerberus_sync_firewall', [$this, 'sync_os_firewall_rules']);
     }
 
     /**
@@ -146,8 +147,25 @@ final class VIS_Cerberus {
 
         global $wpdb;
         $id = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$this->table_bans} WHERE ip = %s LIMIT 1", $ip));
-        
         $is_banned = $id !== null;
+
+        if (!$is_banned) {
+            $cidr_bans = wp_cache_get('vis_cidr_bans', 'visiongaia_cerberus');
+            if (!is_array($cidr_bans)) {
+                $cidr_bans = $wpdb->get_col("SELECT ip FROM {$this->table_bans} WHERE ip LIKE '%/%' LIMIT 1000");
+                if (!is_array($cidr_bans)) $cidr_bans = [];
+                wp_cache_set('vis_cidr_bans', $cidr_bans, 'visiongaia_cerberus', 300);
+            }
+            $ip_bin = @inet_pton($ip);
+            if ($ip_bin !== false) {
+                foreach ($cidr_bans as $network) {
+                    if (is_string($network) && self::cidr_match_bin($ip_bin, $network)) {
+                        $is_banned = true;
+                        break;
+                    }
+                }
+            }
+        }
         $this->is_banned_memory_cache = $is_banned;
         
         // Cacht das Ergebnis für 5 Minuten im RAM (verhindert Ping of Death auf MySQL)
@@ -244,6 +262,11 @@ final class VIS_Cerberus {
     }
 
     public function ban_ip(string $ip, string $reason): void {
+        if (!self::valid_address_or_network($ip)) {
+            error_log('[VIS CERBERUS] Invalid ban target rejected.');
+            return;
+        }
+
         global $wpdb;
         $uri = substr(esc_url_raw($_SERVER['REQUEST_URI'] ?? ''), 0, 255);
 
@@ -262,11 +285,28 @@ final class VIS_Cerberus {
         $this->is_banned_memory_cache = true;
         wp_cache_set('vis_ban_status_' . md5($ip), 1, 'visiongaia_cerberus', 300);
 
-        $this->sync_os_firewall_rules();
+        $this->schedule_os_firewall_sync();
     }
 
     public function ban_subnet(string $subnet, string $reason = 'PROMETHEUS_BOTANICAL_SWARM_BAN'): void {
+        if (!str_contains($subnet, '/')) return;
         $this->ban_ip($subnet, $reason);
+        wp_cache_delete('vis_cidr_bans', 'visiongaia_cerberus');
+    }
+
+    private function schedule_os_firewall_sync(): void {
+        if (!wp_next_scheduled('vis_cerberus_sync_firewall')) {
+            wp_schedule_single_event(time() + 5, 'vis_cerberus_sync_firewall');
+        }
+    }
+
+    private static function valid_address_or_network(string $value): bool {
+        if (filter_var($value, FILTER_VALIDATE_IP) !== false) return true;
+        if (substr_count($value, '/') !== 1) return false;
+        [$network, $prefix] = explode('/', $value, 2);
+        $packed = @inet_pton($network);
+        if ($packed === false || !ctype_digit($prefix)) return false;
+        return (int)$prefix >= 0 && (int)$prefix <= strlen($packed) * 8;
     }
 
     /**
@@ -356,6 +396,11 @@ final class VIS_Cerberus {
 
     public function get_validated_ip(): string {
         if ($this->cached_ip !== null) {
+            return $this->cached_ip;
+        }
+
+        if (class_exists('VIS_Security')) {
+            $this->cached_ip = \VIS_Security::client_ip();
             return $this->cached_ip;
         }
 

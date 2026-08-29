@@ -20,6 +20,7 @@ final class VIS_Bootstrapper {
                 'VIS_Event_Bus'             => 'includes/core/class-vis-event-bus.php',
                 'VIS_Module_Registry'        => 'includes/core/class-vis-module-registry.php',
                 'VIS_Integration_Bus'        => 'includes/core/class-vis-integration-bus.php',
+                'VIS_Trinity_Grid'           => 'includes/core/class-vis-trinity-grid.php',
                 'VIS_AI_Gateway'             => 'includes/core/class-vis-ai-gateway.php',
                 'VIS_Module_Integrity'        => 'includes/core/class-vis-module-integrity.php',
                 'VIS_Security_Health'       => 'includes/core/class-vis-security-health.php',
@@ -75,6 +76,11 @@ final class VIS_Bootstrapper {
             } catch (\Throwable $e) {
                 self::trigger_fail_close('CERBERUS_KERNEL', 'Perimeter guard panic.');
             }
+        }
+
+        // Trinity dependencies must exist before the synchronous AEGIS guard can emit a strike.
+        if (class_exists('VIS_Trinity_Grid')) {
+            VIS_Trinity_Grid::prime($config);
         }
 
         // VGT KERNEL: AEGIS INITIATION (PRIORITY 1)

@@ -4,8 +4,8 @@
 
 ### Sovereign WordPress Security Fabric
 
-[![Version](https://img.shields.io/badge/version-7.5.2_Open_Core-D4AF37?style=for-the-badge)](#)
-[![License](https://img.shields.io/badge/license-AGPL--3.0--only-0B5FFF?style=for-the-badge)](LICENSE)
+[![Version](https://img.shields.io/badge/version-7.6.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![Dependencies](https://img.shields.io/badge/external_PHP_dependencies-0-2EA44F?style=for-the-badge)](#zero-dependency-philosophy)
@@ -80,6 +80,7 @@ The core is designed to remain **fully functional as an independent open-source 
 - [Open Core Model](#open-core-model)
 - [Security Disclosure](#security-disclosure)
 - [License](#license)
+- [Changelog](#changelog)
 
 ---
 
@@ -339,7 +340,7 @@ The decay mechanism allows temporarily suspicious but legitimate clients to reco
 ```text
 Score 75
    ↓
-Micro-Tarpit Threshold
+Pre-Lock Telemetry Threshold
 
 Score 100
    ↓
@@ -514,9 +515,9 @@ wp-config.php.bak
 phpmyadmin
 ```
 
-### Tarpits
+### Bounded deception responses
 
-Suspicious automated clients can be routed into deliberately slow responses intended to consume scanner time without exposing real application state.
+Suspicious automated clients receive small, finite decoy responses without exposing real application state or holding PHP workers open.
 
 ### Cryptographic canaries
 
@@ -526,18 +527,9 @@ HMAC-SHA256-backed canary values can be inserted into controlled locations for l
 
 When configured, scraper-facing data can be altered for clients already classified as hostile automation.
 
-### Experimental active-response research
+### Defensive response boundary
 
-Some experimental deception concepts may exist in the research codebase.
-
-These features are:
-
-- **disarmed by default**;
-- not required for normal GeDefense protection;
-- not part of the default security posture;
-- intended for controlled research and legally authorized environments only.
-
-Operators remain responsible for applicable law and infrastructure policy.
+Nemesis is restricted to defensive telemetry, canaries, bounded decoy responses and content deception. Runtime paths do not emit response bombs, cookie bombs, terminal-control payloads or long-running worker delays.
 
 ---
 
@@ -941,7 +933,7 @@ Administrators should baseline legitimate application behavior before enabling a
 
 # Performance
 
-The current GeDefense WP 7.5.2 technical profile defines the following internal benchmark targets/results:
+The current GeDefense WP 7.6.0 technical profile defines the following internal benchmark targets/results:
 
 | Metric | GeDefense WP |
 |---|---:|
@@ -963,6 +955,7 @@ The repository includes dedicated regression and benchmark gates.
 ```bash
 php scripts/security-regression.php
 php scripts/aegis-regression.php
+php scripts/trinity-regression.php
 php scripts/morpheus-regression.php
 php scripts/integrity-baseline-regression.php
 php scripts/sentinel-threat-benchmark.php
@@ -1077,7 +1070,7 @@ If a `SECURITY.md` file exists in the repository, follow the disclosure process 
 
 GeDefense WP is defensive security software.
 
-Some modules include deception, honeypot, tarpit and experimental active-response research concepts. Experimental functionality is not required for normal defensive operation and should remain disabled unless the operator has explicitly validated the legal, operational and infrastructure implications of enabling it.
+Some modules include deception, honeypots and bounded decoy responses. These mechanisms remain local, finite and defensive.
 
 GeDefense WP does not guarantee that a WordPress installation is invulnerable.
 
@@ -1120,7 +1113,7 @@ GeDefense WP Open Core is licensed under the:
 SPDX identifier:
 
 ```text
-AGPL-3.0-only
+AGPL-3.0-or-later
 ```
 
 See:
@@ -1135,12 +1128,33 @@ Third-party trademarks, WordPress marks, VisionGaia Technology branding and sepa
 
 ---
 
+# Changelog
+
+## 7.6.0 — Trinity Deterministic Interlock
+
+- introduced a dedicated Trinity orchestration core for deterministic AEGIS, Prometheus, Cerberus and Nemesis routing;
+- primed Trinity dependencies before the synchronous AEGIS request guard;
+- centralized trusted-proxy and Cloudflare client identity resolution;
+- enforced CIDR bans inside the PHP perimeter and deferred OS firewall export through a single scheduled synchronization;
+- rejected unlocked Prometheus state mutations and expanded bounded lock acquisition;
+- scoped botanical swarm correlation to a common network before subnet mitigation;
+- replaced blocking PHP tarpits, artificial response bombs and five-second sleeps with bounded deception responses and telemetry;
+- added server-side bounds and capability enforcement for Trinity and Prometheus configuration;
+- added an executable Trinity interlock regression suite; and
+- aligned release metadata and licensing identifiers.
+
+## 7.5.2 — Initial Open-Core Release
+
+- published the first complete Open Core security kernel, module matrix, assurance suite and architecture documentation.
+
+---
+
 # Project Status
 
 ```text
 Product:       GeDefense WP
 Edition:       Open Core
-Version:       7.5.2
+Version:       7.6.0
 Architecture:  Multi-Tier Security Kernel
 Runtime:       PHP 8.1–8.4
 Platform:      WordPress 6.0+
@@ -1153,7 +1167,7 @@ Dependencies:  Zero external PHP vendor libraries
 
 <div align="center">
 
-## GeDefense WP 7.5.2 — Open Core
+## GeDefense WP 7.6.0 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

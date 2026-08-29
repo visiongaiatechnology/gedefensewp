@@ -3,7 +3,12 @@
 declare(strict_types=1);
 define('ABSPATH', __DIR__ . '/');
 function wp_strip_all_tags(string $value, bool $remove_breaks=false): string { $value=strip_tags($value);return $remove_breaks?(preg_replace('/[\r\n\t ]+/',' ',$value)??''):$value; }
-require dirname(__DIR__) . '/includes/VisionGaiaSEO/includes/class-vg-seo-relevance.php';
+$optionalSeo = dirname(__DIR__) . '/includes/VisionGaiaSEO/includes/class-vg-seo-relevance.php';
+if (!is_file($optionalSeo)) {
+    fwrite(STDOUT, "VGT SEO RELEVANCE: SKIP (optional Open-Core module not installed)\n");
+    exit(0);
+}
+require $optionalSeo;
 $document=['canonical_title'=>'WordPress Firewall für Agenturen','slug'=>'wordpress-firewall-agenturen','site_name'=>'VisionGaia','headings'=>['Angriffe auf WordPress blockieren','WAF ohne Abhängigkeiten'],'content'=>'Diese Seite beschreibt eine WordPress Firewall und WAF-Schutz für Agenturen.'];
 $wrong=VG_SEO_Relevance::enforce(['seo_title'=>'Luxusreisen und Hotels auf Mallorca','focus_keyword'=>'Mallorca Hotels'],$document);
 if($wrong['seo_title']!=='WordPress Firewall für Agenturen | VisionGaia'||str_contains($wrong['focus_keyword'],'mallorca')){fwrite(STDERR,"VGT SEO RELEVANCE: FAILED unrelated fallback\n");exit(1);}

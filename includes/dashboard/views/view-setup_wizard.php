@@ -364,10 +364,9 @@ $site_url = site_url();
                 <p style="font-size:12px; color:var(--vgt-text-dim); margin:0 0 10px 0;">
                     <?php esc_html_e('Injiziert unsichtbare Fake-Login-Felder und fingierte Fehlermeldungen. Bots, die diese Felder ausfüllen, enttarnen sich sofort als Angreifer.', 'vgt-sentinel'); ?>
                 </p>
-                <label class="vgt-checkbox-label" style="display:flex; align-items:center; gap:8px; color:#fff; cursor:pointer;">
-                    <input type="checkbox" name="vis_config[nemesis_active_strike]" value="1" <?php checked(!empty($opt['nemesis_active_strike'])); ?>>
-                    <span><?php esc_html_e('Active Strike: Aktive Gegenmaßnahmen & GZIP-Bomben (Standardmäßig deaktiviert)', 'vgt-sentinel'); ?></span>
-                </label>
+                <p style="font-size:12px; color:var(--vgt-neon-green); margin:0;">
+                    <?php esc_html_e('Bounded Response: Keine blockierenden PHP-Worker oder offensiven Payloads.', 'vgt-sentinel'); ?>
+                </p>
             </div>
 
             <!-- GHOST TRAP CARD -->

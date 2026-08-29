@@ -695,9 +695,9 @@ final class VIS_I18n {
             'en' => 'Mutates payload content on-the-fly when bot signatures are recognized. Prevents harvesting of valid email addresses via 3-byte hex entropy injection.'
         ],
         'Kinetische Sabotage Aktiv'  => ['de' => 'Kinetische Sabotage Aktiv', 'en' => 'Kinetic Sabotage Active'],
-        '<strong>GZIP-Bombing</strong> führt zu RAM-Überlauf beim Angreifer. <strong>Terminal-Sabotage</strong> injiziert ANSI-Codes, die das Terminal des Hackers unleserlich machen.' => [
-            'de' => '<strong>GZIP-Bombing</strong> führt zu RAM-Überlauf beim Angreifer. <strong>Terminal-Sabotage</strong> injiziert ANSI-Codes, die das Terminal des Hackers unleserlich machen.',
-            'en' => '<strong>GZIP Bombing</strong> creates memory exhaustion on attacker rigs. <strong>Terminal Sabotage</strong> injects ANSI control sequences scrambling terminal output.'
+        '<strong>Bounded Response</strong> liefert endliche Täuschungsdaten ohne PHP-Worker zu blockieren.' => [
+            'de' => '<strong>Bounded Response</strong> liefert endliche Täuschungsdaten ohne PHP-Worker zu blockieren.',
+            'en' => '<strong>Bounded Response</strong> returns finite decoy data without retaining PHP workers.'
         ],
         'Cookie Bombing Aktiv'       => ['de' => 'Cookie Bombing Aktiv', 'en' => 'Cookie Bombing Active'],
         '<strong>State Exhaustion:</strong> Flutet den Scraper mit hunderten gigantischen Session-Cookies. Führt bei automatisierten Bots zum sofortigen Out-of-Memory Absturz.' => [
@@ -895,9 +895,9 @@ final class VIS_I18n {
             'de' => 'Aktive Gegenmaßnahme: Täter-IP sofort dauerhaft in Cerberus sperren',
             'en' => 'Active Countermeasure: Instantly ban offender IP permanently in Cerberus'
         ],
-        'Active Strike: Aktive Gegenmaßnahmen & GZIP-Bomben (Standardmäßig deaktiviert)' => [
-            'de' => 'Active Strike: Aktive Gegenmaßnahmen & GZIP-Bomben (Standardmäßig deaktiviert)',
-            'en' => 'Active Strike: Offensive Countermeasures & GZIP Bombs (Disabled by default)'
+        'Bounded Response: Defensive Täuschung ohne Worker-Blocking' => [
+            'de' => 'Bounded Response: Defensive Täuschung ohne Worker-Blocking',
+            'en' => 'Bounded Response: Defensive deception without worker retention'
         ],
         'Ghost Trap Honeypot'        => ['de' => 'Ghost Trap Honigtopf', 'en' => 'Ghost Trap Honeypot'],
         'Erzeugt dynamische Köder-Dateien (.bak, .sql, config-dumps), die nur bösartige Scanner ansteuern. Bei Zugriff wird die IP sofort isoliert.' => [
@@ -1061,7 +1061,7 @@ final class VIS_I18n {
         // =========================================================================
         // 18. TRINITY GRID & TOPOLOGY
         // =========================================================================
-        'TRINITY GRID V7.5.2' => ['de' => 'TRINITY GRID V7.5.2', 'en' => 'TRINITY GRID V7.5.2'],
+        'TRINITY GRID V7.6.0' => ['de' => 'TRINITY GRID V7.6.0', 'en' => 'TRINITY GRID V7.6.0'],
         'Coordinated Real-Time Defense Interlock Matrix & Visual Topology' => ['de' => 'Koordinierte Echtzeit-Abwehrkopplungsmatrix & Visuelle Topologie', 'en' => 'Coordinated Real-Time Defense Interlock Matrix & Visual Topology'],
         'TRINITY: INTERLOCKED' => ['de' => 'TRINITY: GEKOPPELT', 'en' => 'TRINITY: INTERLOCKED'],
         'TRINITY: DEGRADED' => ['de' => 'TRINITY: EINGESCHRÄNKT', 'en' => 'TRINITY: DEGRADED'],

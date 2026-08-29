@@ -4,7 +4,7 @@
  * Modul: NEMESIS (Deception & Counterintelligence Engine)
  * Status: DIAMANT VGT SUPREME (Enterprise Compliance Edition)
  * Architekt: VGT Intelligence System
- * Update: Modulare Trennung von "Legal Defense" und "Active Strike"
+ * Update: Bounded defensive deception without worker retention or offensive payloads
  * KERNEL UPGRADES:
  * - Zero-Allocation Tarpit Engine (Verhindert OOM Memory Leaks).
  * - Kryptografische JSON-Encodierung (Verhindert RCE via Log-Pivoting).
@@ -25,19 +25,14 @@ final class VIS_Nemesis {
 
     private static ?self $instance = null;
     private array $config;
-    private bool $active_strike; // Der Master-Schalter für kinetische Sabotage (Compliance-Locked)
 
-    /** @var resource|null */
-    private $tarpit_lock_handle = null;
     private string $table_logs;
 
     // [ DIAMANT FIX ]: Atomare & Non-Capturing Gruppen gegen Regex Denial of Service
     private const SCRAPER_REGEX = '~(?i)(?>curl|wget|python-requests|scrapy|java|libwww-perl|postman|go-http-client|nikto|nmap|zgrab|masscan|httpx|nucleus)~S';
     private const HONEYPOT_REGEX = '~/(?>\.env|wp-config\.php(?>\.bak|\.old|\.save)?|\.git/config|backup\.zip|db\.sql|administrator|cms-admin|phpunit\.xml|xmlrpc\.php)~iS';
     
-    private const MAX_CONCURRENT_TARPITS = 3;
     private const MAX_LOG_SIZE_BYTES = 10485760; // 10 MB
-    private const TARPIT_CHUNK_DELAY_MICROSEC = 30000000; // 30 Sekunden
     private const MAX_POISON_BUFFER_SIZE = 5242880; // 5 MB Limit
     private const MAX_DECODE_ITERATIONS = 10; // Schutz vor Decode-DoS
 
@@ -47,9 +42,6 @@ final class VIS_Nemesis {
         }
 
         $this->config = get_option( 'vis_config', [] );
-        // VGT COMPLIANCE: Active Strike ist standardmäßig AUS, es sei denn der Admin aktiviert es explizit
-        $this->active_strike = !empty( $this->config['nemesis_active_strike'] );
-        
         global $wpdb;
         $this->table_logs = $wpdb->prefix . 'vis_nemesis_logs';
         $this->enforce_telemetry_schema();
@@ -136,12 +128,12 @@ final class VIS_Nemesis {
         $decoded_uri = $this->deep_urldecode( $raw_uri );
         
         if ( preg_match( self::HONEYPOT_REGEX, $decoded_uri ) ) {
-            $this->execute_tarpit_and_feed( $decoded_uri );
+            $this->execute_tarpit_and_feed( $decoded_uri, true );
         }
     }
 
     public function trigger_tarpit( string $reason ): void {
-        $this->execute_tarpit_and_feed( $reason );
+        $this->execute_tarpit_and_feed( $reason, false );
     }
 
     private function deep_urldecode( string $input ): string {
@@ -157,17 +149,10 @@ final class VIS_Nemesis {
         return $input;
     }
 
-    private function execute_tarpit_and_feed( string $trigger ): void {
-        if ( ! $this->acquire_os_lock() ) {
-            http_response_code( 429 );
-            header( 'Retry-After: 86400' );
-            header( 'Connection: close' );
-            die( 'VGT_DEFLECTED' );
-        }
-
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    private function execute_tarpit_and_feed( string $trigger, bool $respond ): void {
+        $ip = class_exists('VIS_Security') ? \VIS_Security::client_ip() : ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
         $cerberus_class = '\VIS_Cerberus';
-        if ( class_exists( $cerberus_class ) ) {
+        if ( $respond && class_exists( $cerberus_class ) ) {
             try {
                 if ( method_exists( $cerberus_class, 'instance' ) ) {
                     $cerberus = $cerberus_class::instance();
@@ -183,160 +168,33 @@ final class VIS_Nemesis {
             }
         }
 
-        $current = (int) wp_cache_get( 'vgt_active_tarpits' );
-        wp_cache_set( 'vgt_active_tarpits', $current + 1, '', 60 );
-
         $this->log_threat_intel( $trigger );
+        if (!$respond) return;
 
-        if ( function_exists( 'ini_set' ) ) {
-            @ini_set( 'zlib.output_compression', '0' );
-            @ini_set( 'implicit_flush', '1' );
+        $payload = $this->generate_fake_header($trigger) . "\n";
+        while (ob_get_level() > 0) @ob_end_clean();
+        if (!headers_sent()) {
+            http_response_code(404);
+            header('Content-Type: text/plain; charset=utf-8');
+            header('Content-Length: ' . strlen($payload));
+            header('Cache-Control: no-store, max-age=0');
+            header('X-Robots-Tag: noindex, nofollow');
+            header('Connection: close');
         }
-        
-        ignore_user_abort( true ); 
-        if ( function_exists( 'set_time_limit' ) ) {
-            @set_time_limit( 0 ); 
-        }
-        
-        $accept_encoding = $_SERVER['HTTP_ACCEPT_ENCODING'] ?? '';
-        
-        // VGT COMPLIANCE: GZIP-Bombing ist eine offensive Waffe (DoS). Nur erlaubt, wenn Active Strike an ist.
-        $is_gzip = $this->active_strike && str_contains( $accept_encoding, 'gzip' );
-        $is_sql  = str_contains( $trigger, '.sql' );
-
-        header( 'HTTP/1.1 200 OK' );
-        header( 'X-Accel-Buffering: no' );
-        header( 'X-LiteSpeed-Cache-Control: no-cache' );
-        header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
-        header( 'Pragma: no-cache' );
-        header( 'X-Robots-Tag: noindex, nofollow' );
-
-        // VGT COMPLIANCE: COOKIE BOMBING (State Exhaustion) - Nur im Active Strike Modus
-        if ( $this->active_strike ) {
-            for ( $c = 0; $c < 20; $c++ ) {
-                header( 'Set-Cookie: vgt_poison_jar_' . $c . '=' . bin2hex( random_bytes( 500 ) ) . '; path=/; HttpOnly; SameSite=Strict' );
-            }
-        }
-        
-        if ( $is_gzip ) {
-            header( 'Content-Encoding: gzip' );
-            header( 'Content-Type: application/octet-stream' );
-            header( 'Content-Length: 10000000000' ); 
-        } else {
-            header( 'Content-Encoding: none' );
-            header( 'Content-Type: text/plain; charset=utf-8' );
-            header( 'Content-Length: 2147483647' );
-        }
-        
-        while ( ob_get_level() > 0 ) { 
-            @ob_end_clean(); 
-        }
-
-        try {
-            if ( $is_gzip ) {
-                echo "\x1f\x8b\x08\x00\x00\x00\x00\x00"; 
-            } else {
-                echo $this->generate_fake_header( $trigger ) . "\n" . str_repeat( "\x20", 1024 ) . "\n";
-            }
-            @flush();
-
-            // [ DIAMANT FIX ]: Zero-Allocation Payload Pre-Computation
-            // Verhindert Memory-Fragmentation und GC-Spikes über den Verlauf der Tarpit-Stunde.
-            $precomputed_gzip_payload = $is_gzip ? gzdeflate( str_repeat( "\0", 1048576 ), 1 ) : '';
-            $precomputed_sql_payload  = ($is_sql && $this->active_strike) ? "INSERT INTO `vgt_honeypot_decoys` (`hash_key`, `timestamp`) VALUES ('" . hash( 'sha256', random_bytes( 32 ) ) . "', NOW());\n" : '';
-            $precomputed_safe_hash    = hash( 'sha256', random_bytes( 16 ) ) . "\n";
-
-            $trinity_config = get_option('vis_trinity_config', []);
-            $max_iterations = (int) ($trinity_config['tarpit_max_loops'] ?? 120);
-            
-            $iterations = 0;
-            while ( $iterations < $max_iterations ) {
-                if ( connection_aborted() ) {
-                    break; 
-                }
-                
-                if ( $is_gzip ) {
-                    // GZIP-Bombing (RAM Überlauf beim Angreifer)
-                    echo $precomputed_gzip_payload; 
-                } elseif ( $is_sql && $this->active_strike ) {
-                    // VGT COMPLIANCE: SQL-Festplatten-Bloat
-                    echo $precomputed_sql_payload;
-                } else {
-                    // LEGALE STANDARD-VERTEIDIGUNG (Reines Tarpitting / Zeitverzögerung)
-                    echo $precomputed_safe_hash;
-                }
-                
-                @flush();
-                usleep( self::TARPIT_CHUNK_DELAY_MICROSEC );
-                $iterations++;
-            }
-        } finally {
-            $this->release_os_lock();
-        }
-
-        die();
-    }
-
-    private function acquire_os_lock(): bool {
-        $tenant_hash = hash( 'sha256', ABSPATH );
-        $target_dir = WP_CONTENT_DIR . '/vgt_sys_locks_' . substr( $tenant_hash, 0, 12 );
-
-        if ( ! is_dir( $target_dir ) ) {
-            if ( ! @mkdir( $target_dir, 0700, true ) ) {
-                return false;
-            }
-            @file_put_contents( $target_dir . '/index.php', '<?php exit; ?>' );
-        }
-
-        for ( $i = 1; $i <= self::MAX_CONCURRENT_TARPITS; $i++ ) {
-            $lock_file = $target_dir . '/tarpit_slot_' . $i . '.lock';
-            $fp = @fopen( $lock_file, 'w' );
-            
-            if ( $fp && flock( $fp, LOCK_EX | LOCK_NB ) ) {
-                $this->tarpit_lock_handle = $fp; 
-                register_shutdown_function( [ $this, 'emergency_lock_release' ] );
-                return true;
-            }
-            if ( $fp ) {
-                @fclose( $fp );
-            }
-        }
-        
-        return false;
-    }
-
-    private function release_os_lock(): void {
-        if ( is_resource( $this->tarpit_lock_handle ) ) {
-            flock( $this->tarpit_lock_handle, LOCK_UN );
-            fclose( $this->tarpit_lock_handle );
-            $this->tarpit_lock_handle = null;
-        }
-    }
-
-    public function emergency_lock_release(): void {
-        $this->release_os_lock();
+        exit($payload);
     }
 
     private function generate_fake_header( string $trigger ): string {
         $hash = hash('sha256', random_bytes(32));
         
-        $ansi_sabotage = "";
-        $vgt_banner = "";
-        
-        // VGT COMPLIANCE: TERMINAL SABOTAGE (ANSI Escape Codes) - Nur im Active Strike Modus
-        if ( $this->active_strike ) {
-            $ansi_sabotage = "\033[2J\033[3J\033[H\033[?25l\a\a\a";
-            $vgt_banner = "\033[31;1m[!] VGT TERMINAL SABOTAGE PROTOCOL ENGAGED [!]\033[0m\n\033[32mDownloading Decoy Data...\033[0m\n\n";
-        }
-        
         if ( str_contains( $trigger, '.env' ) ) {
-            return $ansi_sabotage . $vgt_banner . "APP_ENV=production\nAPP_KEY=base64:" . base64_encode( $hash ) . "\nDB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_DATABASE=wp_core\nDB_USERNAME=root\nDB_PASSWORD=vgt_" . substr( $hash, 0, 16 );
+            return "APP_ENV=production\nAPP_KEY=base64:" . base64_encode( $hash ) . "\nDB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_DATABASE=wp_core\nDB_USERNAME=root\nDB_PASSWORD=vgt_" . substr( $hash, 0, 16 );
         }
         if ( str_contains( $trigger, 'wp-config' ) ) {
-            return $ansi_sabotage . $vgt_banner . "<?php\ndefine( 'DB_NAME', 'wp_decoy' );\ndefine( 'DB_USER', 'admin_decoy' );\ndefine( 'DB_PASSWORD', 'vgt_{$hash}' );";
+            return "<?php\ndefine( 'DB_NAME', 'wp_decoy' );\ndefine( 'DB_USER', 'admin_decoy' );\ndefine( 'DB_PASSWORD', 'vgt_{$hash}' );";
         }
         if ( str_contains( $trigger, '.sql' ) ) {
-            return $ansi_sabotage . "-- VGT DECOY SQL ENGINE ACTIVE\nCREATE TABLE IF NOT EXISTS `vgt_honeypot_decoys` (`hash_key` VARCHAR(255), `timestamp` DATETIME);\n";
+            return "-- VGT DECOY SQL ENGINE ACTIVE\nCREATE TABLE IF NOT EXISTS `vgt_honeypot_decoys` (`hash_key` VARCHAR(255), `timestamp` DATETIME);\n";
         }
         
         return "PK\x03\x04\x14\x00\x00\x00\x08\x00";
@@ -354,7 +212,7 @@ final class VIS_Nemesis {
         }
 
         return [
-            'socket_ip' => filter_var( $remote_addr, FILTER_VALIDATE_IP ) ?: '0.0.0.0',
+            'socket_ip' => class_exists('VIS_Security') ? \VIS_Security::client_ip() : (filter_var($remote_addr, FILTER_VALIDATE_IP) ?: '0.0.0.0'),
             'claims'    => $untrusted_claims
         ];
     }
