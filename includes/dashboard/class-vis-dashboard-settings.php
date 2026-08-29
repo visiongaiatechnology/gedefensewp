@@ -11,6 +11,7 @@ final class VIS_Dashboard_Settings {
     }
 
     private static function handle_standard_config(): void {
+        if (!current_user_can('manage_options')) return;
         if ((!isset($_POST['vis_save_config']) && !isset($_POST['_wpnonce'])) || !check_admin_referer('vis_save_config')) {
             return;
         }
@@ -36,7 +37,7 @@ final class VIS_Dashboard_Settings {
             'titan'      => ['titan_enabled', 'titan_block_xmlrpc', 'titan_block_rest', 'titan_disable_feeds', 'titan_camouflage_mode', 'titan_cleanup_emojis', 'titan_cleanup_embeds','titan_includes_guard','titan_xmlrpc_honeypot', 'titan_login_slug', 'titan_login_gatekeeper', 'titan_heartbeat_disable'],
             'hades'      => ['hades_enabled'],
             'prometheus' => ['prometheus_enabled'], 
-            'nemesis'    => ['nemesis_enabled', 'nemesis_active_strike'],
+            'nemesis'    => ['nemesis_enabled'],
             'styx'       => ['styx_enabled', 'styx_audit_mode', 'styx_block_wp_telemetry'],
             'gorgon'     => ['gorgon_enabled'],
             'morpheus'   => ['morpheus_enabled'],
@@ -51,7 +52,7 @@ final class VIS_Dashboard_Settings {
                 'zeus_enabled', 'cerberus_enabled',
                 'prometheus_enabled',
                 'morpheus_enabled', 'morpheus_enforce',
-                'nemesis_enabled', 'nemesis_active_strike',
+                'nemesis_enabled',
                 'ghost_trap_enabled', 'trap_enabled',
                 'titan_enabled', 'titan_block_xmlrpc', 'titan_block_rest', 'titan_disable_feeds', 'titan_camouflage_mode',
                 'hades_enabled',
@@ -144,9 +145,8 @@ final class VIS_Dashboard_Settings {
                 $trin_raw = $_POST['vis_trinity_config'];
                 $trin_clean = [
                     'interlock_enabled'  => isset($trin_raw['interlock_enabled']),
-                    'prom_waf_penalty'   => (float) ($trin_raw['prom_waf_penalty'] ?? 50.0),
-                    'micro_tarpit_score' => (float) ($trin_raw['micro_tarpit_score'] ?? 75.0),
-                    'tarpit_max_loops'   => (int) ($trin_raw['tarpit_max_loops'] ?? 120),
+                    'prom_waf_penalty'   => self::bounded_float($trin_raw['prom_waf_penalty'] ?? null, 50.0, 0.0, 100.0),
+                    'micro_tarpit_score' => self::bounded_float($trin_raw['micro_tarpit_score'] ?? null, 75.0, 10.0, 200.0),
                 ];
                 update_option('vis_trinity_config', $trin_clean);
             }
@@ -158,14 +158,25 @@ final class VIS_Dashboard_Settings {
                 $prom_raw = $_POST['vis_prometheus_config'];
                 $prom_clean = [];
                 
-                $float_keys = ['event_horizon_score', 'infra_horizon_score', 'score_decay_rate', 'penalty_method', 'penalty_params', 'penalty_regex', 'penalty_404', 'penalty_auth', 'penalty_burst', 'penalty_freq', 'penalty_rotation'];
-                $int_keys   = ['infra_cooldown_window', 'score_decay_window'];
-                
-                foreach ($float_keys as $fk) {
-                    if (isset($prom_raw[$fk])) $prom_clean[$fk] = (float) $prom_raw[$fk];
+                $float_bounds = [
+                    'event_horizon_score' => [100.0, 25.0, 1000.0],
+                    'infra_horizon_score' => [150.0, 50.0, 2000.0],
+                    'score_decay_rate'    => [0.2, 0.01, 10.0],
+                    'penalty_method' => [30.0, 0.0, 500.0], 'penalty_params' => [15.0, 0.0, 500.0],
+                    'penalty_regex' => [50.0, 0.0, 500.0], 'penalty_404' => [25.0, 0.0, 500.0],
+                    'penalty_auth' => [40.0, 0.0, 500.0], 'penalty_burst' => [20.0, 0.0, 500.0],
+                    'penalty_freq' => [10.0, 0.0, 500.0], 'penalty_rotation' => [25.0, 0.0, 500.0],
+                ];
+                $int_bounds = [
+                    'infra_cooldown_window' => [3600, 60, 86400],
+                    'score_decay_window' => [300, 60, 86400],
+                ];
+
+                foreach ($float_bounds as $key => [$default, $min, $max]) {
+                    if (array_key_exists($key, $prom_raw)) $prom_clean[$key] = self::bounded_float($prom_raw[$key], $default, $min, $max);
                 }
-                foreach ($int_keys as $ik) {
-                    if (isset($prom_raw[$ik])) $prom_clean[$ik] = (int) $prom_raw[$ik];
+                foreach ($int_bounds as $key => [$default, $min, $max]) {
+                    if (array_key_exists($key, $prom_raw)) $prom_clean[$key] = self::bounded_int($prom_raw[$key], $default, $min, $max);
                 }
                 
                 update_option('vis_prometheus_config', $prom_clean);
@@ -174,6 +185,16 @@ final class VIS_Dashboard_Settings {
 
         wp_safe_redirect(add_query_arg('settings-updated', 'true', $_SERVER['REQUEST_URI']));
         exit;
+    }
+
+    private static function bounded_float(mixed $value, float $default, float $min, float $max): float {
+        $number = is_numeric($value) ? (float)$value : $default;
+        return max($min, min($max, $number));
+    }
+
+    private static function bounded_int(mixed $value, int $default, int $min, int $max): int {
+        $number = is_numeric($value) ? (int)$value : $default;
+        return max($min, min($max, $number));
     }
 
     private static function handle_zeus_fallback_config(): void {

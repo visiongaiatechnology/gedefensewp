@@ -9,7 +9,6 @@ $trinity_config = get_option('vis_trinity_config', []);
 $interlock_enabled = !isset($trinity_config['interlock_enabled']) || !empty($trinity_config['interlock_enabled']);
 $prom_waf_penalty = $trinity_config['prom_waf_penalty'] ?? 50.0;
 $micro_tarpit_score = $trinity_config['micro_tarpit_score'] ?? 75.0;
-$tarpit_max_loops = $trinity_config['tarpit_max_loops'] ?? 120;
 
 $opt = get_option('vis_config', []);
 $aegis_on = !empty($opt['aegis_enabled']);
@@ -110,7 +109,7 @@ $wpdb->suppress_errors($suppress);
     <!-- HEADER SECTION -->
     <div class="vgt-header">
         <div class="vgt-title-group">
-            <h1 class="vgt-glitch-text" data-text="<?php esc_attr_e('TRINITY GRID V7.5.2', 'vgt-sentinel'); ?>"><?php esc_html_e('TRINITY GRID V7.5.2', 'vgt-sentinel'); ?></h1>
+            <h1 class="vgt-glitch-text" data-text="<?php esc_attr_e('TRINITY GRID V7.6.0', 'vgt-sentinel'); ?>"><?php esc_html_e('TRINITY GRID V7.6.0', 'vgt-sentinel'); ?></h1>
             <p class="vgt-subtitle"><?php esc_html_e('Coordinated Real-Time Defense Interlock Matrix & Visual Topology', 'vgt-sentinel'); ?></p>
         </div>
         <div class="vgt-status-badge <?php echo $trinity_active ? 'active' : 'offline'; ?>">
@@ -128,14 +127,14 @@ $wpdb->suppress_errors($suppress);
             <div class="card-desc"><?php esc_html_e('Strafpunkte bei WAF-Strike', 'vgt-sentinel'); ?></div>
         </div>
         <div class="hud-card">
-            <div class="card-label"><?php esc_html_e('Klebeschwelle', 'vgt-sentinel'); ?></div>
+            <div class="card-label"><?php esc_html_e('Pre-Lock-Schwelle', 'vgt-sentinel'); ?></div>
             <div class="card-value"><?php echo esc_html((string)$micro_tarpit_score); ?></div>
-            <div class="card-desc"><?php esc_html_e('Score für Micro-Tarpit (5s)', 'vgt-sentinel'); ?></div>
+            <div class="card-desc"><?php esc_html_e('Ressourcenneutrale Eskalationstelemetrie', 'vgt-sentinel'); ?></div>
         </div>
         <div class="hud-card">
-            <div class="card-label"><?php esc_html_e('Tarpit Limit', 'vgt-sentinel'); ?></div>
-            <div class="card-value"><?php echo esc_html((string)$tarpit_max_loops); ?> Cycles</div>
-            <div class="card-desc"><?php esc_html_e('Decay Connection Duration', 'vgt-sentinel'); ?></div>
+            <div class="card-label"><?php esc_html_e('Response-Modus', 'vgt-sentinel'); ?></div>
+            <div class="card-value"><?php esc_html_e('BOUNDED', 'vgt-sentinel'); ?></div>
+            <div class="card-desc"><?php esc_html_e('Keine blockierten PHP-Worker', 'vgt-sentinel'); ?></div>
         </div>
         
         <!-- Live Performance / Scoreboard Cards -->
@@ -367,25 +366,14 @@ $wpdb->suppress_errors($suppress);
             </div>
         </div>
 
-        <!-- Micro-tarpit score -->
+        <!-- Pre-lock telemetry score -->
         <div class="setting-row">
             <div class="setting-info">
-                <div class="setting-label"><?php esc_html_e('Micro-Tarpit Aktivierungsschwelle', 'vgt-sentinel'); ?></div>
-                <div class="setting-desc"><?php esc_html_e('Verhaltens-Score ab dem die IP vor dem endgültigen Bann temporär verlangsamt wird (5 Sekunden Verzögerung).', 'vgt-sentinel'); ?></div>
+                <div class="setting-label"><?php esc_html_e('Pre-Lock Telemetrieschwelle', 'vgt-sentinel'); ?></div>
+                <div class="setting-desc"><?php esc_html_e('Verhaltens-Score, ab dem Trinity eine erhöhte Eskalationsstufe protokolliert, ohne PHP-Worker zu blockieren.', 'vgt-sentinel'); ?></div>
             </div>
             <div class="setting-input">
                 <input type="number" step="0.5" min="10" max="200" name="vis_trinity_config[micro_tarpit_score]" value="<?php echo esc_attr((string)$micro_tarpit_score); ?>" class="vgt-input" style="width:100%; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.4); color:#fff; border-radius:4px; padding:6px 12px; font-family:inherit;">
-            </div>
-        </div>
-
-        <!-- Tarpit Max loops -->
-        <div class="setting-row">
-            <div class="setting-info">
-                <div class="setting-label"><?php esc_html_e('Nemesis Tarpit Loop Limit', 'vgt-sentinel'); ?></div>
-                <div class="setting-desc"><?php esc_html_e('Maximale Durchläufe der Klebefalle (1 Durchlauf = ~30s Delay). Reduziert die Belastung durch persistente Angreifer.', 'vgt-sentinel'); ?></div>
-            </div>
-            <div class="setting-input">
-                <input type="number" step="5" min="5" max="300" name="vis_trinity_config[tarpit_max_loops]" value="<?php echo esc_attr((string)$tarpit_max_loops); ?>" class="vgt-input" style="width:100%; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.4); color:#fff; border-radius:4px; padding:6px 12px; font-family:inherit;">
             </div>
         </div>
 

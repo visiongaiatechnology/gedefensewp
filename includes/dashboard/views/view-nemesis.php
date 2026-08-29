@@ -11,14 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 global $wpdb;
 $opt = get_option('vis_config', []);
 $is_enabled = !empty($opt['nemesis_enabled']);
-// VGT COMPLIANCE: Status des offensiven Active Strike Modus
-$is_active_strike = !empty($opt['nemesis_active_strike']);
 
 $table_logs = $wpdb->prefix . 'vis_nemesis_logs';
 
 // --- ZERO-COST REAL DATA AGGREGATION ---
 // $active_tarpits ist volatil (60 Sekunden TTL). Wir benötigen historische Persistenz.
-$active_tarpits = (int) wp_cache_get( 'vgt_active_tarpits' );
+$active_tarpits = 0;
 $tarpit_total   = 0;
 $canaries_count = 0;
 $poison_count   = 0;
@@ -64,13 +62,8 @@ $wpdb->suppress_errors($suppress);
 $badge_text = __('SHIELD OFFLINE', 'vgt-sentinel');
 $badge_class = 'offline';
 if ($is_enabled) {
-    if ($is_active_strike) {
-        $badge_text = __('ACTIVE STRIKE: ARMED', 'vgt-sentinel');
-        $badge_class = 'armed';
-    } else {
-        $badge_text = __('DECEPTION MATRIX: ENGAGED', 'vgt-sentinel');
-        $badge_class = 'active';
-    }
+    $badge_text = __('DECEPTION MATRIX: ENGAGED', 'vgt-sentinel');
+    $badge_class = 'active';
 }
 ?>
 
@@ -173,26 +166,13 @@ if ($is_enabled) {
                     <h3><?php esc_html_e('Tarpit Mode', 'vgt-sentinel'); ?></h3>
                     <div class="node-status <?php echo $is_enabled ? 'online' : ''; ?>"></div>
                 </div>
-                <p class="card-desc"><?php esc_html_e('Simuliert kritische Schwachstellen (`.env`, `wp-config`). Legal Defense liefert extrem langsame Fake-Hashes aus, um gegnerische Threads an den Server zu binden (Ressourcen-Erschöpfung durch Zeit).', 'vgt-sentinel'); ?></p>
+                <p class="card-desc"><?php esc_html_e('Simuliert kritische Schwachstellen (`.env`, `wp-config`) und liefert eine kleine, deterministisch begrenzte Täuschungsantwort.', 'vgt-sentinel'); ?></p>
                 <div class="tech-specs">
-                    <span><svg class="vgt-icon" style="width:16px; height:16px; color:var(--vgt-nemesis);" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> <?php esc_html_e('Self-DDoS OS-Lock (Max 3 Threads)', 'vgt-sentinel'); ?></span>
+                    <span><svg class="vgt-icon" style="width:16px; height:16px; color:var(--vgt-nemesis);" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> <?php esc_html_e('Bounded Response / Zero Worker Hold', 'vgt-sentinel'); ?></span>
                     <span id="spec-strike-mode-t">
-                        <?php 
-                        if ($is_active_strike) {
-                            echo '<svg class="vgt-icon" style="width:16px; height:16px; color:var(--vgt-danger);" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> ' . esc_html__('Mode: Kinetische Sabotage', 'vgt-sentinel'); 
-                        } else {
-                            echo '<svg class="vgt-icon" style="width:16px; height:16px; color:var(--vgt-nemesis);" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> ' . esc_html__('Mode: Passive Delay', 'vgt-sentinel'); 
-                        }
-                        ?>
+                        <svg class="vgt-icon" style="width:16px; height:16px; color:var(--vgt-nemesis);" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <?php esc_html_e('Mode: Defensive Deception', 'vgt-sentinel'); ?>
                     </span>
-                </div>
-                
-                <div class="strike-explanation-box <?php echo $is_active_strike ? 'active' : ''; ?>">
-                    <h4>
-                        <svg class="vgt-icon" style="width:16px; height:16px;" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                        <?php esc_html_e('Kinetische Sabotage Aktiv', 'vgt-sentinel'); ?>
-                    </h4>
-                    <p><?php echo wp_kses_post(__('<strong>GZIP-Bombing</strong> führt zu RAM-Überlauf beim Angreifer. <strong>Terminal-Sabotage</strong> injiziert ANSI-Codes, die das Terminal des Hackers unleserlich machen.', 'vgt-sentinel')); ?></p>
                 </div>
             </div>
 
@@ -211,13 +191,6 @@ if ($is_enabled) {
                     <span><svg class="vgt-icon" style="width:16px; height:16px; color:#00f2ff;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> <?php esc_html_e('Invisible DOM Injection', 'vgt-sentinel'); ?></span>
                 </div>
 
-                <div class="strike-explanation-box <?php echo $is_active_strike ? 'active' : ''; ?>">
-                    <h4>
-                        <svg class="vgt-icon" style="width:16px; height:16px;" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                        <?php esc_html_e('Cookie Bombing Aktiv', 'vgt-sentinel'); ?>
-                    </h4>
-                    <p><?php echo wp_kses_post(__('<strong>State Exhaustion:</strong> Flutet den Scraper mit hunderten gigantischen Session-Cookies. Führt bei automatisierten Bots zum sofortigen Out-of-Memory Absturz.', 'vgt-sentinel')); ?></p>
-                </div>
             </div>
 
             <!-- POISON CARD -->
@@ -235,13 +208,6 @@ if ($is_enabled) {
                     <span><svg class="vgt-icon" style="width:16px; height:16px; color:#ff003c;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> <?php esc_html_e('DB-Corruption Routine', 'vgt-sentinel'); ?></span>
                 </div>
 
-                <div class="strike-explanation-box <?php echo $is_active_strike ? 'active' : ''; ?>">
-                    <h4>
-                        <svg class="vgt-icon" style="width:16px; height:16px;" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                        <?php esc_html_e('Aggressive DB-Corruption Aktiv', 'vgt-sentinel'); ?>
-                    </h4>
-                    <p><?php echo wp_kses_post(__('<strong>Database Overloader:</strong> Generiert bei jedem Aufruf on-the-fly 50 hochrealistische Honeypot-Adressen. Dies maximiert die Datenbank-Kosten des Angreifers ins Unermessliche.', 'vgt-sentinel')); ?></p>
-                </div>
             </div>
 
         </div>
@@ -257,10 +223,6 @@ if ($is_enabled) {
             <div class="vgt-term-body" id="nemesis-terminal">
                 <?php if ($is_enabled && !empty($real_logs)): ?>
                     <code class="sys-boot">[<?php echo wp_date('H:i:s'); ?>] <?php esc_html_e('[SYSTEM] Connection to Nemesis Database established. Streaming logs...', 'vgt-sentinel'); ?></code>
-                    <?php if ($is_active_strike): ?>
-                        <code class="log-critical">[<?php echo wp_date('H:i:s'); ?>] <?php esc_html_e('[WARNING] ACTIVE STRIKE INITIATED. OFFENSIVE KINETIC COUNTERMEASURES ARMED.', 'vgt-sentinel'); ?></code>
-                    <?php endif; ?>
-                    
                     <?php foreach ($real_logs as $log): 
                         $time = wp_date('H:i:s', strtotime($log->timestamp));
                         $type_str = strtoupper((string)$log->type);
@@ -292,9 +254,6 @@ if ($is_enabled) {
                     <code class="log-info"><span class="term-time">[<?php echo wp_date('H:i:s'); ?>]</span> <?php esc_html_e('[SYSTEM] Waiting for tactical events...', 'vgt-sentinel'); ?><span class="cursor-blink">_</span></code>
                 <?php elseif ($is_enabled): ?>
                     <code class="sys-boot">[<?php echo wp_date('H:i:s'); ?>] <?php esc_html_e('[SYSTEM] Nemesis Counterintelligence Matrix loaded. Database connected.', 'vgt-sentinel'); ?></code>
-                    <?php if ($is_active_strike): ?>
-                        <code class="log-critical">[<?php echo wp_date('H:i:s'); ?>] <?php esc_html_e('[WARNING] ACTIVE STRIKE INITIATED. OFFENSIVE KINETIC COUNTERMEASURES ARMED.', 'vgt-sentinel'); ?></code>
-                    <?php endif; ?>
                     <code class="log-info">[<?php echo wp_date('H:i:s'); ?>] <?php esc_html_e('[SYSTEM] Log table is empty. Matrix is active and waiting for targets...', 'vgt-sentinel'); ?><span class="cursor-blink">_</span></code>
                 <?php else: ?>
                     <code class="log-critical">[<?php echo wp_date('H:i:s'); ?>] <?php esc_html_e('[ERROR] Deception Matrix is offline. Server responds with standard protocols.', 'vgt-sentinel'); ?></code>
@@ -313,59 +272,15 @@ if ($is_enabled) {
             </button>
             
             <div class="vgt-accordion-content" id="vgt-exp-content">
-                <!-- VGT COMPLIANCE: ACTIVE STRIKE (HACK BACK) TOGGLE -->
-                <div class="vgt-master-switch-panel vgt-danger-panel" id="strike-panel">
+                <div class="vgt-master-switch-panel">
                     <div class="panel-info">
-                        <h3 class="danger-text">
-                            <svg class="vgt-icon" style="width:24px; height:24px;" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                            <?php esc_html_e('Active Strike (Hack Back)', 'vgt-sentinel'); ?>
-                        </h3>
-                        <p><?php echo wp_kses_post(__('Entfesselt die kinetischen Sabotage-Waffen. Das System wechselt von reiner Täuschung zum aktiven <strong>Gegenschlag</strong>. Beinhaltet GZIP-Bombing (OOM-Crash beim Angreifer), Cookie-Bombing und Terminal-Sabotage.', 'vgt-sentinel')); ?></p>
-                        <div class="legal-warning-heavy">
-                            <div class="warning-header">
-                                <svg class="vgt-icon" style="width:16px; height:16px;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                                <?php esc_html_e('STRIKTE RECHTLICHE WARNUNG (DEUTSCHLAND)', 'vgt-sentinel'); ?>
-                            </div>
-                            <div class="warning-body">
-                                <?php echo wp_kses_post(__('Die Ausführung aktiver Denial-of-Service (DoS) oder Sabotage-Maßnahmen gegen fremde IT-Systeme (Hack-Back) ist in der Bundesrepublik Deutschland nach <strong>§ 303a StGB (Datenveränderung)</strong> und <strong>§ 303b StGB (Computersabotage)</strong> strafbar und kann mit Freiheitsstrafen geahndet werden.<br><br><strong>Nutzung ausschließlich in isolierten Sandbox-Umgebungen, im Rahmen autorisierter Penetration Tests oder auf eigene, vollumfängliche rechtliche Verantwortung. VGT übernimmt keinerlei Haftung für den Missbrauch dieser Protokolle.</strong>', 'vgt-sentinel')); ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="panel-action">
-                        <label class="vgt-pure-switch danger-switch" id="toggle-container-strike">
-                            <!-- Das Checkbox-Event wird via JS abgefangen -->
-                            <input type="checkbox" name="vis_config[nemesis_active_strike]" id="nemesis_active_strike" value="1" <?php checked($is_active_strike, true); ?>>
-                            <span class="vgt-pure-slider danger-slider"></span>
-                            <div class="switch-label danger-label" id="toggle-label-strike">
-                                <?php echo $is_active_strike ? esc_html__('ARMED', 'vgt-sentinel') : esc_html__('DISARMED', 'vgt-sentinel'); ?>
-                            </div>
-                        </label>
+                        <h3><?php esc_html_e('Bounded Deception Policy', 'vgt-sentinel'); ?></h3>
+                        <p><?php esc_html_e('Nemesis erzeugt ausschließlich kleine, endliche Decoy-Antworten. Worker-Blocking, Response-Bombs, Cookie-Bombs und Hack-Back-Payloads sind aus dem Runtime-Pfad entfernt.', 'vgt-sentinel'); ?></p>
                     </div>
                 </div>
             </div>
         </div>
 
-    </div>
-</div>
-
-<!-- VGT COMPLIANCE MODAL (HIDDEN BY DEFAULT) -->
-<div class="vgt-modal-overlay" id="vgt-compliance-modal" style="display: none;">
-    <div class="vgt-modal-box">
-        <div class="vgt-modal-header">
-            <svg class="vgt-icon" style="width:22px; height:22px;" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            <?php esc_html_e('KINETIC STRIKE AUTHORIZATION REQUIRED', 'vgt-sentinel'); ?>
-        </div>
-        <div class="vgt-modal-body">
-            <p><?php echo wp_kses_post(__('Sie sind dabei, das <strong>Active Strike (Hack Back) Protokoll</strong> zu initialisieren.', 'vgt-sentinel')); ?></p>
-            <p><?php esc_html_e('Diese Aktion verwandelt passive Verteidigung in aktive System-Sabotage (GZIP-Bombs, Memory Exhaustion) gegen die Infrastruktur des Angreifers.', 'vgt-sentinel'); ?></p>
-            <div class="modal-legal-box">
-                <?php echo wp_kses_post(__('Gemäß <strong>§ 303a / § 303b StGB (Computersabotage)</strong> ist der unautorisierte Einsatz dieser Waffen im deutschen Rechtsraum strikt illegal. Bestätigen Sie, dass Sie dieses System in einer autorisierten Umgebung betreiben und die volle rechtliche Haftung übernehmen.', 'vgt-sentinel')); ?>
-            </div>
-        </div>
-        <div class="vgt-modal-actions">
-            <button type="button" class="vgt-btn-cancel" id="vgt-modal-abort"><?php esc_html_e('ABORT SEQUENCE', 'vgt-sentinel'); ?></button>
-            <button type="button" class="vgt-btn-confirm" id="vgt-modal-authorize"><?php esc_html_e('AUTHORIZE STRIKE', 'vgt-sentinel'); ?></button>
-        </div>
     </div>
 </div>
 

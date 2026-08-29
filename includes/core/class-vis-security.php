@@ -235,9 +235,11 @@ final class VIS_Security {
         if (count($parts) !== 2) return false;
 
         $subnet_bin = @inet_pton($parts[0]);
-        if ($subnet_bin === false) return false;
+        if ($subnet_bin === false || strlen($subnet_bin) !== strlen($ip_bin) || !ctype_digit($parts[1])) return false;
 
         $bits = (int)$parts[1];
+        $max_bits = strlen($ip_bin) * 8;
+        if ($bits < 0 || $bits > $max_bits) return false;
         $bytes = $bits >> 3;
         $bits_remainder = $bits & 7;
 
@@ -254,6 +256,28 @@ final class VIS_Security {
         return true;
     }
 
+    public static function ip_in_cidr(string $ip, string $cidr): bool {
+        $ip_bin = @inet_pton($ip);
+        return $ip_bin !== false && self::cidr_match_bin($ip_bin, $cidr);
+    }
+
+    public static function network_cidr(string $ip, int $ipv4_prefix = 24, int $ipv6_prefix = 64): string {
+        $packed = @inet_pton($ip);
+        if ($packed === false) return '';
+        $prefix = strlen($packed) === 4 ? max(0, min(32, $ipv4_prefix)) : max(0, min(128, $ipv6_prefix));
+        $bytes = intdiv($prefix, 8);
+        $remainder = $prefix % 8;
+        $network = $packed;
+        $length = strlen($network);
+        if ($remainder > 0 && $bytes < $length) {
+            $network[$bytes] = chr(ord($network[$bytes]) & (0xff << (8 - $remainder)));
+            $bytes++;
+        }
+        for ($i = $bytes; $i < $length; $i++) $network[$i] = "\0";
+        $normalized = @inet_ntop($network);
+        return is_string($normalized) ? $normalized . '/' . $prefix : '';
+    }
+
     public static function is_public_ip(string $ip): bool {
         return (bool) filter_var(
             $ip,
@@ -263,14 +287,49 @@ final class VIS_Security {
     }
 
     public static function client_ip(): string {
-        $remote_addr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $candidate = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $remote_addr = filter_var($candidate, FILTER_VALIDATE_IP) ? (string)$candidate : '0.0.0.0';
+
         if (isset($_SERVER['HTTP_CF_CONNECTING_IP']) && self::is_cloudflare_ip($remote_addr)) {
             $cf_ip = filter_var($_SERVER['HTTP_CF_CONNECTING_IP'], FILTER_VALIDATE_IP);
             if ($cf_ip !== false && self::is_public_ip((string)$cf_ip)) {
                 return (string)$cf_ip;
             }
         }
-        return filter_var($remote_addr, FILTER_VALIDATE_IP) ? (string)$remote_addr : '0.0.0.0';
+
+        if (defined('VIS_TRUST_PROXY') && VIS_TRUST_PROXY === true) {
+            $configured = defined('VIS_TRUSTED_PROXY_IPS') ? VIS_TRUSTED_PROXY_IPS : [];
+            $trusted = is_array($configured) ? $configured : [];
+            if (self::matches_trusted_proxy($remote_addr, $trusted)) {
+                $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+                if (is_string($forwarded) && $forwarded !== '') {
+                    $chain = array_reverse(array_map('trim', explode(',', $forwarded)));
+                    foreach ($chain as $hop) {
+                        if (self::matches_trusted_proxy($hop, $trusted)) continue;
+                        if (self::is_public_ip($hop)) return $hop;
+                    }
+                }
+
+                foreach (['HTTP_TRUE_CLIENT_IP', 'HTTP_X_REAL_IP'] as $header) {
+                    $edge_ip = $_SERVER[$header] ?? '';
+                    if (is_string($edge_ip) && self::is_public_ip($edge_ip)) return $edge_ip;
+                }
+            }
+        }
+
+        return $remote_addr;
+    }
+
+    /** @param array<int, mixed> $trusted */
+    private static function matches_trusted_proxy(string $ip, array $trusted): bool {
+        if (filter_var($ip, FILTER_VALIDATE_IP) === false) return false;
+        foreach ($trusted as $network) {
+            if (!is_string($network) || $network === '') continue;
+            if ($ip === $network || (str_contains($network, '/') && self::ip_in_cidr($ip, $network))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static function validate_hades_gate(string $admin_secret): bool {

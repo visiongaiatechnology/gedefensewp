@@ -5,7 +5,7 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "586c5197cbec6a5482d39f2103a65bc107343067a13a500190802f48619da96f"
+            "root_hash": "f555b4d6b03ab032b4297864629f7951138182e2de5777ea2d9ce283fadca4af"
         },
         "assets": {
             "files": 5,
@@ -16,12 +16,12 @@
             "root_hash": "178ff34fc8b19b5617b1fad47671e0308a613b8c94566ebcda40b13f751130b9"
         },
         "core": {
-            "files": 9,
-            "root_hash": "a53955181bdafe90c8ba2b9cfe584d1e288b6acb215792b4081a3598346dd179"
+            "files": 10,
+            "root_hash": "edc6c725cd1424e0525054ff6dfab4f3665186be363da16bc99785c5478b7674"
         },
         "dashboard": {
             "files": 74,
-            "root_hash": "1b994a04e80b5abf13bcd4f919ac4b84f3ff44734a374782e71bcdf0754ea06d"
+            "root_hash": "6041cdec5c15b832151a47e0eff0f09e48a59d69ec11e06f2a72f4fa4dafe64c"
         },
         "scanner": {
             "files": 1,
@@ -29,7 +29,7 @@
         },
         "aegis": {
             "files": 2,
-            "root_hash": "1e97a3b6ac398cc933c3b7eac71ca5737c27af981c66b3ffe74a539a547fd878"
+            "root_hash": "0ec801c61df3b381a8bd91dc5caec0bc8c1832842f05105fc9dd3ac9cb794e72"
         },
         "airlock": {
             "files": 4,
@@ -37,7 +37,7 @@
         },
         "cerberus": {
             "files": 1,
-            "root_hash": "5bcef230e7aea299109f06dd5ad69a7650f42f341c9f45b478ea0d86fcac1fbd"
+            "root_hash": "5b004681d3523401b9490fcd5a3bd4ba81a1c120853d3d87bcbecf7fd1d9bed6"
         },
         "chronos": {
             "files": 5,
@@ -65,7 +65,7 @@
         },
         "nemesis": {
             "files": 1,
-            "root_hash": "f28f5cba2795f8d98e3203bd399e10b18e5f76dc62320d47a87829828ebb491c"
+            "root_hash": "1253755a24248cbee6b041122e33e5d4f660a0451ae205024a257d6836cbf8ee"
         },
         "oracle": {
             "files": 1,
@@ -73,7 +73,7 @@
         },
         "prometheus": {
             "files": 1,
-            "root_hash": "513286a3ad982000626e4a1d67768c866ead79ea0a7b86dcf543fb4a48b87b54"
+            "root_hash": "c71e078d3791f1c18949475e1f023aad70d919bf6d8997494c3c75bb429b3783"
         },
         "styx": {
             "files": 1,

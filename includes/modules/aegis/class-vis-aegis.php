@@ -958,6 +958,10 @@ final class VIS_Aegis {
     }
 
     private function get_secure_ip(): string {
+        if (class_exists('VIS_Security')) {
+            return \VIS_Security::client_ip();
+        }
+
         $remote_addr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
         
         if (defined('VIS_TRUST_PROXY') && VIS_TRUST_PROXY === true) {
@@ -1003,40 +1007,11 @@ final class VIS_Aegis {
         $incident_id = 'vis_' . bin2hex(random_bytes(8));
         $this->log_incident($ip, $reason, $action, $vector);
         
-        $trinity_config = get_option('vis_trinity_config', []);
-        $trinity_enabled = !isset($trinity_config['interlock_enabled']) || !empty($trinity_config['interlock_enabled']);
-        
-        if ($trinity_enabled) {
-            // Prometheus Interlock: Penalize score
-            $prom_class = '\VisionGaia\Integrity\Modules\Prometheus\VIS_Prometheus';
-            if (class_exists($prom_class)) {
-                try {
-                    if (method_exists($prom_class, 'get_instance')) {
-                        $prom = $prom_class::get_instance();
-                        if (method_exists($prom, 'increase_threat_score')) {
-                            $prom_penalty = (float) ($trinity_config['prom_waf_penalty'] ?? 50.0);
-                            $prom->increase_threat_score($ip, $prom_penalty, 'AEGIS_STRIKE: ' . $vector);
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    // Ignore
-                }
-            }
-
-            // Nemesis Interlock: Engage full tarpit connection decay
-            $nemesis_class = '\VisionGaia\Integrity\Modules\Nemesis\VIS_Nemesis';
-            if (class_exists($nemesis_class)) {
-                try {
-                    if (method_exists($nemesis_class, 'get_instance')) {
-                        $nemesis = $nemesis_class::get_instance();
-                        if (method_exists($nemesis, 'trigger_tarpit')) {
-                            $nemesis->trigger_tarpit("AEGIS: Threat Lockout (" . $vector . ")");
-                            exit;
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    // Fallback to exit below
-                }
+        if (class_exists('VIS_Trinity_Grid')) {
+            try {
+                \VIS_Trinity_Grid::onAegisStrike($ip, $vector);
+            } catch (\Throwable $e) {
+                error_log('[VIS TRINITY] AEGIS interlock failed closed to local rejection.');
             }
         }
 

@@ -42,7 +42,7 @@ final class VIS_Prometheus {
     private const PENALTY_ROTATION = 25.0;
 
     private const TELEMETRY_BUFFER_LIMIT = 200;
-    private const SPIN_LOCK_MAX_RETRIES  = 3;
+    private const SPIN_LOCK_MAX_RETRIES  = 25;
 
     // O(1) DFA Regex Compilation
     private const ANOMALY_REGEX = '/(?:%00|\\\\0|\\.\\.[\\/\\\\]|:\\/\\/|<script|base64(?:_|decode\s*\()|eval\s*\()/i';
@@ -124,20 +124,30 @@ final class VIS_Prometheus {
             $this->trusted_proxies = VIS_TRUSTED_PROXY_IPS;
         }
 
-        $this->event_horizon_score   = (float) ($prom_config['event_horizon_score'] ?? self::DEFAULT_EVENT_HORIZON_SCORE);
-        $this->infra_horizon_score   = (float) ($prom_config['infra_horizon_score'] ?? self::DEFAULT_INFRA_EVENT_HORIZON_SCORE);
-        $this->infra_cooldown_window = (int)   ($prom_config['infra_cooldown_window'] ?? self::DEFAULT_INFRA_COOLDOWN_WINDOW);
-        $this->score_decay_rate      = (float) ($prom_config['score_decay_rate'] ?? self::DEFAULT_SCORE_DECAY_RATE);
-        $this->score_decay_window    = (int)   ($prom_config['score_decay_window'] ?? self::DEFAULT_SCORE_DECAY_WINDOW);
+        $this->event_horizon_score   = self::bounded_float($prom_config, 'event_horizon_score', self::DEFAULT_EVENT_HORIZON_SCORE, 25.0, 1000.0);
+        $this->infra_horizon_score   = self::bounded_float($prom_config, 'infra_horizon_score', self::DEFAULT_INFRA_EVENT_HORIZON_SCORE, 50.0, 2000.0);
+        $this->infra_cooldown_window = self::bounded_int($prom_config, 'infra_cooldown_window', self::DEFAULT_INFRA_COOLDOWN_WINDOW, 60, 86400);
+        $this->score_decay_rate      = self::bounded_float($prom_config, 'score_decay_rate', self::DEFAULT_SCORE_DECAY_RATE, 0.01, 10.0);
+        $this->score_decay_window    = self::bounded_int($prom_config, 'score_decay_window', self::DEFAULT_SCORE_DECAY_WINDOW, 60, 86400);
 
-        $this->score_penalty_method   = (float) ($prom_config['penalty_method'] ?? self::PENALTY_METHOD);
-        $this->score_penalty_params   = (float) ($prom_config['penalty_params'] ?? self::PENALTY_PARAMS);
-        $this->score_penalty_regex    = (float) ($prom_config['penalty_regex'] ?? self::PENALTY_REGEX);
-        $this->score_penalty_404      = (float) ($prom_config['penalty_404'] ?? self::PENALTY_404);
-        $this->score_penalty_auth     = (float) ($prom_config['penalty_auth'] ?? self::PENALTY_AUTH);
-        $this->score_penalty_burst    = (float) ($prom_config['penalty_burst'] ?? self::PENALTY_BURST);
-        $this->score_penalty_freq     = (float) ($prom_config['penalty_freq'] ?? self::PENALTY_FREQ);
-        $this->score_penalty_rotation = (float) ($prom_config['penalty_rotation'] ?? self::PENALTY_ROTATION);
+        $this->score_penalty_method   = self::bounded_float($prom_config, 'penalty_method', self::PENALTY_METHOD, 0.0, 500.0);
+        $this->score_penalty_params   = self::bounded_float($prom_config, 'penalty_params', self::PENALTY_PARAMS, 0.0, 500.0);
+        $this->score_penalty_regex    = self::bounded_float($prom_config, 'penalty_regex', self::PENALTY_REGEX, 0.0, 500.0);
+        $this->score_penalty_404      = self::bounded_float($prom_config, 'penalty_404', self::PENALTY_404, 0.0, 500.0);
+        $this->score_penalty_auth     = self::bounded_float($prom_config, 'penalty_auth', self::PENALTY_AUTH, 0.0, 500.0);
+        $this->score_penalty_burst    = self::bounded_float($prom_config, 'penalty_burst', self::PENALTY_BURST, 0.0, 500.0);
+        $this->score_penalty_freq     = self::bounded_float($prom_config, 'penalty_freq', self::PENALTY_FREQ, 0.0, 500.0);
+        $this->score_penalty_rotation = self::bounded_float($prom_config, 'penalty_rotation', self::PENALTY_ROTATION, 0.0, 500.0);
+    }
+
+    private static function bounded_float(array $config, string $key, float $default, float $min, float $max): float {
+        $value = isset($config[$key]) && is_numeric($config[$key]) ? (float)$config[$key] : $default;
+        return max($min, min($max, $value));
+    }
+
+    private static function bounded_int(array $config, string $key, int $default, int $min, int $max): int {
+        $value = isset($config[$key]) && is_numeric($config[$key]) ? (int)$config[$key] : $default;
+        return max($min, min($max, $value));
     }
 
     private function __clone() {}
@@ -362,11 +372,11 @@ final class VIS_Prometheus {
 
     private function evaluate_state( string $ip, float $base_increment, float $current_time, array $anomalies = [] ): void {
         
-        $subnet = $ip;
-        if ( strpos( $ip, '.' ) !== false ) {
+        $subnet = class_exists('VIS_Security') ? \VIS_Security::network_cidr($ip) : '';
+        if ($subnet === '' && strpos( $ip, '.' ) !== false ) {
             $parts = explode( '.', $ip );
             $subnet = "{$parts[0]}.{$parts[1]}.{$parts[2]}.0/24";
-        } else {
+        } elseif ($subnet === '') {
             $parts = explode( ':', $ip );
             if ( count( $parts ) >= 4 ) {
                 $subnet = "{$parts[0]}:{$parts[1]}:{$parts[2]}:{$parts[3]}::/64";
@@ -497,11 +507,10 @@ final class VIS_Prometheus {
         if ( $new_score >= $this->event_horizon_score ) {
             $this->trigger_mitigation( $ip, $new_score );
         } elseif ( $trinity_enabled ) {
-            $micro_tarpit_score = (float) ($trinity_config['micro_tarpit_score'] ?? 75.0);
+            $micro_tarpit_score = max(10.0, min(200.0, (float)($trinity_config['micro_tarpit_score'] ?? 75.0)));
             if ( $new_score >= $micro_tarpit_score ) {
-                // Micro-tarpit (5 seconds) to slow down suspicious clients before absolute lockout
-                $this->write_telemetry( 'MICRO_TARPIT', "Client behavior highly suspicious (Score: {$new_score}). Engaging micro-tarpit.", $ip );
-                @sleep(5);
+                // PHP workers are never held open for hostile clients. The pre-lock state is telemetry-only.
+                $this->write_telemetry( 'PRELOCK_THRESHOLD', "Client behavior highly suspicious (Score: {$new_score}).", $ip );
             }
         }
     }
@@ -554,6 +563,11 @@ final class VIS_Prometheus {
                 if ( $lock_result === '1' ) {
                     $locked = true;
                 }
+            }
+
+            if (!$locked) {
+                error_log('[VIS PROMETHEUS] State lock unavailable; unlocked state mutation rejected.');
+                continue;
             }
 
             try {
@@ -612,45 +626,13 @@ final class VIS_Prometheus {
         $strikes = (int) wp_cache_get( 'vgt_prometheus_strikes' );
         wp_cache_set( 'vgt_prometheus_strikes', $strikes + 1, '', 3600 );
 
-        // [ DIAMANT FIX: Cerberus Routing & Method Signature Alignment ]
-        $cerberus_class = '\VIS_Cerberus';
-        
-        if ( class_exists( $cerberus_class ) ) {
-            try {
-                if ( method_exists( $cerberus_class, 'instance' ) ) {
-                    $cerberus = $cerberus_class::instance();
-                    if ( method_exists( $cerberus, 'ban_ip' ) ) {
-                        // Cerberus verlangt einen kondensierten String als Grund, kein Array.
-                        $trigger_uri = substr(esc_url_raw($_SERVER['REQUEST_URI'] ?? 'UNKNOWN'), 0, 100);
-                        $reason_string = 'PROMETHEUS_PREDICTIVE_STRIKE (Threat Score: ' . (int) $score . ' | URI: ' . $trigger_uri . ')';
-                        
-                        $cerberus->ban_ip( $ip, $reason_string );
-                    }
-                }
-            } catch ( \Throwable $e ) {
-                error_log( 'VGT OMEGA PROTOCOL: Cerberus Interlock Failure. Executing Prometheus Terminal Kill.' );
-            }
-        }
-
-        // Nemesis Interlock: Engange full tarpit connection decay
-        $trinity_config = get_option('vis_trinity_config', []);
-        $trinity_enabled = !isset($trinity_config['interlock_enabled']) || !empty($trinity_config['interlock_enabled']);
-
-        if ($trinity_enabled) {
-            $nemesis_class = '\VisionGaia\Integrity\Modules\Nemesis\VIS_Nemesis';
-            if ( class_exists( $nemesis_class ) ) {
-                try {
-                    if ( method_exists( $nemesis_class, 'get_instance' ) ) {
-                        $nemesis = $nemesis_class::get_instance();
-                        if ( method_exists( $nemesis, 'trigger_tarpit' ) ) {
-                            $nemesis->trigger_tarpit("PROMETHEUS: Permanent threat lock (Score: {$score})");
-                            exit;
-                        }
-                    }
-                } catch ( \Throwable $e ) {
-                    // Fallback to exit below
-                }
-            }
+        if (class_exists('VIS_Trinity_Grid')) {
+            \VIS_Trinity_Grid::onPrometheusMitigation($ip, $score, $subnet_context);
+        } elseif (class_exists('VIS_Cerberus')) {
+            $cerberus = \VIS_Cerberus::instance();
+            $subnet_context === null
+                ? $cerberus->ban_ip($ip, 'PROMETHEUS_PREDICTIVE_STRIKE')
+                : $cerberus->ban_subnet($subnet_context, 'PROMETHEUS_PREDICTIVE_INFRA_STRIKE');
         }
 
         while ( ob_get_level() ) {
@@ -674,6 +656,10 @@ final class VIS_Prometheus {
      * [ DIAMANT FIX: Strikte Trusted-Proxy CIDR Validierung anstatt blinden Vertrauens ]
      */
     private function get_client_ip(): string {
+        if (class_exists('VIS_Security')) {
+            return \VIS_Security::client_ip();
+        }
+
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
         if ( $this->trust_proxy_headers ) {
@@ -736,7 +722,9 @@ final class VIS_Prometheus {
         $header_structure = implode('|', $header_keys);
 
         $botanical_fp = hash('sha256', "{$ua}|{$accept}|{$lang}|{$enc}|{$header_structure}");
-        $transient_key = 'vgt_botanical_' . substr($botanical_fp, 0, 32);
+        $subnet_scope = $this->extract_swarm_subnet($ip);
+        if ($subnet_scope === '') return;
+        $transient_key = 'vgt_botanical_' . substr(hash('sha256', $botanical_fp . '|' . $subnet_scope), 0, 32);
 
         $swarm_data = get_transient($transient_key);
         if (!is_array($swarm_data)) {
@@ -756,7 +744,7 @@ final class VIS_Prometheus {
         if (self::botanical_swarm_threshold_reached($swarm_data['ips'])) {
             $this->write_telemetry('BOTANICAL_SWARM_DETECTED', "Distributed Swarm Botnet (" . count($swarm_data['ips']) . " IPs)", $ip);
             
-            $subnet = $this->extract_swarm_subnet($ip);
+            $subnet = $subnet_scope;
             if ($subnet !== '') {
                 if (class_exists('\VIS_Cerberus') && method_exists('\VIS_Cerberus', 'instance')) {
                     try {
@@ -786,6 +774,7 @@ final class VIS_Prometheus {
     }
 
     private function extract_swarm_subnet(string $ip): string {
+        if (class_exists('VIS_Security')) return \VIS_Security::network_cidr($ip);
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             $parts = explode('.', $ip);
             if (count($parts) === 4) {

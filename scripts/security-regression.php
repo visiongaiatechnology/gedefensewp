@@ -46,6 +46,9 @@ $forbidden = [
     'Morpheus static fallback salt' => '/fallback_salt|vgt_fallback_salt/i',
     'Morpheus world-readable directory' => '/modules[\/\\\\]morpheus[\s\S]{0,120}\b(?:mkdir|chmod)\s*\([^;\n]*0755/i',
     'Dynamic Morpheus HTML sink' => '/innerHTML\s*\+=|innerHTML\s*=\s*`[^`]*\$\{(?:data|slug|err)/i',
+    'Nemesis worker retention' => '/ignore_user_abort\s*\(|set_time_limit\s*\(\s*0\s*\)|TARPIT_CHUNK_DELAY_MICROSEC|Content-Length:\s*10000000000/i',
+    'Nemesis offensive response' => '/vgt_poison_jar_|gzdeflate\s*\(|TERMINAL SABOTAGE/i',
+    'Prometheus blocking sleep' => '/@?sleep\s*\(\s*5\s*\)/i',
 ];
 
 foreach ($sourceFiles as $path => $content) {
@@ -66,6 +69,14 @@ foreach ($sourceFiles as $path => $content) {
             && !str_ends_with($normalizedPath, '/includes/dashboard/views/morpheus/script.js')) {
             continue;
         }
+        if (str_starts_with($label, 'Nemesis ')
+            && !str_ends_with($normalizedPath, '/includes/modules/nemesis/class-vis-nemesis.php')) {
+            continue;
+        }
+        if ($label === 'Prometheus blocking sleep'
+            && !str_ends_with($normalizedPath, '/includes/modules/prometheus/class-vis-prometheus.php')) {
+            continue;
+        }
         if (preg_match($pattern, $content, $match, PREG_OFFSET_CAPTURE) === 1) {
             $line = substr_count(substr($content, 0, $match[0][1]), "\n") + 1;
             $failures[] = sprintf('%s: %s:%d', $label, $path, $line);
@@ -78,6 +89,13 @@ $required = [
         'pinned HTTPS transport' => 'function pinned_https_get(',
         'atomic database limiter' => 'vis_rate_limits',
         'typed security exception' => 'class SecurityException',
+        'canonical client identity' => 'public static function client_ip()',
+        'CIDR enforcement primitive' => 'public static function ip_in_cidr(',
+    ],
+    'includes/core/class-vis-trinity-grid.php' => [
+        'AEGIS interlock route' => 'public static function onAegisStrike(',
+        'Prometheus mitigation route' => 'public static function onPrometheusMitigation(',
+        'bounded WAF penalty' => "max(0.0, min(100.0",
     ],
     'includes/modules/aegis/class-vis-aegis.php' => [
         'public deterministic assessment' => 'public function assess_payload(',

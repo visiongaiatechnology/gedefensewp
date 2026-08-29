@@ -3,7 +3,7 @@
  * Plugin Name: GeDefense WP - Open Core
  * Plugin URI: https://github.com/visiongaiatechnology/gedefensewp
  * Description: OMEGA-CLASS Security Suite. High-Performance Integrity Monitoring, Active Defense & RASP Matrix.
- * Version: 7.5.2
+ * Version: 7.6.0
  * Author: VisionGaiaTechnology
  * Author URI: https://visiongaiatechnology.de
  * License: AGPL-3.0-or-later
@@ -25,8 +25,8 @@ if (defined('VIS_VERSION')) {
     return;
 }
 
-define('VIS_VERSION', '7.5.2 OPEN CORE');
-define('VIS_MANIFEST_DIGEST', '20702ddd216c1dcd0dc40f1847b558b93187b4c8d61c14955dfc9262c3fed94e');
+define('VIS_VERSION', '7.6.0 OPEN CORE');
+define('VIS_MANIFEST_DIGEST', '6cc7b11f8a2f1838c97f1f73ab9fe180db36fcd76a4de77404e2dae898eff7f4');
 define('VIS_PRODUCT_NAME', 'GeDefense WP - Open Core');
 define('VIS_PATH', plugin_dir_path(__FILE__));
 define('VIS_URL', plugin_dir_url(__FILE__));
