@@ -15,13 +15,13 @@
 
 declare(strict_types=1);
 
-namespace VisionGaia\Integrity\Modules\Nemesis;
+namespace VisionGaia\GeDefense\Modules\Nemesis;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit('VGT_ACCESS_DENIED');
 }
 
-final class VIS_Nemesis {
+final class Nemesis {
 
     private static ?self $instance = null;
     private array $config;
@@ -372,4 +372,4 @@ final class VIS_Nemesis {
     }
 }
 
-VIS_Nemesis::get_instance();
+Nemesis::get_instance();

@@ -87,6 +87,12 @@ foreach ($sourceFiles as $path => $content) {
 }
 
 $required = [
+    'includes/core/class-namespace-compatibility.php' => [
+        'canonical namespace root' => 'namespace VisionGaia\\GeDefense\\Core;',
+        'central compatibility map' => 'private const CLASSES = [',
+        'canonical module API' => 'VisionGaia\\\\GeDefense\\\\Modules\\\\Aegis\\\\Aegis',
+        'bounded legacy aliasing' => 'class_alias($canonical, $alias);',
+    ],
     'includes/core/class-vis-security.php' => [
         'pinned HTTPS transport' => 'function pinned_https_get(',
         'atomic database limiter' => 'vis_rate_limits',
@@ -139,6 +145,17 @@ $required = [
         'shared client IP resolution' => "VIS_Security', 'client_ip'",
         'AEGIS whitelist coverage' => "aegis_whitelist_ips",
         'Prometheus whitelist coverage' => "prometheus_whitelist_ips",
+    ],
+    'includes/modules/throneguard/class-vis-throne-guard.php' => [
+        'master capability boundary' => 'mcp_master_access',
+        'superkey hashing' => 'password_hash(',
+        'constant-time session verification' => 'hash_equals(',
+        'REST master lock' => 'enforce_rest_lock',
+    ],
+    'includes/modules/loginpager/class-vis-loginpager.php' => [
+        'login-only style injection' => 'login_enqueue_scripts',
+        'local login styling' => "wp_register_style('vis-loginpager', false",
+        'URL protocol sanitizer' => 'esc_url_raw(trim($value)',
     ],
     'assets/js/vis-scanner-client.js' => [
         'accepted baseline terminal state' => "STATE.mode === 'reindex' && (status === 'clean' || status === 'init')",

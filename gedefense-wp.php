@@ -3,7 +3,7 @@
  * Plugin Name: GeDefense WP - Open Core
  * Plugin URI: https://github.com/visiongaiatechnology/gedefensewp
  * Description: OMEGA-CLASS Security Suite. High-Performance Integrity Monitoring, Active Defense & RASP Matrix.
- * Version: 7.6.1
+ * Version: 8.0.0
  * Author: VisionGaiaTechnology
  * Author URI: https://visiongaiatechnology.de
  * License: AGPL-3.0-or-later
@@ -25,8 +25,8 @@ if (defined('VIS_VERSION')) {
     return;
 }
 
-define('VIS_VERSION', '7.6.1 OPEN CORE');
-define('VIS_MANIFEST_DIGEST', '91692f3f39d03d12a91722b3387600dbe0744a62edf3e20a9909f5fb0c95a1bc');
+define('VIS_VERSION', '8.0.0 OPEN CORE');
+define('VIS_MANIFEST_DIGEST', 'b967b486b05f78f5190ec4799aa23a35d73d9ce8df2d99b61f19279482882dfc');
 define('VIS_PRODUCT_NAME', 'GeDefense WP - Open Core');
 define('VIS_PATH', plugin_dir_path(__FILE__));
 define('VIS_URL', plugin_dir_url(__FILE__));
@@ -51,14 +51,14 @@ if (!defined('VIS_MANIFEST_FILE')) {
 require_once VIS_PATH . 'class-vis-bootstrapper.php';
 require_once VIS_PATH . 'includes/core/class-vis-security.php';
 VIS_Bootstrapper::register_autoloader();
-if (class_exists('VIS_Event_Bus')) {
-    VIS_Event_Bus::init();
+if (class_exists('\VisionGaia\GeDefense\Core\EventBus')) {
+    \VisionGaia\GeDefense\Core\EventBus::init();
 }
 
 // --- 3. ZERO-OVERHEAD HOOK MATRIX (STANDARD PLUGIN CONTEXT) ---
 register_activation_hook(__FILE__, function(): void {
     require_once VIS_PATH . 'class-vis-schema.php';
-    VIS_Schema::enforce();
+    \VisionGaia\GeDefense\Core\Schema::enforce();
 });
 
 register_deactivation_hook(__FILE__, function(): void {
@@ -70,10 +70,10 @@ if (is_admin()) {
     add_action('admin_init', function(): void {
         if (get_option('vis_db_version') !== VIS_VERSION) {
             require_once VIS_PATH . 'class-vis-schema.php';
-            VIS_Schema::enforce();
+            \VisionGaia\GeDefense\Core\Schema::enforce();
         }
         require_once VIS_PATH . 'class-vis-vault.php';
-        VIS_Vault::auto_migrate_config();
+        \VisionGaia\GeDefense\Core\Vault::auto_migrate_config();
     });
 }
 
@@ -82,14 +82,14 @@ if (did_action('plugins_loaded')) {
     if (!is_array($vis_global_config)) {
         $vis_global_config = [];
     }
-    VIS_Bootstrapper::engage_phase_2($vis_global_config);
+    \VisionGaia\GeDefense\Core\Bootstrapper::engage_phase_2($vis_global_config);
 } else {
     add_action('plugins_loaded', function(): void {
         $vis_global_config = get_option('vis_config', []);
         if (!is_array($vis_global_config)) {
             $vis_global_config = [];
         }
-        VIS_Bootstrapper::engage_phase_2($vis_global_config);
+        \VisionGaia\GeDefense\Core\Bootstrapper::engage_phase_2($vis_global_config);
     }, 10);
 }
 
@@ -104,4 +104,4 @@ $vis_global_config = get_option('vis_config', []);
 if (!is_array($vis_global_config)) {
     $vis_global_config = [];
 }
-VIS_Bootstrapper::engage_phase_1($vis_global_config);
+\VisionGaia\GeDefense\Core\Bootstrapper::engage_phase_1($vis_global_config);

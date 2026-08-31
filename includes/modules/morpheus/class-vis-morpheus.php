@@ -8,7 +8,7 @@
 
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Morpheus;
+namespace VisionGaia\GeDefense\Modules\Morpheus;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit( 'VGT Protocol: Direct access denied.' );
@@ -19,7 +19,7 @@ require_once __DIR__ . '/src/class-morpheus-path-jail.php';
 require_once __DIR__ . '/src/class-morpheus-ai.php';
 require_once __DIR__ . '/src/class-morpheus-dashboard.php';
 
-final class Vis_Morpheus {
+final class Morpheus {
 
     private static ?self $instance = null;
     

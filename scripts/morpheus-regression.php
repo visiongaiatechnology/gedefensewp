@@ -22,8 +22,8 @@ function wp_normalize_path(string $path): string { return str_replace('\\', '/',
 require $workspace . '/includes/modules/morpheus/src/class-morpheus-path-jail.php';
 require $workspace . '/includes/modules/morpheus/class-vis-morpheus.php';
 
-use VGT\Sentinel\Modules\Morpheus\Morpheus_Path_Jail;
-use VGT\Sentinel\Modules\Morpheus\Vis_Morpheus;
+use VisionGaia\GeDefense\Modules\Morpheus\Morpheus_Path_Jail;
+use VisionGaia\GeDefense\Modules\Morpheus\Morpheus;
 
 $failures = [];
 
@@ -58,11 +58,11 @@ $invalidMatrices = [
     ['network' => [], 'db_write' => [], 'options' => ['wp_options']],
     ['network' => [], 'db_write' => [], 'options' => [], 'extra' => []],
 ];
-if (!Vis_Morpheus::validate_matrix($validMatrix)) {
+if (!Morpheus::validate_matrix($validMatrix)) {
     $failures[] = 'Valid permission matrix rejected.';
 }
 foreach ($invalidMatrices as $matrix) {
-    if (Vis_Morpheus::validate_matrix($matrix)) {
+    if (Morpheus::validate_matrix($matrix)) {
         $failures[] = 'Unsafe permission matrix accepted.';
     }
 }

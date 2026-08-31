@@ -10,19 +10,19 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit( 'VGT Protocol: Direct access denied.' );
 }
 
-if ( ! class_exists( '\VGT\Sentinel\Modules\Morpheus\Vis_Morpheus' ) ) {
+if ( ! class_exists( '\VisionGaia\GeDefense\Modules\Morpheus\Morpheus' ) ) {
     $core_file = wp_normalize_path( VIS_PATH . 'includes/modules/morpheus/class-vis-morpheus.php' );
     if ( is_readable( $core_file ) ) {
         require_once $core_file;
     }
     
-    if ( ! class_exists( '\VGT\Sentinel\Modules\Morpheus\Vis_Morpheus' ) ) {
+    if ( ! class_exists( '\VisionGaia\GeDefense\Modules\Morpheus\Morpheus' ) ) {
         echo '<div class="vgt-alert vgt-alert-danger" style="background: rgba(255, 0, 60, 0.1); border: 1px solid #ff003c; color: #ff003c; padding: 16px; border-radius: 8px; font-family: monospace; font-weight: bold; margin-bottom: 20px;">' . esc_html__( 'VGT KERNEL PANIC: Morpheus Engine Boot Failure. System halted.', 'vgt-sentinel' ) . '</div>';
         return;
     }
 }
 
-$morpheus = \VGT\Sentinel\Modules\Morpheus\Vis_Morpheus::get_instance();
+$morpheus = \VisionGaia\GeDefense\Modules\Morpheus\Morpheus::get_instance();
 
 // Sicherheits-Tokens & Config
 $vis_config = get_option('vis_config', []);

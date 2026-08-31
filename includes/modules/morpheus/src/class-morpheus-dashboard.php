@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Morpheus;
+namespace VisionGaia\GeDefense\Modules\Morpheus;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 final class Morpheus_Dashboard {
 
-    private Vis_Morpheus $core;
+    private Morpheus $core;
 
-    public function __construct( Vis_Morpheus $core ) {
+    public function __construct( Morpheus $core ) {
         $this->core = $core;
         
         add_action( 'wp_ajax_vgt_morpheus_trigger_ai', [ $this, 'ajax_trigger_ai' ] );
@@ -61,7 +61,7 @@ final class Morpheus_Dashboard {
             }
 
             $this->core->enforcement_mode = $is_strict;
-            Vis_Morpheus::ai_debug('System enforcement mode changed.');
+            Morpheus::ai_debug('System enforcement mode changed.');
             wp_send_json_success(['strict' => $is_strict]);
         });
     }
@@ -72,7 +72,7 @@ final class Morpheus_Dashboard {
             $slug = Morpheus_Path_Jail::validate_slug($_POST['plugin_slug'] ?? null);
             Morpheus_Path_Jail::existing_file('audit', $slug, '.log');
 
-            Vis_Morpheus::ai_debug("==== MANUAL AI TRIGGER INITIATED FOR [$slug] ====");
+            Morpheus::ai_debug("==== MANUAL AI TRIGGER INITIATED FOR [$slug] ====");
             $result = $this->core->ai->trigger_ai($slug, true);
             if ($result['success']) {
                 wp_send_json_success(['message' => 'AI processing finished.']);
@@ -103,7 +103,7 @@ final class Morpheus_Dashboard {
                 }
             }
 
-            Vis_Morpheus::ai_debug("Vorschlag für [$slug] durch Admin abgelehnt. Audit beginnt von vorn.");
+            Morpheus::ai_debug("Vorschlag für [$slug] durch Admin abgelehnt. Audit beginnt von vorn.");
             wp_send_json_success();
         });
     }
@@ -132,7 +132,7 @@ final class Morpheus_Dashboard {
                 throw new \StorageException('Proposed matrix cleanup failed.');
             }
 
-            Vis_Morpheus::ai_debug("Erfolg! Matrix für [$slug] kompiliert.");
+            Morpheus::ai_debug("Erfolg! Matrix für [$slug] kompiliert.");
             wp_send_json_success();
         });
     }
@@ -142,7 +142,7 @@ final class Morpheus_Dashboard {
             $this->verify_isolation_token();
             $slug = Morpheus_Path_Jail::validate_slug($_POST['plugin_slug'] ?? null);
             $this->core->delete_plugin_matrix($slug);
-            Vis_Morpheus::ai_debug("Admin-Aktion: Erlaubnis für [$slug] aus der Matrix entfernt.");
+            Morpheus::ai_debug("Admin-Aktion: Erlaubnis für [$slug] aus der Matrix entfernt.");
             wp_send_json_success();
         });
     }

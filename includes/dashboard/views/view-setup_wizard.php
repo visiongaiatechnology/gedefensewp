@@ -201,6 +201,7 @@ $site_url = site_url();
                     <small style="color:var(--vgt-text-muted); font-size:11px; display:block; margin-top:4px;"><?php esc_html_e('IPs, deren Dateioperationen nicht heuristisch überwacht werden.', 'vgt-sentinel'); ?></small>
                 </div>
             </div>
+
         </div>
 
         <!-- ====================================================================
@@ -456,6 +457,17 @@ $site_url = site_url();
                         <input type="text" class="vgt-input" name="vis_config[hades_admin_secret]" id="hades-secret-input" value="<?php echo esc_attr($opt['hades_admin_secret'] ?? 'omega'); ?>" placeholder="omega">
                     </div>
                 </div>
+            </div>
+            <div class="vgt-wizard-card">
+                <div class="vgt-card-header"><div style="display:flex;align-items:center;gap:10px"><span class="vgt-badge-tag vgt-badge-red">THRONEGUARD</span><h4 style="margin:0;font-size:15px;color:#fff">Master Privilege Separation</h4></div><label class="vgt-switch"><input type="checkbox" name="vis_config[throneguard_enabled]" value="1" <?php checked(!empty($opt['throneguard_enabled'])); ?>><span class="vgt-slider"></span></label></div>
+                <p style="font-size:12px;color:var(--vgt-text-dim);margin-bottom:0">Der installierende Administrator wird als GeDefense-Master provisioniert. Die Entfernung toxischer Administratorrechte und der Superkey-Lock werden anschließend in der eigenen ThroneGuard-Ansicht aktiviert.</p>
+            </div>
+
+            <div class="vgt-wizard-card">
+                <div class="vgt-card-header"><div style="display:flex;align-items:center;gap:10px"><span class="vgt-badge-tag vgt-badge-blue">LOGINPAGER</span><h4 style="margin:0;font-size:15px;color:#fff">Sovereign Login Surface</h4></div><label class="vgt-switch"><input type="checkbox" name="vis_config[loginpager_enabled]" value="1" <?php checked(!empty($opt['loginpager_enabled'])); ?>><span class="vgt-slider"></span></label></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px"><div class="vgt-form-group"><label>Hintergrundfarbe</label><input type="color" name="vis_config[loginpager_bg_color]" value="<?php echo esc_attr(sanitize_hex_color((string)($opt['loginpager_bg_color'] ?? '')) ?: '#070a13'); ?>"></div><div class="vgt-form-group"><label>Akzentfarbe</label><input type="color" name="vis_config[loginpager_accent]" value="<?php echo esc_attr(sanitize_hex_color((string)($opt['loginpager_accent'] ?? '')) ?: '#00f0ff'); ?>"></div></div>
+                <div class="vgt-form-group"><label>Hintergrundbild-URL (optional)</label><input class="vgt-input" type="url" name="vis_config[loginpager_bg_image]" value="<?php echo esc_url((string)($opt['loginpager_bg_image'] ?? '')); ?>"></div>
+                <div class="vgt-form-group"><label>Logo-URL (optional)</label><input class="vgt-input" type="url" name="vis_config[loginpager_logo]" value="<?php echo esc_url((string)($opt['loginpager_logo'] ?? '')); ?>"></div>
             </div>
         </div>
 

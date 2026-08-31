@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Gorgon;
+namespace VisionGaia\GeDefense\Modules\Gorgon;
 
 if (!defined('ABSPATH')) exit('VGT Protocol: Direct access denied.');
 

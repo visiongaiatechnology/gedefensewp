@@ -20,6 +20,8 @@ final class VIS_Security_Health {
             self::pattern_present('vault_versioned_payload', 'Vault payload versioning active', '/PAYLOAD_PREFIX\s*=\s*[\'"]vgt1:/i', 7, VIS_PATH . 'class-vis-vault.php'),
             self::pattern_present('dattrack_nonce', 'Dattrack nonce verification active', '/wp_verify_nonce\(\$nonce,\s*[\'"]vgt_dattrack_pulse[\'"]\)/i', 7, VIS_PATH . 'includes/VLP/includes/modules/dattrack/class-collector.php'),
             self::pattern_present('airlock_uploaded_file', 'Airlock verifies uploaded tmp origin', '/is_uploaded_file\s*\(/i', 7, VIS_PATH . 'includes/modules/airlock/src/class-airlock-scanner.php'),
+                        self::pattern_present('throneguard_core', 'ThroneGuard privilege boundary active', '/final\s+class\s+VIS_Throne_Guard/i', 9, VIS_PATH . 'includes/modules/throneguard/class-vis-throne-guard.php'),
+            self::pattern_present('loginpager_core', 'LoginPager gateway active', '/final\s+class\s+VIS_LoginPager/i', 6, VIS_PATH . 'includes/modules/loginpager/class-vis-loginpager.php'),
             self::legacy_gorgon_inactive(),
         ];
 

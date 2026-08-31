@@ -51,12 +51,26 @@ class VIS_Dashboard_View {
             'vault'      => ['icon' => '<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>', 'label' => __('SCHLÜSSEL-TRESOR', 'vgt-sentinel')],
 
             'section_system' => ['label' => __('VI. SYSTEM & ASSISTENT', 'vgt-sentinel'), 'type' => 'separator'],
+            'throneguard'    => ['icon' => '<path d="M3 7l4 4 5-7 5 7 4-4-2 12H5L3 7z"/><line x1="5" y1="22" x2="19" y2="22"/>', 'label' => __('THRONEGUARD', 'vgt-sentinel')],
+            'loginpager'     => ['icon' => '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 10h8M8 14h5"/>', 'label' => __('LOGINPAGER', 'vgt-sentinel')],
             'modules'        => ['icon' => '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>', 'label' => __('ADD-ON VERWALTUNG', 'vgt-sentinel')],
             'setup_wizard'   => ['icon' => '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>', 'label' => __('EINRICHTUNGSASSISTENT', 'vgt-sentinel')],
         ];
 
         // Hide onboarding wizard tab if already completed
-        $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'overview';
+        $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : '';
+        if ($active_tab === '' && isset($_GET['page'])) {
+            $page = sanitize_key($_GET['page']);
+            if ($page === 'vgt-throneguard') {
+                $active_tab = 'throneguard';
+            } elseif ($page === 'vgt-loginpager') {
+                $active_tab = 'loginpager';
+            } else {
+                $active_tab = 'overview';
+            }
+        } elseif ($active_tab === '') {
+            $active_tab = 'overview';
+        }
         if (get_option('vgt_setup_wizard_completed') && $active_tab !== 'setup_wizard') {
             unset($tabs['setup_wizard']);
         }
@@ -66,7 +80,19 @@ class VIS_Dashboard_View {
 
     public function render() {
         $tabs = $this->get_tabs();
-        $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'overview';
+        $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : '';
+        if ($active_tab === '' && isset($_GET['page'])) {
+            $page = sanitize_key($_GET['page']);
+            if ($page === 'vgt-throneguard') {
+                $active_tab = 'throneguard';
+            } elseif ($page === 'vgt-loginpager') {
+                $active_tab = 'loginpager';
+            } else {
+                $active_tab = 'overview';
+            }
+        } elseif ($active_tab === '') {
+            $active_tab = 'overview';
+        }
 
         // [ DIAMANT VGT FIX: ROUTING GUARD ]
         // Verhindert LFI auf ungültige Tabs UND wehrt ab, falls jemand manuell einen "separator" Tab ansteuert.
@@ -75,7 +101,7 @@ class VIS_Dashboard_View {
         }
         
         // [ DIAMANT VGT FIX: MISSING CONFIG TABS ]
-        $config_tabs = ['trinity', 'aegis', 'titan', 'hades', 'zeus', 'prometheus', 'vault', 'nemesis', 'styx', 'morpheus', 'gorgon', 'vlp', 'ghost_trap', 'filesystem', 'airlock', 'cerberus', 'modules', 'setup_wizard'];
+        $config_tabs = ['trinity', 'aegis', 'titan', 'hades', 'zeus', 'prometheus', 'vault', 'nemesis', 'styx', 'morpheus', 'gorgon', 'vlp', 'ghost_trap', 'filesystem', 'airlock', 'cerberus', 'loginpager', 'modules', 'setup_wizard'];
         $is_config_tab = in_array($active_tab, $config_tabs); 
         
         // DATEN LADEN
@@ -147,7 +173,7 @@ class VIS_Dashboard_View {
                     ' . $lang_switcher;
         
         // Alle Module, die Configs speichern, bekommen den Button. Wir lesen das direkt aus der oben berechneten Variable.
-        $config_tabs = ['aegis', 'titan', 'hades', 'zeus', 'prometheus', 'vault', 'nemesis', 'styx', 'morpheus', 'gorgon', 'vlp', 'ghost_trap', 'filesystem', 'airlock', 'cerberus', 'modules'];
+        $config_tabs = ['aegis', 'titan', 'hades', 'zeus', 'prometheus', 'vault', 'nemesis', 'styx', 'morpheus', 'gorgon', 'vlp', 'ghost_trap', 'filesystem', 'airlock', 'cerberus', 'loginpager', 'modules'];
         if (in_array($tab, $config_tabs)) {
             // Native Save Icon
             $save_icon = '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle; margin-right:8px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';

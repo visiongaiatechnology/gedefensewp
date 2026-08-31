@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Morpheus;
+namespace VisionGaia\GeDefense\Modules\Morpheus;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 final class Morpheus_UI {
 
-    private Vis_Morpheus $core;
+    private Morpheus $core;
     private array $audit_trace_cache = [];
 
-    public function __construct( Vis_Morpheus $core ) {
+    public function __construct( Morpheus $core ) {
         $this->core = $core;
     }
 

@@ -29,3 +29,6 @@ composer.lock
 # Test artifacts
 tests/_output/
 .phpunit.result.cache
+*.zip
+test_scan_uploads/
+

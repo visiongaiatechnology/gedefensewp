@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Morpheus;
+namespace VisionGaia\GeDefense\Modules\Morpheus;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 final class Morpheus_Shield_State {
 
-    private Vis_Morpheus $core;
+    private Morpheus $core;
     private Morpheus_Tracer $tracer;
     private Morpheus_UI $ui;
     private array $critical_options_map = [];
 
-    public function __construct( Vis_Morpheus $core, Morpheus_Tracer $tracer, Morpheus_UI $ui ) {
+    public function __construct( Morpheus $core, Morpheus_Tracer $tracer, Morpheus_UI $ui ) {
         $this->core = $core;
         $this->tracer = $tracer;
         $this->ui = $ui;
@@ -34,19 +34,19 @@ final class Morpheus_Shield_State {
     }
 
     public function intercept_option_update( mixed $value, string $option, mixed $old_value ): mixed {
-        if ( Vis_Morpheus::$is_internal_action ) return $value; 
+        if ( Morpheus::$is_internal_action ) return $value;
         $this->enforce_option_policy( $option, 'UPDATE' );
         return $value;
     }
 
     public function intercept_option_add( mixed $value, string $option, mixed $old_value = '' ): mixed {
-         if ( Vis_Morpheus::$is_internal_action ) return $value; 
+         if ( Morpheus::$is_internal_action ) return $value;
          $this->enforce_option_policy( $option, 'ADD' );
          return $value;
     }
 
     public function intercept_option_delete( mixed $delete, string $option ): mixed {
-        if ( Vis_Morpheus::$is_internal_action ) return $delete; 
+        if ( Morpheus::$is_internal_action ) return $delete;
         $this->enforce_option_policy( $option, 'DELETE' );
         return $delete;
     }

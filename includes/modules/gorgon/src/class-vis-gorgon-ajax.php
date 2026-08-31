@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Gorgon;
+namespace VisionGaia\GeDefense\Modules\Gorgon;
 
 if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
  * VGT OMEGA PROTOCOL - GORGON NEURAL AJAX CONTROLLER
  * STATUS: DIAMANT VGT SUPREME
  */
-final class Vis_Gorgon_Ajax {
+final class Gorgon_Ajax {
 
     public static function mount_endpoints(): void {
         $actions = ['toggle', 'update_config', 'ping_nexus', 'sync', 'add_node', 'remove_node'];
@@ -168,8 +168,8 @@ final class Vis_Gorgon_Ajax {
 
     public static function handle_sync(): void {
         self::verify_privileges();
-        if (class_exists('\\VGT\\Sentinel\\Modules\\Gorgon\\Vis_Gorgon')) {
-            $gorgon = \VGT\Sentinel\Modules\Gorgon\Vis_Gorgon::get_instance();
+        if (class_exists('\\VisionGaia\\GeDefense\\Modules\\Gorgon\\Gorgon')) {
+            $gorgon = \VisionGaia\GeDefense\Modules\Gorgon\Gorgon::get_instance();
             $gorgon->execute_sync_cycle(true);
             wp_send_json_success(['message' => 'Manual Sync Triggered']);
         }

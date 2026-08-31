@@ -2,7 +2,7 @@
 // STATUS: PLATIN
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Morpheus;
+namespace VisionGaia\GeDefense\Modules\Morpheus;
 
 if (!defined('ABSPATH')) {
     exit('VGT_ACCESS_DENIED');

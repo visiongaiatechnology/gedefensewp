@@ -4,12 +4,12 @@
 
 ### Sovereign WordPress Security Fabric
 
-[![Version](https://img.shields.io/badge/version-7.6.1_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.0.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![Dependencies](https://img.shields.io/badge/external_PHP_dependencies-0-2EA44F?style=for-the-badge)](#zero-dependency-philosophy)
-[![Modules](https://img.shields.io/badge/core_modules-17-111111?style=for-the-badge)](#core-module-matrix)
+[![Modules](https://img.shields.io/badge/core_modules-19-111111?style=for-the-badge)](#core-module-matrix)
 [![Architecture](https://img.shields.io/badge/architecture-multi--tier_security_kernel-111111?style=for-the-badge)](#architecture)
 [![Strict Types](https://img.shields.io/badge/PHP-strict_types-5C2D91?style=for-the-badge)](#zero-dependency-philosophy)
 [![Local First](https://img.shields.io/badge/design-local--first-2EA44F?style=for-the-badge)](#security-design-principles)
@@ -87,6 +87,8 @@ The core is designed to remain **fully functional as an independent open-source 
 # Architecture
 
 GeDefense WP is organized as a layered security fabric that operates before, during and after normal WordPress execution.
+
+All GeDefense-owned runtime APIs use the canonical `VisionGaia\GeDefense` namespace. Core, dashboard, scanner and module symbols are separated below that root. Pre-8.0 `VisionGaia\Integrity` and `VGT\Sentinel` names are isolated inside the central compatibility boundary. Existing global `VIS_` implementation symbols remain ABI-compatible for WordPress hooks and third-party add-ons, but new integrations must use the canonical API.
 
 ```mermaid
 flowchart TD
@@ -201,13 +203,15 @@ Incoming requests pass through a deterministic multi-stage pipeline:
 | 15 | **KEY VAULT** | Encrypted Secret Storage | Cryptography |
 | 16 | **ORACLE** | Security Configuration Audit | Audit |
 | 17 | **MODULE REGISTRY** | Open-Core Expansion Hub | Extensibility |
+| 18 | **THRONEGUARD** | Master/Admin Privilege Separation & Superkey Session | Identity / Privilege |
+| 19 | **LOGINPAGER** | Local Login Surface Hardening & Branding | Identity / UI |
 
 ---
 
 # 1. AEGIS — Deep Packet Inspection WAF
 
 **Classification:** Layer 3/7 Ingress Firewall & Protocol Analyzer  
-**Core class:** `VIS_Aegis`  
+**Core class:** `VisionGaia\GeDefense\Modules\Aegis\Aegis`
 **Path:** `includes/modules/aegis/class-vis-aegis.php`
 
 AEGIS is the primary application-layer request inspection engine.
@@ -307,7 +311,7 @@ The AI path is an **optional analytical supplement**, not a replacement for dete
 # 2. PROMETHEUS — Behavioral Threat Horizon
 
 **Classification:** Layer 7 Behavioral Analysis & Threat Horizon Engine  
-**Namespace:** `VisionGaia\Integrity\Modules\Prometheus\VIS_Prometheus`
+**Namespace:** `VisionGaia\GeDefense\Modules\Prometheus\Prometheus`
 
 Prometheus evaluates behavior across individual clients and network ranges rather than treating every request as an isolated event.
 
@@ -401,7 +405,7 @@ This avoids making every suspicious request an immediate permanent ban while sti
 # 4. Self-Integrity Engine
 
 **Classification:** Layer 1 Cryptographic Invariant Guard  
-**Class:** `VIS_Module_Integrity`  
+**Class:** `VisionGaia\GeDefense\Core\ModuleIntegrity`
 **Path:** `includes/core/class-vis-module-integrity.php`
 
 The self-integrity layer verifies critical GeDefense WP components against a cryptographic trust anchor.
@@ -441,7 +445,7 @@ The mechanism verifies **code integrity**, not the semantic correctness of exter
 # 5. MORPHEUS — Runtime Application Self-Protection
 
 **Classification:** Layer 7 In-Memory Execution Protection  
-**Namespace:** `VGT\Sentinel\Modules\Morpheus\Vis_Morpheus`
+**Namespace:** `VisionGaia\GeDefense\Modules\Morpheus\Morpheus`
 
 Morpheus protects critical WordPress state during runtime.
 
@@ -501,7 +505,7 @@ active_plugins
 # 6. NEMESIS — Deception Grid
 
 **Classification:** Layer 7 Counterintelligence & Deception Matrix  
-**Namespace:** `VisionGaia\Integrity\Modules\Nemesis\VIS_Nemesis`
+**Namespace:** `VisionGaia\GeDefense\Modules\Nemesis\Nemesis`
 
 Nemesis is the deception layer of GeDefense WP.
 
@@ -536,7 +540,7 @@ Nemesis is restricted to defensive telemetry, canaries, bounded decoy responses 
 # 7. TITAN — WordPress Hardening
 
 **Classification:** Layer 4 System Hardening & Anti-Enumeration Shield  
-**Class:** `VIS_Titan`  
+**Class:** `VisionGaia\GeDefense\Modules\Titan\Titan`
 **Path:** `includes/modules/titan/class-vis-titan.php`
 
 Titan reduces unnecessary WordPress exposure.
@@ -565,7 +569,7 @@ Example protected routes:
 # 8. HADES — Dynamic Admin Stealth
 
 **Classification:** Layer 7 Identity & Route Cloaking  
-**Class:** `VIS_Hades`  
+**Class:** `VisionGaia\GeDefense\Modules\Hades\Hades`
 **Path:** `includes/modules/hades/class-vis-hades.php`
 
 Hades reduces direct exposure of administrative login surfaces.
@@ -596,7 +600,7 @@ Standard wp-login.php / wp-admin
 # 9. CERBERUS — Perimeter Firewall
 
 **Classification:** Layer 0/1 Instant Drop Barrier  
-**Class:** `VIS_Cerberus`  
+**Class:** `VisionGaia\GeDefense\Modules\Cerberus\Cerberus`
 **Path:** `includes/modules/cerberus/class-vis-cerberus.php`
 
 Cerberus is designed to reject already-known hostile clients as early as possible.
@@ -630,7 +634,7 @@ Immediate Reject
 # 10. ZEUS — Pre-Boot Request Filter
 
 **Classification:** Layer 0 Ultra-Lightweight Request Filter  
-**Class:** `VIS_Zeus`  
+**Class:** `VisionGaia\GeDefense\Modules\Zeus\Zeus`
 **Path:** `includes/modules/zeus/class-vis-zeus.php`
 
 Zeus performs low-cost filtering before deeper application inspection.
@@ -649,7 +653,7 @@ Zeus performs low-cost filtering before deeper application inspection.
 # 11. AIRLOCK — Ingress File Inspection
 
 **Classification:** Layer 7 Ingress Data Sandbox  
-**Class:** `VIS_Airlock`  
+**Class:** `VisionGaia\GeDefense\Modules\Airlock\Airlock`
 **Path:** `includes/modules/airlock/class-vis-airlock.php`
 
 Airlock evaluates uploaded files using content-aware checks rather than trusting file extensions.
@@ -683,7 +687,7 @@ and unsafe XML entity expansion patterns.
 # 12. GHOST TRAP — Honeypot Layer
 
 **Classification:** Layer 7 Active Lure Engine  
-**Class:** `VIS_Ghost_Trap`  
+**Class:** `VisionGaia\GeDefense\Modules\Trap\GhostTrap`
 **Path:** `includes/modules/trap/class-vis-ghost-trap.php`
 
 Ghost Trap generates decoy resources that should never be requested by legitimate users.
@@ -704,7 +708,7 @@ Access to a decoy route can be treated as high-confidence automated reconnaissan
 # 13. STYX — Outbound Egress Shield
 
 **Classification:** Layer 7 Egress Control & Supply-Chain Guard  
-**Class:** `VIS_Styx`  
+**Class:** `VisionGaia\GeDefense\Modules\Styx\Styx`
 **Path:** `includes/modules/styx/class-vis-styx.php`
 
 Styx monitors outbound WordPress HTTP traffic.
@@ -733,7 +737,7 @@ Styx is especially relevant where WordPress must operate under a **local-first o
 # 14. CHRONOS — Autonomous Scanner
 
 **Classification:** Asynchronous Background Integrity Daemon  
-**Class:** `VIS_Chronos`  
+**Class:** `VisionGaia\GeDefense\Modules\Chronos\Chronos`
 **Path:** `includes/modules/chronos/class-vis-chronos.php`
 
 Chronos performs scheduled integrity and filesystem monitoring.
@@ -775,7 +779,7 @@ Alert templates can include variables such as:
 # 15. KEY VAULT — Cryptographic Secret Storage
 
 **Classification:** Cryptographic Key Management  
-**Class:** `VIS_Key_Vault`
+**Class:** `VisionGaia\GeDefense\Modules\Vault\KeyVault`
 
 The Key Vault protects sensitive configuration values such as API credentials and module tokens.
 
@@ -805,7 +809,7 @@ Sensitive values should never be committed to the repository.
 # 16. ORACLE — Security Audit Engine
 
 **Classification:** Static Security & Configuration Auditing  
-**Class:** `VIS_Oracle`  
+**Class:** `VisionGaia\GeDefense\Modules\Oracle\Oracle`
 **Path:** `includes/modules/oracle/class-vis-oracle.php`
 
 Oracle evaluates WordPress and PHP security posture across twelve primary vectors.
@@ -830,7 +834,7 @@ Oracle evaluates WordPress and PHP security posture across twelve primary vector
 # 17. MODULE REGISTRY — Open Core Expansion
 
 **Classification:** Extensible Module Architecture  
-**Class:** `VIS_Module_Registry`  
+**Class:** `VisionGaia\GeDefense\Core\ModuleRegistry`
 **Path:** `includes/core/class-vis-module-registry.php`
 
 The module registry provides the expansion layer for GeDefense WP Open Core.
@@ -857,6 +861,46 @@ A high-performance visual layout and component system designed to avoid heavywei
 Generative Engine Optimization and semantic entity tooling for AI-oriented search and discovery systems.
 
 ---
+
+---
+
+# 18. THRONEGUARD — Sovereign Privilege Sentinel
+
+**Classification:** Layer 7 Privilege Boundary & Identity Hardening  
+**Core class:** `VisionGaia\GeDefense\Modules\ThroneGuard\ThroneGuard` (`VIS_Throne_Guard`)  
+**Path:** `includes/modules/throneguard/class-vis-throne-guard.php`
+
+ThroneGuard enforces a strict cryptographic privilege boundary between sovereign **GeDefense Master** accounts and standard WordPress **Administrator** accounts.
+
+### Core mechanisms
+
+- **Sovereign Master Role (`master`)**: Introduces a dedicated, immutable role tier above standard WordPress administrators.
+- **Granular Admin Capability Matrix**: Empowers Masters to selectively strip toxic capabilities from standard administrators across 4 critical attack vectors:
+  - *Plugins:* `activate_plugins`, `install_plugins`, `update_plugins`, `delete_plugins`, `edit_plugins`
+  - *Themes:* `switch_themes`, `install_themes`, `update_themes`, `delete_themes`, `edit_themes`
+  - *Users & Privilege Escalation:* `create_users`, `promote_users`, `delete_users`, `edit_users`
+  - *System & Filesystem:* `update_core`, `unfiltered_html`, `edit_files`
+- **Dynamic Capability Reconciliation**: Automatically reconciles role permissions on login, user mutations, and option updates to prevent rogue privilege elevation.
+- **Zero-Trust Superkey Lockdown**: Protects `wp-admin` dashboard access and REST API write actions with a cryptographic Superkey (PBKDF2/SHA-256 with CSPRNG salt). Privileged sessions require periodic verification (2-hour sliding window token) and bind to client browser fingerprints.
+- **Event Horizon Audit Stream**: Circular buffer security event logger (up to 80 events) tracking Master claims, Superkey changes, role reconciliations, and unauthorized REST manipulation attempts with real-time severity filtering (Critical, Warning, Success, Info) and AJAX log purging.
+- **Apex Cyberpunk Cockpit**: High-tech dashboard featuring live telemetry vitals (Master Sovereignty, Superkey Vault, Admin Privilege Filter, Zero-Trust Lockdown) and inline privilege matrix toggles.
+
+---
+
+# 19. LOGINPAGER — Sovereign Login Surface
+
+**Classification:** Authentication Gateway & Visual Hardening  
+**Core class:** `VisionGaia\GeDefense\Modules\LoginPager\LoginPager` (`VIS_LoginPager`)  
+**Path:** `includes/modules/loginpager/class-vis-loginpager.php`
+
+LoginPager transforms the native WordPress authentication endpoint (`wp-login.php`) into a local-first, zero-dependency, cyberpunk-styled security gateway.
+
+### Core mechanisms
+
+- **Zero External Dependencies:** 100% self-contained inline CSS and SVGs without any Google Fonts, external CDNs, or third-party trackers.
+- **Cyberpunk Glassmorphism Surface:** Translucent dark form card (`backdrop-filter: blur()`), glowing accent edge lighting, and geometric background mesh.
+- **Adaptive Logo & Branding Fallback:** Intelligently centers custom logos or renders a clean, glowing Portal Title if no image asset is supplied.
+- **Real-Time Interactive Cockpit (`view-loginpager.php`):** 2-column cockpit with 5 instant color presets (*Cyber Cyan, Emerald Matrix, Purple Haze, Apex Gold, Crimson Core*), dual color pickers with HEX inputs, custom background/logo URLs, and a 1:1 live preview browser mockup simulator.
 
 # Zero-Dependency Philosophy
 
@@ -933,7 +977,7 @@ Administrators should baseline legitimate application behavior before enabling a
 
 # Performance
 
-The current GeDefense WP 7.6.1 technical profile defines the following internal benchmark targets/results:
+The current GeDefense WP 8.0.0 technical profile defines the following internal benchmark targets/results:
 
 | Metric | GeDefense WP |
 |---|---:|
@@ -956,6 +1000,7 @@ The repository includes dedicated regression and benchmark gates.
 php scripts/security-regression.php
 php scripts/malware-scanner-regression.php
 php scripts/scanner-resumption-regression.php
+php scripts/throneguard-loginpager-regression.php
 php scripts/aegis-regression.php
 php scripts/trinity-regression.php
 php scripts/morpheus-regression.php
@@ -1132,6 +1177,32 @@ Third-party trademarks, WordPress marks, VisionGaia Technology branding and sepa
 
 # Changelog
 
+## 8.0.0 — Apex Sovereign Cyber Defense & Privilege Boundary Architecture
+
+### 👑 ThroneGuard Master Engine & Privilege Boundary
+- **Sovereign Master Role (`master`)**: Implemented immutable Master node provisioning, separating high-trust site owners from standard WordPress administrators.
+- **Granular Capability Matrix**: Built interactive per-capability permission filters across 16 core capabilities (Plugins, Themes, User Elevation, and Filesystem/Kernel Updates) with automatic real-time role reconciliation.
+- **Zero-Trust Superkey Vault**: Engineered cryptographic Superkey authentication (PBKDF2/SHA-256 with CSPRNG salt) and anti-hijack session locking for `wp-admin` and REST endpoints with 2-hour token lifetimes.
+- **Event Horizon Audit Stream**: Built circular buffer telemetry logger with real-time severity filtering (`ALL`, `CRITICAL`, `WARNING`, `SUCCESS`, `INFO`), instant keyword search, and nonce-verified AJAX log clearing.
+- **Cyberpunk Lockscreen**: Integrated standalone zero-trust lockscreen overlay with glowing biometric shield and reveal toggle.
+
+### 🎨 LoginPager Sovereign Login Surface & Live Cockpit
+- **Cyberpunk Login Surface (`wp-login.php`)**: Re-engineered native WordPress login with deep glassmorphism (`backdrop-filter`), glowing neon focus states, animated checkmarks, and elevated action buttons.
+- **Dynamic Branding Fallback**: Automatic SVG status badges and portal typography when no external logo is provided.
+- **Interactive 2-Column Cockpit**: Built live preview browser mockup with instant bidirectional synchronization (`vis-loginpager-admin.js`) and 5 instant color presets (*Cyber Cyan, Emerald Matrix, Purple Haze, Apex Gold, Crimson Core*).
+
+### 📊 Multi-Tier Security Scoring & NOC Integration
+- **Command Center (Overview)**: Rebalanced Cyber Defense Matrix to include ThroneGuard Master as a core 15% pillar (Zeus 20%, Aegis 15%, ThroneGuard 15%, Prometheus 15%, Titan 15%, Hades 10%, Cerberus 5%, Airlock 5% = 100%).
+- **System Status (NOC)**: Added ThroneGuard and LoginPager to the NOC module diagnostic matrix and live vitals score.
+- **Security Center**: Registered formal Trust Boundary (`Admin Role -> ThroneGuard Master`) and assurance health invariants in `VIS_Security_Health` and `VIS_Security_Center`.
+
+### 🌐 Full 3-Language Localization (DE 🇩🇪, EN 🇬🇧, RU 🇷🇺)
+- Completed 100% dictionary translation coverage in `de.php`, `en.php`, and `ru.php` for all ThroneGuard, LoginPager, capability matrix, and Setup Wizard elements.
+
+### 🛡️ Core Stability & Zero-Dependency Invariants
+- Canonical `VisionGaia\GeDefense` namespace consolidation with full `VIS_` ABI backward compatibility.
+- 100% Zero-Dependency compliance: Zero Composer packages, zero external CDNs, zero cloud dependencies.
+
 ## 7.6.1 — Scanner State Finalization
 
 - fixed the accepted-baseline completion path so the Integrity Monitor retains its live secure state instead of forcing a stale results reload;
@@ -1169,12 +1240,12 @@ Third-party trademarks, WordPress marks, VisionGaia Technology branding and sepa
 ```text
 Product:       GeDefense WP
 Edition:       Open Core
-Version:       7.6.1
+Version:       8.0.0
 Architecture:  Multi-Tier Security Kernel
 Runtime:       PHP 8.1–8.4
 Platform:      WordPress 6.0+
 License:       AGPL-3.0-or-later
-Core Modules:  17
+Core Modules:  19
 Dependencies:  Zero external PHP vendor libraries
 ```
 
@@ -1182,7 +1253,7 @@ Dependencies:  Zero external PHP vendor libraries
 
 <div align="center">
 
-## GeDefense WP 7.6.1 — Open Core
+## GeDefense WP 8.0.0 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

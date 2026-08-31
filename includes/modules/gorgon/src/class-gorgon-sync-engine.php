@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Gorgon;
+namespace VisionGaia\GeDefense\Modules\Gorgon;
 
 if (!defined('ABSPATH')) exit('VGT Protocol: Direct access denied.');
 
@@ -10,10 +10,10 @@ final class Gorgon_Sync_Engine {
     private Gorgon_Config $config;
     private Gorgon_Harvester $harvester;
     private Gorgon_Uplink $uplink;
-    private Vis_Gorgon $core;
+    private Gorgon $core;
     private string $lock_name;
 
-    public function __construct(Gorgon_Config $config, Gorgon_Harvester $harvester, Gorgon_Uplink $uplink, Vis_Gorgon $core) {
+    public function __construct(Gorgon_Config $config, Gorgon_Harvester $harvester, Gorgon_Uplink $uplink, Gorgon $core) {
         $this->config = $config;
         $this->harvester = $harvester;
         $this->uplink = $uplink;

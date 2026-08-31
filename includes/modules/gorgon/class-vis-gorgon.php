@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Gorgon;
+namespace VisionGaia\GeDefense\Modules\Gorgon;
 
 if ( ! defined( 'ABSPATH' ) ) exit( 'VGT Protocol: Direct access denied.' );
 
@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) exit( 'VGT Protocol: Direct access denied.' );
  * MODULE: GORGON - NEURAL INTELLIGENCE GRID V4.1
  * STATUS: DIAMANT VGT SUPREME STATUS
  */
-final class Vis_Gorgon {
+final class Gorgon {
 
     private static ?self $instance = null;
     private Gorgon_Sync_Engine $sync_engine;
@@ -33,7 +33,7 @@ final class Vis_Gorgon {
 
         // Mount AJAX Endpoints
         if ( wp_doing_ajax() ) {
-            Vis_Gorgon_Ajax::mount_endpoints();
+            Gorgon_Ajax::mount_endpoints();
         }
 
         add_action( 'vgt_gorgon_neural_sync', [ $this, 'execute_sync_cycle' ] );
