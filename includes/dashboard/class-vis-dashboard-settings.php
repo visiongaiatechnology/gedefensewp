@@ -12,7 +12,10 @@ final class VIS_Dashboard_Settings {
 
     private static function handle_standard_config(): void {
         if (!current_user_can('manage_options')) return;
-        if ((!isset($_POST['vis_save_config']) && !isset($_POST['_wpnonce'])) || !check_admin_referer('vis_save_config')) {
+        if (!isset($_POST['vis_context']) || !isset($_POST['_wpnonce'])) {
+            return;
+        }
+        if (!wp_verify_nonce((string)$_POST['_wpnonce'], 'vis_save_config')) {
             return;
         }
 

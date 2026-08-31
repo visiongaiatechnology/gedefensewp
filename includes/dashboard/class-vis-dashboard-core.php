@@ -13,6 +13,7 @@ final class VIS_Dashboard_Core {
         add_action('admin_init', ['VIS_Dashboard_Settings', 'process_mutations']);
         add_action('admin_enqueue_scripts', [$this, 'inject_assets']);
         add_action('admin_notices', [$this, 'display_setup_wizard_notice']);
+        add_action('admin_notices', [$this, 'display_admin_whitelist_notice']);
 
         // Auto-complete wizard if options already exist (system is already configured)
         if (!get_option('vgt_setup_wizard_completed')) {
@@ -49,6 +50,46 @@ final class VIS_Dashboard_Core {
         echo '<p style="font-size: 14px; margin: 0 0 8px 0; color: #1e293b;"><strong>' . esc_html__('Willkommen bei GeDefense WP!', 'vgt-sentinel') . '</strong> — ' . esc_html__('Bitte führen Sie den Einrichtungs-Assistenten aus, um die grundlegenden Sicherheitsvorkehrungen und das IP-Whitelisting zu konfigurieren.', 'vgt-sentinel') . '</p>';
         echo '<p style="margin: 0;"><a href="' . esc_url(admin_url('admin.php?page=vgt-suite&tab=setup_wizard')) . '" class="button button-primary" style="background: #3b82f6; border-color: #3b82f6; color: #fff; text-decoration: none;">' . esc_html__('Einrichtungs-Assistenten starten &rarr;', 'vgt-sentinel') . '</a></p>';
         echo '</div>';
+    }
+
+    public function display_admin_whitelist_notice(): void {
+        if (!current_user_can('manage_options') || wp_doing_ajax()) return;
+
+        $ip = $this->resolve_admin_ip();
+        if ($ip === '') return;
+
+        $config = get_option('vis_config', []);
+        $config = is_array($config) ? $config : [];
+        $aegisCovered = $this->whitelist_contains((string)($config['aegis_whitelist_ips'] ?? ''), $ip);
+        $prometheusCovered = $this->whitelist_contains((string)($config['prometheus_whitelist_ips'] ?? ''), $ip);
+        if ($aegisCovered && $prometheusCovered) return;
+
+        $wizardUrl = admin_url('admin.php?page=vgt-suite&tab=setup_wizard');
+        $aegisUrl = admin_url('admin.php?page=vgt-suite&tab=aegis');
+        $prometheusUrl = admin_url('admin.php?page=vgt-suite&tab=prometheus');
+        $missing = [];
+        if (!$aegisCovered) $missing[] = 'AEGIS';
+        if (!$prometheusCovered) $missing[] = 'PROMETHEUS';
+
+        echo '<div class="notice notice-error" style="border-left-color:#dc2626;padding:14px 20px;">';
+        echo '<p style="font-size:14px;margin:0 0 8px;color:#7f1d1d;"><strong>' . esc_html__('ADMIN-IP SCHUTZGATE AKTIV', 'vgt-sentinel') . '</strong> — ' . esc_html__('Bevor Sie Seiten veröffentlichen, WordPress aktualisieren oder Schutzmodule aktivieren: Tragen Sie die IP dieser Admin-Sitzung in die Whitelists von AEGIS und Prometheus ein.', 'vgt-sentinel') . '</p>';
+        echo '<p style="margin:0 0 10px;color:#7f1d1d;">' . esc_html(sprintf(__('Erkannte Admin-IP: %s. Fehlende Freigabe: %s. Ohne beide Freigaben können REST-, Nonce- und Update-Anfragen blockiert werden.', 'vgt-sentinel'), $ip, implode(', ', $missing))) . '</p>';
+        echo '<p style="margin:0;display:flex;gap:8px;flex-wrap:wrap;"><a class="button button-primary" href="' . esc_url($wizardUrl) . '">' . esc_html__('Setup-Wizard öffnen', 'vgt-sentinel') . '</a><a class="button" href="' . esc_url($aegisUrl) . '">' . esc_html__('AEGIS-Whitelist', 'vgt-sentinel') . '</a><a class="button" href="' . esc_url($prometheusUrl) . '">' . esc_html__('Prometheus-Whitelist', 'vgt-sentinel') . '</a></p>';
+        echo '</div>';
+    }
+
+    private function resolve_admin_ip(): string {
+        $candidate = class_exists('VIS_Security') && method_exists('VIS_Security', 'client_ip')
+            ? VIS_Security::client_ip()
+            : (string)($_SERVER['REMOTE_ADDR'] ?? '');
+        return is_string($candidate) && filter_var($candidate, FILTER_VALIDATE_IP) !== false ? $candidate : '';
+    }
+
+    private function whitelist_contains(string $raw, string $ip): bool {
+        foreach (preg_split('/\R/u', $raw) ?: [] as $entry) {
+            if (is_string($entry) && hash_equals(trim($entry), $ip)) return true;
+        }
+        return false;
     }
 
     private function load_dependencies(): void {

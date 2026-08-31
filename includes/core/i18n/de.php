@@ -769,7 +769,7 @@ return [
     // =========================================================================
     // 18. TRINITY GRID & TOPOLOGY
     // =========================================================================
-    'TRINITY GRID V7.6.0' => 'TRINITY GRID V7.6.0',
+    'TRINITY GRID V7.6.1' => 'TRINITY GRID V7.6.1',
     'Coordinated Real-Time Defense Interlock Matrix & Visual Topology' => 'Koordinierte Echtzeit-Abwehrkopplungsmatrix & Visuelle Topologie',
     'TRINITY: INTERLOCKED' => 'TRINITY: GEKOPPELT',
     'TRINITY: DEGRADED' => 'TRINITY: EINGESCHRÄNKT',

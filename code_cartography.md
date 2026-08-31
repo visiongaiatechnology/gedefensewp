@@ -1,4 +1,4 @@
-# Code Cartography: GeDefense WP – Open Core (v7.6.0)
+# Code Cartography: GeDefense WP – Open Core (v7.6.1)
 
 This document provides a comprehensive architectural map of the **GeDefense WP - Open Core** codebase. It outlines subsystem boundaries, class responsibilities, execution phases, and data flows to accelerate developer onboarding and code auditing.
 
@@ -108,6 +108,10 @@ GeDefense WP operates as an operating-system-style security kernel with strict d
 
 #### Automation, Vault & Audit:
 *   **`chronos/`** (`VIS_Chronos`) — Autonomous Background Integrity Daemon.
+*   **`includes/scanner/class-vis-scanner-engine.php`** — Resumable path-jailed integrity orchestration with append-only NDJSON state and guarded baseline commits.
+*   **`includes/scanner/class-vis-malware-engine.php`** — Shared zero-dependency detector kernel for Airlock and Integrity/Chronos.
+*   **`includes/scanner/detectors/`** — PHP lexical-flow, MIME/polyglot, SVG/XML, archive and path-context analysis.
+*   **`includes/scanner/storage/class-vis-quarantine-store.php`** — Atomic private quarantine vault for high-confidence executable findings.
 *   **`vault/`** (`VIS_Key_Vault`) — Authenticated Libsodium KMS for API secrets.
 *   **`oracle/`** (`VIS_Oracle`) — 12-vector system security audit engine.
 *   **`filesystem/`** (`VIS_Filesystem_Guard`) — Static file permission and CHMOD auditor.

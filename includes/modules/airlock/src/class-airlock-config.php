@@ -33,7 +33,7 @@ final class VIS_Airlock_Config {
 
     public function get_max_size_bytes(): int {
         $mb = isset($this->config['airlock_max_mb']) ? (int)$this->config['airlock_max_mb'] : 5;
-        if ($mb <= 0) $mb = 5;
+        $mb = max(1, min(25, $mb));
         return $mb * 1048576; // Convert MB to Bytes
     }
 
