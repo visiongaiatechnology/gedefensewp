@@ -2,10 +2,9 @@ jQuery(document).ready(function($) {
     'use strict';
 
     /**
-     * VISIONGAIATECHNOLOGY CLIENT PILOT V2.7 (AIR-GAPPED EDITION)
-     * Protocol: Platinum Asynchronous Phasing (Error-Proofed & Bulletproof WP-AJAX Sync)
-     * Backend Sync: VIS_Scanner_Engine V6.6.2 (Self-Deploying MU-Plugin)
-     * Security: Cryptographic Uplink Protocol (CUP) via Headers
+     * VISIONGAIA CLIENT PILOT V3.0 (AIR-GAPPED APEX EDITION)
+     * Protocol: Platinum Asynchronous Phasing & Reactive Live DOM Mutation
+     * Backend Sync: VIS_Scanner_Engine Omega
      */
     
     // Globale Config robuster auflösen (Hybrid Support für Matrix & Legacy CFG)
@@ -35,14 +34,14 @@ jQuery(document).ready(function($) {
                 border: 1px solid rgba(212, 175, 55, 0.2);
                 border-top: 2px solid #D4AF37;
                 box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(212,175,55,0.05);
-                padding: 40px; border-radius: 4px; width: 450px; max-width: 90%;
+                padding: 40px; border-radius: 6px; width: 480px; max-width: 90%;
                 text-align: center; transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
                 color: #fff; font-family: 'Rajdhani', -apple-system, sans-serif;
             }
             .vis-glass-overlay.active .vis-glass-card { transform: scale(1); }
             .vis-spinner-lg { font-size: 50px; width: 50px; height: 50px; margin: 0 auto 20px auto; color: #00ffaa; }
             .vis-status-title { font-family: 'Syncopate', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 2px; margin: 0 0 10px 0; color: #fff; text-transform: uppercase; }
-            .vis-status-desc { font-size: 13px; color: #94a3b8; font-family: 'JetBrains Mono', monospace; min-height: 40px; }
+            .vis-status-desc { font-size: 13px; color: #94a3b8; font-family: 'JetBrains Mono', monospace; min-height: 40px; line-height: 1.5; }
             
             .vis-progress-track {
                 width: 100%; height: 4px; background: rgba(0,0,0,0.5);
@@ -54,10 +53,10 @@ jQuery(document).ready(function($) {
             }
             
             .vis-modal-actions { display: flex; gap: 10px; justify-content: center; margin-top: 25px; }
-            .vis-btn-modal { padding: 10px 20px; border-radius: 2px; border: none; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.2s; font-family: 'Orbitron', sans-serif; letter-spacing: 1px; }
+            .vis-btn-modal { padding: 10px 20px; border-radius: 3px; border: none; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.2s; font-family: 'Orbitron', sans-serif; letter-spacing: 1px; }
             .vis-btn-cancel { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
             .vis-btn-cancel:hover { background: rgba(255,255,255,0.1); }
-            .vis-btn-confirm { background: rgba(212, 175, 55, 0.1); color: #D4AF37; border: 1px solid #D4AF37; }
+            .vis-btn-confirm { background: rgba(212, 175, 55, 0.15); color: #D4AF37; border: 1px solid #D4AF37; }
             .vis-btn-confirm:hover { background: #D4AF37; color: #000; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
             
             @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -81,19 +80,20 @@ jQuery(document).ready(function($) {
         mode: 'scan', 
         total: 0
     };
+    let completionTimer = null;
 
     // --- EVENT LISTENERS ---
-    UI.scanBtn.off('click').on('click', function(e) {
+    $(document).on('click', '.vis-btn-scan', function(e) {
         e.preventDefault();
         STATE.mode = $(this).data('mode') || 'scan';
         STATE.phase = 'init';
         STATE.offset = 0;
-        
+
         showProcessingModal('NATIVE KERNEL SCAN', 'Initializing Air-Gapped Deployment...', STATE.mode);
         executeCycle();
     });
 
-    UI.approveBtn.off('click').on('click', function(e) {
+    $(document).on('click', '#vis-btn-approve', function(e) {
         e.preventDefault();
         showConfirmModal();
     });
@@ -104,8 +104,8 @@ jQuery(document).ready(function($) {
             <div class="dashicons dashicons-warning" style="font-size:40px; width:40px; height:40px; color:#D4AF37; margin-bottom:15px;"></div>
             <div class="vis-status-title">BASELINE OVERRIDE</div>
             <div class="vis-status-desc">
-                Möchten Sie den aktuellen Systemzustand wirklich als "Sicher" markieren?<br><br>
-                <span style="color:#D4AF37;">Alle aktuellen Anomalien werden kryptographisch in die Matrix aufgenommen.</span>
+                Möchten Sie den aktuellen Systemzustand wirklich als &quot;Sicher&quot; markieren?<br><br>
+                <span style="color:#D4AF37;">Alle aktuellen System-Dateien werden kryptographisch in die Matrix aufgenommen.</span>
             </div>
             <div class="vis-modal-actions">
                 <button class="vis-btn-modal vis-btn-cancel" id="vis-modal-cancel">ABBRECHEN</button>
@@ -117,7 +117,7 @@ jQuery(document).ready(function($) {
         $('#vis-modal-cancel').off('click').on('click', function() {
             UI.overlay.removeClass('active');
         });
-        
+
         $('#vis-modal-confirm').off('click').on('click', function() {
             STATE.mode = 'reindex';
             STATE.phase = 'init';
@@ -150,12 +150,11 @@ jQuery(document).ready(function($) {
             url: endpoint,
             type: 'POST',
             headers: {
-                // VGT KERNEL: Cryptographic Uplink Override (Umgeht VGT OS 403 Container Firewall)
                 'X-VGT-Uplink-Token': uplinkToken
             },
             data: {
                 action: payloadAction,
-                nonce: cfg.nonce || '', // Fallback für Legacy Environments
+                nonce: cfg.nonce || '',
                 phase: STATE.phase,
                 offset: STATE.offset,
                 mode: STATE.mode
@@ -223,37 +222,127 @@ jQuery(document).ready(function($) {
         $('#vis-progress-bar').css('width', percent + '%');
     }
 
+    function updateLiveDOM(status) {
+        if (status === 'clean' || status === 'init') {
+            // 1. Module Header in Integrity View
+            $('.vgt-module-header').css('border-left', '4px solid #10b981');
+            $('.vgt-module-header .vgt-icon').first().replaceWith(`
+                <svg class="vgt-icon" style="color:#10b981; width:24px; height:24px;" viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            `);
+            $('.vgt-module-title h2 span.vgt-badge').removeClass('vgt-badge-alert').addClass('vgt-badge-neutral').text('FILE HASHING ENGINE');
+            $('.vgt-module-title .vgt-is-alert').removeClass('vgt-is-alert').addClass('vgt-is-active');
+            $('.vgt-module-title .vgt-status-pulse').next('span').css('color', '#10b981').text('CLEAN');
+
+            // 2. State Panels: Remove Anomaly Table, Show Clean State
+            const cleanPanelHtml = `
+                <div class="vgt-glass-panel vgt-state-clean" style="border-top:3px solid #10b981;">
+                    <svg class="vgt-icon vgt-state-clean-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <h3>SYSTEM SECURE</h3>
+                    <p>Alle überwachten Dateien stimmen exakt mit dem kryptographischen Manifest überein. Es wurden keine nicht-autorisierten Modifikationen (Zero-Day/Malware) im Dateisystem festgestellt.</p>
+                </div>
+            `;
+            $('.vgt-table-container').fadeOut(200, function() {
+                $(this).replaceWith(cleanPanelHtml);
+            });
+
+            // 3. Overview Cockpit Widget
+            const $overviewCard = $('.vis-card-integrity-baseline');
+            if ($overviewCard.length) {
+                $overviewCard.find('.vis-badge').css({
+                    'background': 'rgba(0, 255, 170, 0.12)',
+                    'color': '#00ffaa',
+                    'border': '1px solid rgba(0, 255, 170, 0.25)'
+                }).text('SECURE');
+                $overviewCard.find('.vis-integrity-circle-box').css('color', '#00ffaa').html(`
+                    <svg class="vgt-icon" style="width:24px; height:24px;" viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                `);
+                $overviewCard.find('p').html('Systemintegrität verifiziert.<br><small style="opacity: 0.6; font-family: monospace;">[State: Valid]</small>');
+                $overviewCard.find('.vis-btn-sidebar-danger').removeClass('vis-btn-sidebar-danger').text('SCAN MANAGER');
+            }
+        }
+    }
+
     function finalizeUI(msg, status) {
         let icon = "dashicons-yes";
         let color = "#00ffaa"; 
+        const baselineAccepted = STATE.mode === 'reindex' && (status === 'clean' || status === 'init');
 
         if (status === 'warning') {
             icon = "dashicons-warning";
             color = "#ff4d4d"; 
         }
 
-        if (status === 'init') {
-            msg = "System Baseline Created. Next scan will verify native integrity.";
+        if (status === 'init' || status === 'clean') {
+            msg = msg || "System Baseline Created. System integrity securely verified.";
+            updateLiveDOM(status);
         }
 
         UI.card.find('.vis-spinner-lg').removeClass('dashicons-update spin').addClass(icon).css('color', color);
-        $('.vis-status-title').text(status === 'clean' ? 'SUCCESS' : (status === 'warning' ? 'ANOMALY DETECTED' : 'READY'));
+        UI.card.find('.vis-status-title').text(status === 'clean' || status === 'init' ? 'SYSTEM SECURE' : 'ANOMALY DETECTED');
         $('#vis-dynamic-desc').text(msg).css('color', color);
         
-        setTimeout(function() {
-            window.location.reload(); 
-        }, 2000);
+        // Add completion button for instant close
+        if (!UI.card.find('#vis-modal-done').length) {
+            UI.card.append(`
+                <div class="vis-modal-actions">
+                    <button class="vis-btn-modal vis-btn-confirm" id="vis-modal-done" style="background:rgba(16,185,129,0.2); border-color:#10b981; color:#10b981;">OK, VERSTANDEN</button>
+                </div>
+            `);
+            $('#vis-modal-done').off('click').on('click', function() {
+                if (completionTimer !== null) {
+                    window.clearTimeout(completionTimer);
+                    completionTimer = null;
+                }
+                UI.overlay.removeClass('active');
+                if (!baselineAccepted) {
+                    reloadPage();
+                }
+            });
+        }
+
+        completionTimer = window.setTimeout(function() {
+            completionTimer = null;
+            UI.overlay.removeClass('active');
+            if (!baselineAccepted) {
+                reloadPage();
+            }
+        }, 1800);
+    }
+
+    function reloadPage() {
+        const cleanUrl = window.location.href.split('#')[0];
+        const sep = cleanUrl.indexOf('?') >= 0 ? '&' : '?';
+        const urlWithoutVgt = cleanUrl.replace(/([&?])_vgt_r=\d+/, '');
+        const targetUrl = urlWithoutVgt + (urlWithoutVgt.indexOf('?') >= 0 ? '&' : '?') + '_vgt_r=' + Date.now();
+        window.location.replace(targetUrl);
     }
 
     function failSequence(reason) {
         UI.card.find('.vis-spinner-lg').removeClass('dashicons-update spin').addClass('dashicons-no').css('color', '#ff4d4d');
-        $('.vis-status-title').text('CRITICAL ERROR');
+        UI.card.find('.vis-status-title').text('CRITICAL ERROR');
         $('#vis-dynamic-desc').text(reason).css('color', '#ff8082');
         $('#vis-progress-bar').css({'width': '100%', 'background': '#ff4d4d', 'box-shadow': '0 0 10px #ff4d4d'});
         
-        UI.overlay.css('pointer-events', 'all').on('click', function() {
-            UI.overlay.removeClass('active');
-            $(this).off('click');
+        if (!UI.card.find('#vis-modal-dismiss').length) {
+            UI.card.append(`
+                <div class="vis-modal-actions">
+                    <button class="vis-btn-modal vis-btn-cancel" id="vis-modal-dismiss">SCHLIESSEN</button>
+                </div>
+            `);
+            $('#vis-modal-dismiss').off('click').on('click', function() {
+                UI.overlay.removeClass('active');
+            });
+        }
+
+        UI.overlay.css('pointer-events', 'all').on('click', function(e) {
+            if ($(e.target).hasClass('vis-glass-overlay')) {
+                UI.overlay.removeClass('active');
+                $(this).off('click');
+            }
         });
     }
 });

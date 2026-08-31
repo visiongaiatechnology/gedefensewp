@@ -4,7 +4,7 @@
 
 ### Sovereign WordPress Security Fabric
 
-[![Version](https://img.shields.io/badge/version-7.6.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-7.6.1_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -933,7 +933,7 @@ Administrators should baseline legitimate application behavior before enabling a
 
 # Performance
 
-The current GeDefense WP 7.6.0 technical profile defines the following internal benchmark targets/results:
+The current GeDefense WP 7.6.1 technical profile defines the following internal benchmark targets/results:
 
 | Metric | GeDefense WP |
 |---|---:|
@@ -954,6 +954,8 @@ The repository includes dedicated regression and benchmark gates.
 
 ```bash
 php scripts/security-regression.php
+php scripts/malware-scanner-regression.php
+php scripts/scanner-resumption-regression.php
 php scripts/aegis-regression.php
 php scripts/trinity-regression.php
 php scripts/morpheus-regression.php
@@ -1130,6 +1132,14 @@ Third-party trademarks, WordPress marks, VisionGaia Technology branding and sepa
 
 # Changelog
 
+## 7.6.1 — Scanner State Finalization
+
+- fixed the accepted-baseline completion path so the Integrity Monitor retains its live secure state instead of forcing a stale results reload;
+- serialized the completion timer to prevent duplicate terminal UI actions;
+- added a regression invariant for accepted baseline state handling; and
+- added a persistent admin-IP protection gate until the current session is whitelisted in both AEGIS and Prometheus; and
+- synchronized the Scanner, Airlock and Trinity integration release across the Open Core and MU-plugin distributions.
+
 ## 7.6.0 — Trinity Deterministic Interlock
 
 - introduced a dedicated Trinity orchestration core for deterministic AEGIS, Prometheus, Cerberus and Nemesis routing;
@@ -1141,7 +1151,12 @@ Third-party trademarks, WordPress marks, VisionGaia Technology branding and sepa
 - replaced blocking PHP tarpits, artificial response bombs and five-second sleeps with bounded deception responses and telemetry;
 - added server-side bounds and capability enforcement for Trinity and Prometheus configuration;
 - added an executable Trinity interlock regression suite; and
-- aligned release metadata and licensing identifiers.
+- aligned release metadata and licensing identifiers;
+- replaced the monolithic integrity loop with resumable path-jailed indexing and append-only NDJSON scan state;
+- introduced a zero-dependency malware kernel shared by Airlock and Integrity/Chronos through bounded upload and deep-filesystem profiles;
+- added PHP lexical-flow, MIME/polyglot, SVG/XML, archive and path-context detectors;
+- refused compromised first-run or reindex baselines and added an atomic private quarantine vault; and
+- routed structured upload and filesystem malware findings into Trinity without misattributing asynchronous findings to visitor IPs.
 
 ## 7.5.2 — Initial Open-Core Release
 
@@ -1154,7 +1169,7 @@ Third-party trademarks, WordPress marks, VisionGaia Technology branding and sepa
 ```text
 Product:       GeDefense WP
 Edition:       Open Core
-Version:       7.6.0
+Version:       7.6.1
 Architecture:  Multi-Tier Security Kernel
 Runtime:       PHP 8.1–8.4
 Platform:      WordPress 6.0+
@@ -1167,7 +1182,7 @@ Dependencies:  Zero external PHP vendor libraries
 
 <div align="center">
 
-## GeDefense WP 7.6.0 — Open Core
+## GeDefense WP 7.6.1 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

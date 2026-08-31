@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) exit;
 // =========================================================================================
 // 1. REPORT DATA FETCH (STRICT 1:1)
 // =========================================================================================
+wp_cache_delete('vis_scan_report', 'options');
+wp_cache_delete('alloptions', 'options');
 $report = get_option('vis_scan_report', false);
 $has_report = !empty($report) && is_array($report);
 $status = $has_report ? $report['status'] : 'unknown';
@@ -100,7 +102,7 @@ if ($status === 'clean' || $status === 'init') {
         <div class="vgt-glass-panel vgt-state-clean" style="border-color:var(--vgt-border);">
             <svg class="vgt-icon" style="width:64px; height:64px; color:var(--vgt-text-muted); margin-bottom:20px; opacity:0.5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <h3><?php esc_html_e('AWAITING INITIALIZATION', 'vgt-sentinel'); ?></h3>
-            <p><?php esc_html_e('Kein Integritäts-Bericht im System verzeichnet. Bitte starten Sie einen manuellen Baseline-Scan, um das Hashing-Netzwerk zu aktivieren.', 'vgt-sentinel'); ?></p>
+            <p><?php esc_html_e('Kein IntegritÃ¤ts-Bericht im System verzeichnet. Bitte starten Sie einen manuellen Baseline-Scan, um das Hashing-Netzwerk zu aktivieren.', 'vgt-sentinel'); ?></p>
         </div>
 
     <?php elseif($status === 'clean' || $status === 'init'): ?>
@@ -108,7 +110,7 @@ if ($status === 'clean' || $status === 'init') {
         <div class="vgt-glass-panel vgt-state-clean" style="border-top:3px solid var(--vgt-neon-green);">
             <svg class="vgt-icon vgt-state-clean-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
             <h3><?php esc_html_e('SYSTEM SECURE', 'vgt-sentinel'); ?></h3>
-            <p><?php esc_html_e('Alle überwachten Dateien stimmen exakt mit dem kryptographischen Manifest überein. Es wurden keine nicht-autorisierten Modifikationen (Zero-Day/Malware) im Dateisystem festgestellt.', 'vgt-sentinel'); ?></p>
+            <p><?php esc_html_e('Alle Ã¼berwachten Dateien stimmen exakt mit dem kryptographischen Manifest Ã¼berein. Es wurden keine nicht-autorisierten Modifikationen (Zero-Day/Malware) im Dateisystem festgestellt.', 'vgt-sentinel'); ?></p>
         </div>
 
     <?php else: ?>
@@ -124,7 +126,7 @@ if ($status === 'clean' || $status === 'init') {
                             <?php 
                             printf(
                                 esc_html(
-                                    _n('%d Datei verstößt gegen die System-Baseline.', '%d Dateien verstoßen gegen die System-Baseline.', count($changes), 'vgt-sentinel')
+                                    _n('%d Datei verstÃ¶ÃŸt gegen die System-Baseline.', '%d Dateien verstoÃŸen gegen die System-Baseline.', count($changes), 'vgt-sentinel')
                                 ),
                                 (int)count($changes)
                             ); 

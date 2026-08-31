@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
+require_once VIS_PATH . 'includes/scanner/class-vis-malware-engine.php';
+
 final class VIS_Airlock_Scanner {
 
     private const CHUNK_SIZE = 8192;
@@ -13,10 +15,10 @@ final class VIS_Airlock_Scanner {
     }
 
     public function execute_omega_scan(array $file): array {
-        $path = $file['tmp_name'] ?? '';
-        $raw_name = $file['name'] ?? '';
+        $path = isset($file['tmp_name']) && is_string($file['tmp_name']) ? $file['tmp_name'] : '';
+        $raw_name = isset($file['name']) && is_string($file['name']) ? basename($file['name']) : '';
 
-        if (empty($path) || $file['error'] !== UPLOAD_ERR_OK) return $file;
+        if ($path === '' || (int)($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) return $file;
         if (!is_uploaded_file($path)) {
             $file['error'] = 'VGT_AIRLOCK_DENIED: Upload origin rejected.';
             return $file;
@@ -62,7 +64,59 @@ final class VIS_Airlock_Scanner {
             return $file;
         }
 
+        try {
+            $context = new VIS_Scan_Context(
+                VIS_Scan_Context::PROFILE_FAST_UPLOAD,
+                'AIRLOCK',
+                'wp-content/uploads/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $raw_name),
+                $raw_name,
+                $ext,
+                $real_mime,
+                $expected_mime,
+                'UPLOAD'
+            );
+            $verdict = (new VIS_Malware_Engine())->scan($path, $context, VIS_Scan_Budget::fastUpload($max_size));
+            if ($verdict->findings !== []) {
+                $this->emitFinding($raw_name, $verdict);
+            }
+            if ($verdict->shouldBlock()) {
+                $file['error'] = 'VGT_AIRLOCK_DENIED: Malware policy rejected the upload.';
+                return $file;
+            }
+        } catch (ValidationException $e) {
+            $file['error'] = $e->getMessage();
+            return $file;
+        } catch (SecurityException $e) {
+            error_log('[SEC] ' . $e->getMessage());
+            $file['error'] = 'VGT_AIRLOCK_DENIED: Request rejected for security reasons.';
+            return $file;
+        } catch (StorageException $e) {
+            error_log('[STORAGE] ' . $e->getMessage());
+            $file['error'] = 'VGT_AIRLOCK_DENIED: Scanner unavailable.';
+            return $file;
+        } catch (Throwable $e) {
+            error_log('[FATAL] ' . $e->getMessage());
+            $file['error'] = 'VGT_AIRLOCK_DENIED: Critical scanner fault.';
+            return $file;
+        }
+
         return $file;
+    }
+
+    private function emitFinding(string $name, VIS_Scan_Verdict $verdict): void {
+        $safeName = substr(preg_replace('/[^A-Za-z0-9._-]/', '_', $name) ?? 'upload', 0, 128);
+        if (class_exists('VIS_Event_Bus')) {
+            VIS_Event_Bus::emit('AIRLOCK', 'MALWARE_FINDING', 'Upload malware analysis produced findings.', [
+                'file' => $safeName,
+                'risk' => $verdict->risk,
+                'confidence' => $verdict->confidence,
+                'sha256' => $verdict->sha256,
+            ], max(1, min(10, (int)ceil($verdict->risk / 10))));
+        }
+        if (class_exists('VIS_Trinity_Grid')) {
+            $ip = class_exists('VIS_Security') ? VIS_Security::client_ip() : null;
+            VIS_Trinity_Grid::onMalwareFinding('AIRLOCK', $safeName, $verdict->toArray(), $ip);
+        }
     }
 
     private function has_embedded_executable_payload(string $path): bool {

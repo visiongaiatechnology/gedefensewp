@@ -80,26 +80,28 @@ final class VIS_Module_Registry {
             }
         }
 
-        // 2. Check in dynamic addons directory
+        // 2. Check dynamic addons directory and variations
         $addons_dir = self::get_addons_dir();
         $folder = $module['addon_folder'];
         $file = $module['addon_file'];
 
-        $addon_path = $addons_dir . '/' . $folder . '/' . $file;
-        if (file_exists($addon_path)) {
-            return $addon_path;
-        }
+        $candidates = [
+            $addons_dir . '/' . $folder . '/' . $file,
+            $addons_dir . '/' . strtolower($folder) . '/' . $file,
+            $addons_dir . '/' . strtoupper($folder) . '/' . $file,
+            $addons_dir . '/' . $id . '/' . $file,
+            $addons_dir . '/' . strtolower($id) . '/' . $file,
+            $addons_dir . '/' . strtoupper($id) . '/' . $file,
+            $addons_dir . '/' . $file,
+            VIS_PATH . 'addons/' . $folder . '/' . $file,
+            VIS_PATH . 'addons/' . strtolower($folder) . '/' . $file,
+            VIS_PATH . 'addons/' . $id . '/' . $file,
+        ];
 
-        // 3. Fallback check (folder named by slug)
-        $slug_path = $addons_dir . '/' . $id . '/' . $file;
-        if (file_exists($slug_path)) {
-            return $slug_path;
-        }
-
-        // 4. Local addons/ folder in plugin directory
-        $local_addon = VIS_PATH . 'addons/' . $folder . '/' . $file;
-        if (file_exists($local_addon)) {
-            return $local_addon;
+        foreach ($candidates as $cand) {
+            if (file_exists($cand)) {
+                return $cand;
+            }
         }
 
         return '';
@@ -127,15 +129,20 @@ final class VIS_Module_Registry {
         if ($module === null) return false;
 
         $addons_dir = self::get_addons_dir();
+        $folder = $module['addon_folder'];
         $candidates = [
-            $addons_dir . '/' . $module['addon_folder'],
+            $addons_dir . '/' . $folder,
+            $addons_dir . '/' . strtolower($folder),
+            $addons_dir . '/' . strtoupper($folder),
             $addons_dir . '/' . $id,
-            VIS_PATH . 'addons/' . $module['addon_folder'],
+            $addons_dir . '/' . strtolower($id),
+            $addons_dir . '/' . strtoupper($id),
+            VIS_PATH . 'addons/' . $folder,
             VIS_PATH . 'addons/' . $id
         ];
 
         $deleted = false;
-        foreach ($candidates as $dir) {
+        foreach (array_unique($candidates) as $dir) {
             if (is_dir($dir)) {
                 self::recursive_rmdir($dir);
                 $deleted = true;

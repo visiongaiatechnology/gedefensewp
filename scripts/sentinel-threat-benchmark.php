@@ -4,7 +4,7 @@
  * VISIONGAIA TECHNOLOGY: VGT SENTINEL SECURITY BENCHMARK & THREAT AUDIT SUITE
  * PURPOSE: Automated In-Memory Validation of AEGIS, PROMETHEUS, and CERBERUS
  * STATUS: AUTHORIZED RESEARCH & REGRESSION BENCHMARK SUITE
- * VERSION: 7.6.0 OMEGA ASSURANCE
+ * VERSION: 7.6.1 OMEGA ASSURANCE
  * ==============================================================================
  * 
  * Usage:
@@ -337,7 +337,7 @@ final class SentinelBenchmarkRunner {
     private function print_banner(): void {
         echo BenchmarkColors::CYAN;
         echo "=====================================================================\n";
-        echo " VGT SENTINEL V7.6.0 SECURITY BENCHMARK & THREAT AUDIT SUITE\n";
+        echo " VGT SENTINEL V7.6.1 SECURITY BENCHMARK & THREAT AUDIT SUITE\n";
         echo " Automated In-Memory Regression & Protection Verification\n";
         echo "=====================================================================\n";
         echo BenchmarkColors::RESET;
@@ -390,7 +390,7 @@ final class SentinelBenchmarkRunner {
         
         $output = [
             'suite'            => 'VGT Sentinel Security Benchmark',
-            'version'          => '7.6.0',
+            'version'          => '7.6.1',
             'passed'           => $this->suite_passed,
             'timestamp'        => date('c'),
             'total_vectors'    => count($this->results),

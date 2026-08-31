@@ -49,6 +49,8 @@ $forbidden = [
     'Nemesis worker retention' => '/ignore_user_abort\s*\(|set_time_limit\s*\(\s*0\s*\)|TARPIT_CHUNK_DELAY_MICROSEC|Content-Length:\s*10000000000/i',
     'Nemesis offensive response' => '/vgt_poison_jar_|gzdeflate\s*\(|TERMINAL SABOTAGE/i',
     'Prometheus blocking sleep' => '/@?sleep\s*\(\s*5\s*\)/i',
+    'Integrity scanner follows symlinks' => '/RecursiveDirectoryIterator::FOLLOW_SYMLINKS/i',
+    'Integrity scanner trusts transport input' => '~includes[/\\\\]+scanner[\s\S]{0,120}\$_POST~i',
 ];
 
 foreach ($sourceFiles as $path => $content) {
@@ -119,6 +121,29 @@ $required = [
         'entrypoint trust anchor' => 'VIS_MANIFEST_DIGEST',
         'complete component verification' => 'public static function verify_all()',
         'constant-time digest match' => 'hash_equals((string)VIS_MANIFEST_DIGEST',
+    ],
+    'includes/scanner/class-vis-scanner-engine.php' => [
+        'resumable jailed indexing' => 'private function continueIndexing(',
+        'append-only scan state' => 'current_scan.ndjson',
+        'symlink rejection' => 'is_link($candidate)',
+        'malware correlation' => 'VIS_Trinity_Grid::onMalwareFinding(',
+        'quarantine integration' => 'new VIS_Quarantine_Store()',
+    ],
+    'includes/scanner/class-vis-malware-engine.php' => [
+        'shared malware kernel' => 'final class VIS_Malware_Engine',
+        'bounded detector execution' => '$budget->maxMilliseconds',
+        'detector composition' => 'new VIS_Php_Lexical_Detector()',
+    ],
+    'includes/dashboard/class-vis-dashboard-core.php' => [
+        'admin IP whitelist notice' => 'display_admin_whitelist_notice',
+        'shared client IP resolution' => "VIS_Security', 'client_ip'",
+        'AEGIS whitelist coverage' => "aegis_whitelist_ips",
+        'Prometheus whitelist coverage' => "prometheus_whitelist_ips",
+    ],
+    'assets/js/vis-scanner-client.js' => [
+        'accepted baseline terminal state' => "STATE.mode === 'reindex' && (status === 'clean' || status === 'init')",
+        'accepted baseline remains live' => 'if (!baselineAccepted)',
+        'single completion timer' => 'window.clearTimeout(completionTimer)',
     ],
     'scripts/sentinel-threat-benchmark.php' => [
         'supported payload API' => 'assess_payload(',

@@ -1,88 +1,86 @@
 <?php
+// STATUS: DIAMANT VGT SUPREME
 declare(strict_types=1);
 
-if (!defined('ABSPATH')) exit('ACCESS DENIED: VISIONGAIATECHNOLOGY OMEGA PROTOCOL');
+if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
-/**
- * VISIONGAIATECHNOLOGY ENGINE: SCANNER CORE (PLATINUM ARCHITECTURE)
- * Status: OMEGA HARDENED V6.2 (STRICT MODE + FAULT TOLERANCE + PATH NORMALIZATION)
- * Optimization: JSON Storage Engine for High-Performance I/O
- * * LOGIC RETENTION PROTOCOL: ACTIVE
- * - Scannen & Reindex Logik unverändert.
- * - Dashboard Kompatibilität: 100%.
- */
-class VIS_Scanner_Engine_Omega {
+require_once __DIR__ . '/class-vis-malware-engine.php';
+require_once __DIR__ . '/storage/class-vis-quarantine-store.php';
 
-    // CONFIGURATION
-    private array $exclude_dirs = [
-        'node_modules', '.git', 'cache', 'upgrade', 'languages', 'vis-vault-omega', 'tmp_vis_states', 'updraft', 'backups', 'wprocket'
+final class VIS_Scanner_Engine_Omega {
+    private const INDEX_DIRECTORY_BUDGET = 250;
+    private const INDEX_TIME_BUDGET_SECONDS = 3.0;
+    private const PROCESS_BATCH_SIZE = 150;
+    private const PROCESS_TIME_BUDGET_SECONDS = 4.0;
+    private const MAX_STATE_BYTES = 67108864;
+
+    /** @var array<string, true> */
+    private array $excludedDirectories = [
+        'node_modules' => true, '.git' => true, 'cache' => true, 'upgrade' => true,
+        'languages' => true, 'vis-vault-omega' => true, 'tmp_vis_states' => true,
+        'updraft' => true, 'backups' => true, 'wprocket' => true, 'scripts' => true,
     ];
-    
-    // Performance: O(1) Lookup Map für Extensions
-    private array $monitored_extensions = [
-        'php' => true, 'php5' => true, 'phtml' => true, 'html' => true, 
-        'htm' => true, 'js' => true, 'htaccess' => true, 'py' => true, 'pl' => true
-    ];
-    
-    private int $time_limit = 5; 
-    private int $batch_size = 500; 
-    private float $start_time;
 
-    // PATHS
-    private string $vault_dir;
-    private string $manifest_file;
-    private string $queue_file;
-    private string $result_file;
+    /** @var array<string, true> */
+    private array $monitoredExtensions = [
+        'php' => true, 'php3' => true, 'php4' => true, 'php5' => true, 'php7' => true,
+        'php8' => true, 'phtml' => true, 'phar' => true, 'html' => true, 'htm' => true,
+        'js' => true, 'htaccess' => true, 'ini' => true, 'svg' => true, 'zip' => true,
+        'py' => true, 'pl' => true,
+    ];
+
+    private string $siteRoot;
+    private string $vaultDirectory;
+    private string $manifestFile;
+    private string $stateDirectory;
+    private string $queueFile;
+    private string $resultFile;
+    private string $findingFile;
+    private string $indexStateFile;
+    private string $cursorFile;
+    private VIS_Malware_Engine $malwareEngine;
 
     public function __construct() {
-        // High-Priority Execution
-        if (function_exists('ini_set')) {
-            @ini_set('memory_limit', '512M'); // Temporärer Boost für große Dateisysteme
-            @ini_set('max_execution_time', '30');
+        $resolvedRoot = realpath(ABSPATH);
+        if ($resolvedRoot === false || !is_dir($resolvedRoot)) {
+            throw new StorageException('Integrity scan root unavailable.');
         }
-
-        $this->start_time = microtime(true);
-        $upload_dir = wp_upload_dir();
-        
-        // Hardening: Pfade normalisieren & Trailing Slash Konsistenz
-        $this->vault_dir = wp_normalize_path($upload_dir['basedir'] . '/vis-vault-omega');
-        
-        // UPGRADE: JSON statt PHP-Array für Performance & Sicherheit
-        $this->manifest_file = $this->vault_dir . '/integrity_matrix.json';
-        
-        $temp_dir = $this->vault_dir . '/tmp_vis_states';
-        if (!is_dir($temp_dir)) {
-            @mkdir($temp_dir, 0755, true);
-            // Security: Temp Dir absichern
-            @file_put_contents($temp_dir . '/index.php', '<?php // Silence is golden');
-            @file_put_contents($temp_dir . '/.htaccess', 'Deny from all');
+        $this->siteRoot = rtrim(wp_normalize_path($resolvedRoot), '/') . '/';
+        if (defined('VIS_VAULT_DIR')) {
+            $this->vaultDirectory = rtrim(wp_normalize_path((string)VIS_VAULT_DIR), '/');
+        } else {
+            $uploadDirectory = wp_upload_dir();
+            $this->vaultDirectory = rtrim(wp_normalize_path((string)($uploadDirectory['basedir'] ?? '')), '/') . '/vis-vault-omega';
         }
-        
-        $this->queue_file = $temp_dir . '/scan_queue.json';
-        $this->result_file = $temp_dir . '/current_scan.json';
+        if (defined('VIS_MANIFEST_FILE')) {
+            $this->manifestFile = wp_normalize_path((string)VIS_MANIFEST_FILE);
+        } else {
+            $this->manifestFile = $this->vaultDirectory . '/integrity_matrix.json';
+        }
+        $this->stateDirectory = $this->vaultDirectory . '/tmp_vis_states';
+        $this->queueFile = $this->stateDirectory . '/scan_queue.ndjson';
+        $this->resultFile = $this->stateDirectory . '/current_scan.ndjson';
+        $this->findingFile = $this->stateDirectory . '/malware_findings.ndjson';
+        $this->indexStateFile = $this->stateDirectory . '/index_state.json';
+        $this->cursorFile = $this->stateDirectory . '/process_cursor.json';
+        $this->malwareEngine = new VIS_Malware_Engine();
     }
 
-    /**
-     * MASTER CONTROLLER (PLATINUM PROTOCOL)
-     */
+    /** @return array<string, mixed> */
     public function run_scan_cycle(string $phase = 'init', int $offset = 0, string $mode = 'scan'): array {
-        if (!$this->ensure_vault_exists()) {
-            return ['status' => 'error', 'message' => 'Vault Directory critical permission error.'];
+        if (!$this->ensureVaultExists()) {
+            return ['status' => 'error', 'message' => 'Scanner vault permission enforcement failed.'];
         }
-
-        // Logic Override Check (Sichert Fallback falls Mode POST Parameter abweicht)
-        // Härtung: Nur erlaubte Modi zulassen
-        $mode = ($mode === 'reindex') ? 'reindex' : 'scan';
-        if ($mode === 'scan' && isset($_POST['mode']) && $_POST['mode'] === 'reindex') {
-            $mode = 'reindex';
-        }
+        $mode = $mode === 'reindex' ? 'reindex' : 'scan';
+        $offset = max(0, $offset);
 
         try {
             return match ($phase) {
-                'init'      => $this->phase_indexing($mode),
-                'process'   => $this->phase_processing($offset, $mode),
-                'finalize'  => $this->phase_finalization($mode),
-                default     => throw new ValidationException('Invalid scanner phase.'),
+                'init' => $this->initializeScan($mode),
+                'index' => $this->continueIndexing($offset, $mode),
+                'process' => $this->processFiles($offset, $mode),
+                'finalize' => $this->finalizeScan($mode),
+                default => throw new ValidationException('Invalid scanner phase.'),
             };
         } catch (ValidationException $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
@@ -98,341 +96,480 @@ class VIS_Scanner_Engine_Omega {
         }
     }
 
-    /**
-     * PHASE 1: INDEXING
-     * Rekursiver Scan des Dateisystems.
-     */
-    private function phase_indexing(string $mode): array {
-        // Cleanup old states
-        if (file_exists($this->queue_file)) @unlink($this->queue_file);
-        if (file_exists($this->result_file)) @unlink($this->result_file);
-        
-        // Initialize empty result set (Reset State)
-        $this->write_json($this->result_file, []);
-
-        $root = wp_normalize_path(ABSPATH);
-        // Härtung: Trailing Slash erzwingen für konsistente substr Berechnung
-        $root = rtrim($root, '/') . '/'; 
-        
-        // Validierung des Roots
-        if (!is_dir($root) || !is_readable($root)) {
-            throw new Exception("System Root unreachable: $root");
+    /** @return array<string, mixed> */
+    private function initializeScan(string $mode): array {
+        foreach ([$this->queueFile, $this->resultFile, $this->findingFile, $this->indexStateFile, $this->cursorFile] as $file) {
+            if (is_file($file) && !@unlink($file)) throw new StorageException('Stale scanner state cleanup failed.');
         }
-
-        $file_list = [];
-        $count = 0;
-        
-        // Performance: Pfad-Längen vorab berechnen
-        $root_len = strlen($root);
-
-        try {
-            // HARDENING: Exception Handling für Directory Access
-            $directory = new RecursiveDirectoryIterator($root, RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS);
-            $iterator = new RecursiveIteratorIterator($directory);
-
-            foreach ($iterator as $file) {
-                /** @var SplFileInfo $file */
-                // Hard Time Limit Check (etwas strikter im Loop)
-                if ((microtime(true) - $this->start_time) > 10) break; 
-                
-                if (!$file->isFile()) continue;
-
-                $path = wp_normalize_path($file->getPathname());
-                
-                // Optimized Exclusion Logic
-                foreach ($this->exclude_dirs as $ex) {
-                    // Härtung: Striker Check mit Slashes, um "cache_me" vs "cache" zu unterscheiden
-                    if (strpos($path, '/' . $ex . '/') !== false) continue 2;
-                }
-
-                $ext = strtolower($file->getExtension());
-                if (!isset($this->monitored_extensions[$ext])) continue;
-
-                // Relativer Pfad: Sicherstellen, dass er nicht mit / beginnt, wenn root Slash hat
-                // Durch $root = rtrim... . '/' ist root_len inkl. Slash. Pfad wird relativ ohne Slash.
-                $rel_path = substr($path, $root_len);
-                
-                if ($rel_path !== false && $rel_path !== '') {
-                    $file_list[] = $rel_path;
-                    $count++;
-                }
-            }
-        } catch (UnexpectedValueException $e) {
-            // Fängt Permissions Fehler ab, die den Scan sonst töten würden
-            error_log("VIS SCANNER WARNING: Directory Access Denied during Indexing - " . $e->getMessage());
-        } catch (Exception $e) {
-            throw $e;
-        }
-
-        // Speichern der Queue
-        $this->write_json($this->queue_file, $file_list);
-
+        $this->writeJson($this->indexStateFile, ['pending' => [$this->siteRoot], 'files' => 0, 'directories' => 0]);
+        $this->truncateFile($this->queueFile);
+        $this->truncateFile($this->resultFile);
+        $this->truncateFile($this->findingFile);
         return [
-            'status'  => 'next_phase',
-            'phase'   => 'process',
-            'offset'  => 0,
-            'mode'    => $mode, 
-            'total'   => $count,
-            'message' => ($mode === 'reindex') ? "Re-Indexing System Core..." : "Initializing Integrity Scan..."
+            'status' => 'next_phase', 'phase' => 'index', 'offset' => 0, 'mode' => $mode,
+            'total' => 0, 'message' => 'Initializing jailed filesystem inventory...',
         ];
     }
 
-    /**
-     * PHASE 2: PROCESSING
-     * Hashing und Analyse in Batches.
-     */
-    private function phase_processing(int $offset, string $mode): array {
-        if (!file_exists($this->queue_file)) {
-            return ['status' => 'error', 'message' => 'Logic Error: Queue lost. Restart required.'];
+    /** @return array<string, mixed> */
+    private function continueIndexing(int $offset, string $mode): array {
+        $state = $this->loadJson($this->indexStateFile);
+        $pending = is_array($state['pending'] ?? null) ? array_values($state['pending']) : [];
+        $files = max(0, (int)($state['files'] ?? 0));
+        $directories = max(0, (int)($state['directories'] ?? 0));
+        $started = microtime(true);
+        $processedDirectories = 0;
+
+        while ($pending !== []
+            && $processedDirectories < self::INDEX_DIRECTORY_BUDGET
+            && (microtime(true) - $started) < self::INDEX_TIME_BUDGET_SECONDS) {
+            $directory = array_pop($pending);
+            if (!is_string($directory)) continue;
+            $resolvedDirectory = realpath($directory);
+            if ($resolvedDirectory === false || !is_dir($resolvedDirectory) || is_link($directory)) continue;
+            $normalizedDirectory = rtrim(wp_normalize_path($resolvedDirectory), '/') . '/';
+            if (!str_starts_with($normalizedDirectory, $this->siteRoot)) {
+                throw new SecurityException('Integrity indexing path escaped jail.');
+            }
+
+            try {
+                $iterator = new FilesystemIterator($resolvedDirectory, FilesystemIterator::SKIP_DOTS);
+                foreach ($iterator as $entry) {
+                    if (!$entry instanceof SplFileInfo || $entry->isLink()) continue;
+                    $name = strtolower($entry->getFilename());
+                    if ($entry->isDir()) {
+                        if (!isset($this->excludedDirectories[$name])) $pending[] = $entry->getPathname();
+                        continue;
+                    }
+                    if (!$entry->isFile()) continue;
+                    $extension = strtolower($entry->getExtension());
+                    if (!isset($this->monitoredExtensions[$extension])) continue;
+                    $normalized = wp_normalize_path($entry->getPathname());
+                    if (!str_starts_with($normalized, $this->siteRoot)) {
+                        throw new SecurityException('Integrity file path escaped jail.');
+                    }
+                    $relative = substr($normalized, strlen($this->siteRoot));
+                    if ($relative === '' || str_contains($relative, "\0")) continue;
+                    $this->appendLine($this->queueFile, $relative);
+                    $files++;
+                }
+            } catch (UnexpectedValueException $e) {
+                $this->appendFindingRecord([
+                    'file' => substr($normalizedDirectory, strlen($this->siteRoot)),
+                    'verdict' => ['risk' => 20, 'confidence' => 100, 'truncated' => false, 'findings' => [[
+                        'code' => 'DIRECTORY_UNREADABLE', 'risk' => 85, 'confidence' => 100,
+                        'message' => 'Directory could not be read; a complete integrity baseline cannot be proven.', 'quarantine_eligible' => false,
+                    ]]],
+                ]);
+            }
+            $processedDirectories++;
+            $directories++;
         }
 
-        // HARDENING: Strict Type Check für file_get_contents
-        $queue_data = @file_get_contents($this->queue_file);
-        if ($queue_data === false) {
-             return ['status' => 'error', 'message' => 'I/O Error: Cannot read queue.'];
-        }
-
-        $queue = json_decode($queue_data, true);
-        
-        if (!is_array($queue)) {
-             return ['status' => 'error', 'message' => 'Queue Corruption Detected.'];
-        }
-
-        $total = count($queue);
-
-        if ($offset >= $total) {
+        $state = ['pending' => $pending, 'files' => $files, 'directories' => $directories];
+        $this->writeJson($this->indexStateFile, $state);
+        if ($pending !== []) {
             return [
-                'status'  => 'next_phase', 
-                'phase'   => 'finalize', 
-                'offset'  => 0,
-                'mode'    => $mode,
-                'message' => 'Analysis complete. Calculating Logic Delta...'
+                'status' => 'processing', 'phase' => 'index', 'offset' => $directories, 'mode' => $mode,
+                'total' => $files, 'message' => "Indexing jailed filesystem... {$files} files discovered",
             ];
         }
 
-        $batch = array_slice($queue, $offset, $this->batch_size);
-        $root = wp_normalize_path(ABSPATH);
-        $root = rtrim($root, '/') . '/'; // Konsistenz mit Indexing Phase
-        
-        // Load partial states
-        $current_results = $this->load_json($this->result_file);
-        $processed_in_batch = 0;
-
-        foreach ($batch as $rel_path) {
-            if ((microtime(true) - $this->start_time) > $this->time_limit) break;
-
-            $abs_path = $root . $rel_path;
-            
-            // Stat Cache clearen für präzise Werte
-            clearstatcache(true, $abs_path);
-            
-            if (file_exists($abs_path)) {
-                $mtime = filemtime($abs_path);
-                $size = filesize($abs_path);
-                
-                // Integrity is content-derived. mtime and size are attacker-
-                // controllable metadata and therefore never authorize hash reuse.
-                $hash_calc = @hash_file('sha256', $abs_path);
-                $hash = ($hash_calc === false) ? 'UNREADABLE_FILE_LOCK' : $hash_calc;
-
-                $current_results[$rel_path] = [
-                    'hash'  => $hash,
-                    'mtime' => $mtime,
-                    'size'  => $size
-                ];
-            }
-            $processed_in_batch++;
-        }
-
-        // Speichern der Zwischenergebnisse
-        $this->write_json($this->result_file, $current_results);
-        
-        // Memory cleanup
-        unset($queue, $current_results, $batch);
-        gc_collect_cycles(); // Zwingende Garbage Collection
-
-        $new_offset = $offset + $processed_in_batch;
-        $percent = ($total > 0) ? round(($new_offset / $total) * 100) : 100;
-
+        $this->writeJson($this->cursorFile, ['index' => 0, 'byte_offset' => 0]);
         return [
-            'status'   => 'processing',
-            'phase'    => 'process',
-            'offset'   => $new_offset,
-            'mode'     => $mode,
-            'progress' => $percent,
-            'message'  => ($mode === 'reindex') ? "Updating Neural Baseline... {$percent}%" : "Deep Scanning... {$percent}%"
+            'status' => 'next_phase', 'phase' => 'process', 'offset' => 0, 'mode' => $mode,
+            'total' => $files, 'message' => 'Inventory complete. Starting malware and integrity analysis...',
         ];
     }
 
-    /**
-     * PHASE 3: FINALIZATION
-     * Vergleich und Reporting.
-     */
-    private function phase_finalization(string $mode): array {
-        $baseline = $this->load_json($this->manifest_file);
-        $new_state = $this->load_json($this->result_file);
-        
-        $report = [];
+    /** @return array<string, mixed> */
+    private function processFiles(int $requestedOffset, string $mode): array {
+        $cursor = $this->loadJson($this->cursorFile);
+        $index = max(0, (int)($cursor['index'] ?? 0));
+        $byteOffset = max(0, (int)($cursor['byte_offset'] ?? 0));
+        if ($requestedOffset > $index) throw new ValidationException('Scanner cursor is ahead of committed state.');
+        if ($requestedOffset < $index) {
+            return ['status' => 'processing', 'phase' => 'process', 'offset' => $index, 'mode' => $mode, 'message' => 'Resuming committed scan cursor...'];
+        }
+
+        $handle = @fopen($this->queueFile, 'rb');
+        if (!is_resource($handle) || fseek($handle, $byteOffset) !== 0) {
+            if (is_resource($handle)) fclose($handle);
+            throw new StorageException('Scanner queue cursor unavailable.');
+        }
+
+        $baseline = $this->loadJson($this->manifestFile);
+        $processed = 0;
+        $started = microtime(true);
+        while (!feof($handle)
+            && $processed < self::PROCESS_BATCH_SIZE
+            && (microtime(true) - $started) < self::PROCESS_TIME_BUDGET_SECONDS) {
+            $line = fgets($handle);
+            if ($line === false) break;
+            $relative = trim($line);
+            if ($relative === '') continue;
+            $this->processOneFile($relative, $baseline);
+            $processed++;
+            $index++;
+        }
+        $nextByteOffset = ftell($handle);
+        $finished = feof($handle);
+        fclose($handle);
+        if (!is_int($nextByteOffset)) throw new StorageException('Scanner queue cursor persistence failed.');
+        $this->writeJson($this->cursorFile, ['index' => $index, 'byte_offset' => $nextByteOffset]);
+
+        if ($finished) {
+            return [
+                'status' => 'next_phase', 'phase' => 'finalize', 'offset' => 0, 'mode' => $mode,
+                'message' => 'Analysis complete. Correlating integrity and malware findings...',
+            ];
+        }
+        return [
+            'status' => 'processing', 'phase' => 'process', 'offset' => $index, 'mode' => $mode,
+            'message' => "Deep malware analysis... {$index} files processed",
+        ];
+    }
+
+    /** @param array<string, mixed> $baseline */
+    private function processOneFile(string $relative, array $baseline): void {
+        if (str_contains($relative, "\0") || str_starts_with($relative, '/') || preg_match('~(?:^|/)\.\.(?:/|$)~', $relative) === 1) {
+            throw new SecurityException('Scanner queue path traversal rejected.');
+        }
+        $candidate = $this->siteRoot . str_replace('\\', '/', $relative);
+        if (is_link($candidate)) throw new SecurityException('Scanner symlink target rejected.');
+        $resolved = realpath($candidate);
+        if ($resolved === false || !is_file($resolved)) {
+            $unavailableFinding = [
+                'code' => 'FILE_UNAVAILABLE',
+                'risk' => 85,
+                'confidence' => 100,
+                'message' => 'Indexed file became unavailable before content verification.',
+                'quarantine_eligible' => false,
+            ];
+            $this->appendFindingRecord([
+                'file' => $relative,
+                'change_type' => 'UNAVAILABLE',
+                'verdict' => [
+                    'risk' => 85,
+                    'confidence' => 100,
+                    'truncated' => false,
+                    'findings' => [$unavailableFinding],
+                ],
+            ]);
+            return;
+        }
+        $normalized = wp_normalize_path($resolved);
+        if (!str_starts_with($normalized, $this->siteRoot)) throw new SecurityException('Scanner target path escaped jail.');
+
+        $sha256 = hash_file('sha256', $resolved);
+        if (!is_string($sha256)) throw new StorageException('Integrity file hashing failed.');
+        $oldHash = is_array($baseline[$relative] ?? null) ? (string)($baseline[$relative]['hash'] ?? '') : '';
+        $changeType = $oldHash === '' ? 'NEW' : (hash_equals($oldHash, $sha256) ? 'UNCHANGED' : 'MODIFIED');
+        $quarantined = false;
+
+        if ($changeType !== 'UNCHANGED' || $baseline === []) {
+            $extension = strtolower(pathinfo($relative, PATHINFO_EXTENSION));
+            $context = new VIS_Scan_Context(
+                VIS_Scan_Context::PROFILE_DEEP_FILESYSTEM,
+                'INTEGRITY',
+                $relative,
+                basename($relative),
+                $extension,
+                VIS_Malware_Engine::detectMime($resolved),
+                null,
+                $changeType
+            );
+            $verdict = $this->malwareEngine->scan($resolved, $context, VIS_Scan_Budget::deepFilesystem());
+            if ($verdict->findings !== []) {
+                $record = ['file' => $relative, 'change_type' => $changeType, 'verdict' => $verdict->toArray()];
+                if ($verdict->shouldQuarantine() && $this->isUploadExecutable($relative, $extension)) {
+                    $store = new VIS_Quarantine_Store();
+                    $record['quarantine'] = $store->quarantine($resolved, $sha256, $verdict);
+                    $quarantined = true;
+                }
+                $this->appendFindingRecord($record);
+                if (class_exists('VIS_Trinity_Grid')) {
+                    VIS_Trinity_Grid::onMalwareFinding('INTEGRITY', $relative, $verdict->toArray(), null);
+                }
+            }
+        }
+
+        if (!$quarantined) {
+            $size = filesize($resolved);
+            $mtime = filemtime($resolved);
+            $this->appendJsonRecord($this->resultFile, [
+                'path' => $relative,
+                'hash' => $sha256,
+                'mtime' => $mtime === false ? 0 : $mtime,
+                'size' => $size === false ? 0 : $size,
+            ]);
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function finalizeScan(string $mode): array {
+        $baseline = $this->loadJson($this->manifestFile);
+        $newState = $this->loadResultState();
+        $findingRecords = $this->loadNdjson($this->findingFile);
+        $malwareChanges = $this->findingChanges($findingRecords);
+        $blockingMalware = false;
+        foreach ($findingRecords as $record) {
+            $verdict = is_array($record['verdict'] ?? null) ? $record['verdict'] : [];
+            if ((int)($verdict['risk'] ?? 0) >= 80 && (int)($verdict['confidence'] ?? 0) >= 75) {
+                $blockingMalware = true;
+                break;
+            }
+        }
 
         if ($mode === 'reindex') {
-            // MODE: REINDEX -> verified overwrite. Findings are invalidated
-            // only after the fresh baseline survived a read-back check.
-            $this->write_json($this->manifest_file, $new_state);
-            $this->assert_baseline_commit($new_state);
-            $report = [
-                'status'    => 'clean',
-                'message'   => 'Baseline successfully re-calibrated.',
-                'changes'   => [],
-                'timestamp' => current_time('mysql'),
-                'baseline'  => hash('sha256', wp_json_encode($new_state, JSON_THROW_ON_ERROR)),
-            ];
-        } else {
-            // MODE: SCAN -> COMPARE
-            if (empty($baseline)) {
-                // First Run
-                $this->write_json($this->manifest_file, $new_state);
+            if ($blockingMalware) {
                 $report = [
-                    'status'    => 'init', 
-                    'message'   => 'Initial System Baseline established.',
-                    'changes'   => [],
-                    'timestamp' => current_time('mysql')
+                    'status' => 'warning',
+                    'message' => 'Baseline approval refused because high-confidence malware findings exist.',
+                    'changes' => $malwareChanges,
+                    'timestamp' => current_time('mysql'),
                 ];
             } else {
-                $this->assert_manifest_identity($baseline, $new_state);
-                $diff = $this->compare_manifests($baseline, $new_state);
-                
-                if (empty($diff)) {
-                    // Update mtimes in background to prevent drift on next scan
-                    if (!empty($new_state)) {
-                         $this->write_json($this->manifest_file, $new_state); 
-                    }
-                    
-                    $report = [
-                        'status'    => 'clean',
-                        'message'   => 'System Integrity Verified. Status: GREEN.',
-                        'changes'   => [],
-                        'timestamp' => current_time('mysql')
-                    ];
-                } else {
-                    $report = [
-                        'status'    => 'warning',
-                        'message'   => 'SECURITY ALERT: Integrity Mismatch Detected.',
-                        'changes'   => $diff,
-                        'timestamp' => current_time('mysql')
-                    ];
-                }
+                $this->commitBaseline($newState);
+                $report = [
+                    'status' => $malwareChanges === [] ? 'clean' : 'warning',
+                    'message' => $malwareChanges === [] ? 'Baseline securely recalibrated after malware analysis.' : 'Baseline recalibrated, but non-blocking malware findings require review.',
+                    'changes' => $malwareChanges, 'timestamp' => current_time('mysql'),
+                    'baseline' => hash('sha256', wp_json_encode($newState, JSON_THROW_ON_ERROR)),
+                ];
+            }
+        } elseif ($baseline === []) {
+            if ($blockingMalware) {
+                $report = [
+                    'status' => 'warning',
+                    'message' => 'Initial baseline refused because high-confidence malware findings exist.',
+                    'changes' => $malwareChanges,
+                    'timestamp' => current_time('mysql'),
+                ];
+            } else {
+                $this->commitBaseline($newState);
+                $report = [
+                    'status' => $malwareChanges === [] ? 'init' : 'warning', 'message' => $malwareChanges === [] ? 'Initial malware-screened system baseline established.' : 'Initial baseline established with non-blocking findings requiring review.',
+                    'changes' => $malwareChanges, 'timestamp' => current_time('mysql'),
+                ];
+            }
+        } else {
+            $this->assertManifestIdentity($baseline, $newState);
+            $changes = array_merge($this->compareManifests($baseline, $newState), $malwareChanges);
+            if ($changes === []) {
+                $this->commitBaseline($newState);
+                $report = [
+                    'status' => 'clean', 'message' => 'Integrity and malware analysis verified the system.',
+                    'changes' => [], 'timestamp' => current_time('mysql'),
+                ];
+            } else {
+                $report = [
+                    'status' => 'warning', 'message' => 'Integrity or malware findings require review.',
+                    'changes' => $changes, 'timestamp' => current_time('mysql'),
+                ];
             }
         }
 
         wp_cache_delete('vis_scan_report', 'options');
+        wp_cache_delete('alloptions', 'options');
         $updated = update_option('vis_scan_report', $report, false);
         if (!$updated && get_option('vis_scan_report', null) !== $report) {
             throw new StorageException('Integrity report persistence failed.');
         }
         wp_cache_delete('vis_scan_report', 'options');
-
-        // Secure Cleanup
-        if (file_exists($this->queue_file)) @unlink($this->queue_file);
-        if (file_exists($this->result_file)) @unlink($this->result_file);
-
+        wp_cache_delete('alloptions', 'options');
+        $this->cleanupScanState();
         return $report;
     }
 
-    // --- HELPER KERNEL ---
-
-    private function compare_manifests(array $old, array $new): array {
+    /** @param array<string, mixed> $old @param array<string, mixed> $new @return list<array<string, string>> */
+    private function compareManifests(array $old, array $new): array {
         $changes = [];
-        // Check Modified & New
         foreach ($new as $path => $data) {
             if (!isset($old[$path])) {
-                $changes[] = ['type' => 'NEW', 'file' => $path, 'desc' => 'New File Detected'];
-            } elseif (($old[$path]['hash'] ?? '') !== $data['hash']) {
-                $changes[] = ['type' => 'MODIFIED', 'file' => $path, 'desc' => 'Content Hash Mismatch'];
+                $changes[] = ['type' => 'NEW', 'file' => $path, 'desc' => 'New file detected'];
+            } elseif (!hash_equals((string)($old[$path]['hash'] ?? ''), (string)($data['hash'] ?? ''))) {
+                $changes[] = ['type' => 'MODIFIED', 'file' => $path, 'desc' => 'Content hash mismatch'];
             }
         }
-        // Check Deleted
         foreach ($old as $path => $data) {
-            if (!isset($new[$path])) {
-                $changes[] = ['type' => 'DELETED', 'file' => $path, 'desc' => 'File Removed'];
+            if (!isset($new[$path])) $changes[] = ['type' => 'DELETED', 'file' => $path, 'desc' => 'File removed'];
+        }
+        return $changes;
+    }
+
+    /** @param list<array<string, mixed>> $records @return list<array<string, string|int>> */
+    private function findingChanges(array $records): array {
+        $changes = [];
+        foreach ($records as $record) {
+            $verdict = is_array($record['verdict'] ?? null) ? $record['verdict'] : [];
+            $findings = is_array($verdict['findings'] ?? null) ? $verdict['findings'] : [];
+            foreach ($findings as $finding) {
+                if (!is_array($finding) || (int)($finding['risk'] ?? 0) < 50) continue;
+                $changes[] = [
+                    'type' => isset($record['quarantine']) ? 'QUARANTINED' : 'MALWARE',
+                    'file' => (string)($record['file'] ?? 'unknown'),
+                    'desc' => (string)($finding['code'] ?? 'MALWARE_FINDING'),
+                    'risk' => (int)($finding['risk'] ?? 0),
+                    'confidence' => (int)($finding['confidence'] ?? 0),
+                ];
             }
         }
         return $changes;
     }
 
-    /** Blocks the characteristic global delete/new false-positive before reporting or committing. */
-    private function assert_manifest_identity(array $old, array $new): void {
-        $old_count = count($old);
-        $new_count = count($new);
-        if ($old_count < 20 || $new_count < 20) return;
-
+    /** @param array<string, mixed> $old @param array<string, mixed> $new */
+    private function assertManifestIdentity(array $old, array $new): void {
+        $oldCount = count($old);
+        $newCount = count($new);
+        if ($oldCount < 20 || $newCount < 20) return;
         $shared = count(array_intersect_key($old, $new));
-        $deleted_ratio = ($old_count - $shared) / $old_count;
-        $created_ratio = ($new_count - $shared) / $new_count;
-        if ($deleted_ratio < 0.75 || $created_ratio < 0.75) return;
-
-        $old_hashes = array_column($old, 'hash');
-        $new_hashes = array_column($new, 'hash');
-        $hash_overlap = count(array_intersect($old_hashes, $new_hashes));
-        $overlap_ratio = $hash_overlap / max(1, min($old_count, $new_count));
-        $reason = $overlap_ratio >= 0.50 ? 'Root/path remap detected.' : 'Incomplete or foreign filesystem snapshot detected.';
-        throw new RuntimeException('Integrity baseline identity guard: ' . $reason);
+        $deletedRatio = ($oldCount - $shared) / $oldCount;
+        $createdRatio = ($newCount - $shared) / $newCount;
+        if ($deletedRatio < 0.75 || $createdRatio < 0.75) return;
+        $oldHashes = array_column($old, 'hash');
+        $newHashes = array_column($new, 'hash');
+        $hashOverlap = count(array_intersect($oldHashes, $newHashes));
+        $reason = ($hashOverlap / max(1, min($oldCount, $newCount))) >= 0.50
+            ? 'Root remap detected.' : 'Foreign or incomplete filesystem snapshot detected.';
+        throw new SecurityException('Integrity baseline path validation failed: ' . $reason);
     }
 
-    private function assert_baseline_commit(array $expected): void {
-        $persisted = $this->load_json($this->manifest_file);
-        $expected_json = wp_json_encode($expected, JSON_THROW_ON_ERROR);
-        $persisted_json = wp_json_encode($persisted, JSON_THROW_ON_ERROR);
-
-        if (!hash_equals(hash('sha256', $expected_json), hash('sha256', $persisted_json))) {
+    /** @param array<string, mixed> $state */
+    private function commitBaseline(array $state): void {
+        $this->writeJson($this->manifestFile, $state);
+        $persisted = $this->loadJson($this->manifestFile);
+        $expectedJson = wp_json_encode($state, JSON_THROW_ON_ERROR);
+        $persistedJson = wp_json_encode($persisted, JSON_THROW_ON_ERROR);
+        if (!hash_equals(hash('sha256', $expectedJson), hash('sha256', $persistedJson))) {
             throw new StorageException('Integrity baseline read-back verification failed.');
         }
     }
 
-    /**
-     * ATOMIC JSON WRITER
-     * Verhindert Dateikorruption bei Concurrent Requests.
-     */
-    private function write_json(string $file, array $data): void {
-        $json = json_encode(
-            $data,
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
-        );
-        
-        $temp = $file . '.tmp.' . bin2hex(random_bytes(16));
-        
-        // Locking Mechanism: EX + Sync
-        if (@file_put_contents($temp, $json, LOCK_EX) !== false) {
-            // Atomic Switch
-            if (@rename($temp, $file)) {
-                // Ensure Permissions
-                if (!@chmod($file, 0600)) {
-                    throw new StorageException('Integrity artifact permission enforcement failed.');
-                }
-                return;
-            }
+    /** @return array<string, array{hash:string,mtime:int,size:int}> */
+    private function loadResultState(): array {
+        $state = [];
+        foreach ($this->loadNdjson($this->resultFile) as $record) {
+            $path = (string)($record['path'] ?? '');
+            $hash = (string)($record['hash'] ?? '');
+            if ($path === '' || preg_match('/^[a-f0-9]{64}$/D', $hash) !== 1) continue;
+            $state[$path] = ['hash' => $hash, 'mtime' => (int)($record['mtime'] ?? 0), 'size' => (int)($record['size'] ?? 0)];
         }
-        @unlink($temp); // Cleanup on fail
-        throw new StorageException('Integrity artifact persistence failed.');
+        ksort($state, SORT_STRING);
+        return $state;
     }
 
-    private function load_json(string $file): array {
-        if (file_exists($file)) {
-            $content = @file_get_contents($file); // @ to suppress warnings
-            if ($content) {
-                $data = json_decode($content, true);
-                return is_array($data) ? $data : [];
+    /** @return list<array<string, mixed>> */
+    private function loadNdjson(string $file): array {
+        if (!is_file($file)) return [];
+        if ((filesize($file) ?: 0) > self::MAX_STATE_BYTES) throw new StorageException('Scanner state size boundary exceeded.');
+        $handle = @fopen($file, 'rb');
+        if (!is_resource($handle)) throw new StorageException('Scanner state unavailable.');
+        $records = [];
+        while (($line = fgets($handle)) !== false) {
+            $line = trim($line);
+            if ($line === '') continue;
+            try {
+                $record = json_decode($line, true, 32, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                fclose($handle);
+                throw new StorageException('Scanner state validation failed.');
             }
+            if (is_array($record)) $records[] = $record;
         }
-        return [];
+        fclose($handle);
+        return $records;
     }
 
-    private function ensure_vault_exists(): bool {
-        if (!is_dir($this->vault_dir)) {
-            @mkdir($this->vault_dir, 0755, true);
-            @file_put_contents($this->vault_dir . '/.htaccess', "Order Deny,Allow\nDeny from all");
-            @file_put_contents($this->vault_dir . '/index.html', ''); // Silence
+    /** @return array<string, mixed> */
+    private function loadJson(string $file): array {
+        if (!is_file($file)) return [];
+        $size = filesize($file);
+        if ($size === false || $size > self::MAX_STATE_BYTES) throw new StorageException('Scanner JSON size boundary exceeded.');
+        $content = file_get_contents($file);
+        if (!is_string($content) || $content === '') return [];
+        try {
+            $data = json_decode($content, true, 64, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw new StorageException('Scanner JSON validation failed.');
         }
-        return is_writable($this->vault_dir);
+        return is_array($data) ? $data : [];
+    }
+
+    private function writeJson(string $file, array $data): void {
+        $json = wp_json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        if (!is_string($json) || strlen($json) > self::MAX_STATE_BYTES) throw new StorageException('Scanner JSON boundary exceeded.');
+        $temporary = $file . '.' . bin2hex(random_bytes(16)) . '.tmp';
+        if (file_put_contents($temporary, $json, LOCK_EX) === false) {
+            throw new StorageException('Scanner state atomic write failed.');
+        }
+        @chmod($temporary, 0600);
+        if (!@rename($temporary, $file)) {
+            if (!@copy($temporary, $file)) {
+                @unlink($temporary);
+                throw new StorageException('Scanner state atomic commit failed.');
+            }
+            @unlink($temporary);
+        }
+        @chmod($file, 0600);
+    }
+
+    private function appendLine(string $file, string $line): void {
+        if (str_contains($line, "\n") || str_contains($line, "\r") || str_contains($line, "\0")) {
+            throw new SecurityException('Scanner queue record rejected.');
+        }
+        $currentSize = is_file($file) ? filesize($file) : 0;
+        if ($currentSize === false || $currentSize + strlen($line) + 1 > self::MAX_STATE_BYTES) {
+            throw new StorageException('Scanner append state boundary exceeded.');
+        }
+        if (file_put_contents($file, $line . "\n", FILE_APPEND | LOCK_EX) === false) {
+            throw new StorageException('Scanner queue append failed.');
+        }
+    }
+
+    private function appendJsonRecord(string $file, array $record): void {
+        $json = wp_json_encode($record, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        if (!is_string($json) || strlen($json) > 65536) throw new StorageException('Scanner record boundary exceeded.');
+        $this->appendLine($file, $json);
+    }
+
+    private function appendFindingRecord(array $record): void {
+        $this->appendJsonRecord($this->findingFile, $record);
+    }
+
+    private function truncateFile(string $file): void {
+        if (file_put_contents($file, '', LOCK_EX) === false) {
+            throw new StorageException('Scanner state initialization failed.');
+        }
+        @chmod($file, 0600);
+    }
+
+    private function isUploadExecutable(string $relative, string $extension): bool {
+        $normalized = strtolower(str_replace('\\', '/', $relative));
+        return preg_match('~(?:^|/)wp-content/uploads(?:/|$)~', $normalized) === 1
+            && in_array($extension, ['php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phtml', 'phar'], true);
+    }
+
+    private function cleanupScanState(): void {
+        foreach ([$this->queueFile, $this->resultFile, $this->findingFile, $this->indexStateFile, $this->cursorFile] as $file) {
+            if (is_file($file) && !@unlink($file)) error_log('[VIS SCANNER] State cleanup failed.');
+        }
+    }
+
+    private function ensureVaultExists(): bool {
+        foreach ([$this->vaultDirectory, $this->stateDirectory] as $directory) {
+            if (!is_dir($directory)) {
+                @mkdir($directory, 0755, true);
+            }
+            @chmod($directory, 0700);
+        }
+        foreach ([$this->vaultDirectory . '/.htaccess' => "Require all denied\nDeny from all\n", $this->vaultDirectory . '/index.php' => "<?php\nexit;\n"] as $file => $content) {
+            if (!is_file($file)) {
+                @file_put_contents($file, $content, LOCK_EX);
+            }
+            @chmod($file, 0600);
+        }
+        return is_dir($this->vaultDirectory) && is_writable($this->vaultDirectory) && is_dir($this->stateDirectory) && is_writable($this->stateDirectory);
     }
 }
 

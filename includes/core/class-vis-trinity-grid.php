@@ -60,6 +60,35 @@ final class VIS_Trinity_Grid {
         }
     }
 
+    /** @param array<string, mixed> $verdict */
+    public static function onMalwareFinding(string $source, string $subject, array $verdict, ?string $ip): void {
+        $source = strtoupper(preg_replace('/[^A-Z0-9_]/i', '_', $source) ?? 'SCANNER');
+        $risk = max(0, min(100, (int)($verdict['risk'] ?? 0)));
+        $confidence = max(0, min(100, (int)($verdict['confidence'] ?? 0)));
+        $safeSubject = substr(preg_replace('/[^A-Za-z0-9._\/-]/', '_', $subject) ?? 'unknown', 0, 160);
+
+        if (class_exists('VIS_Event_Bus')) {
+            VIS_Event_Bus::emit('TRINITY', 'MALWARE_CORRELATION', 'Malware finding correlated.', [
+                'source' => $source,
+                'subject' => $safeSubject,
+                'risk' => $risk,
+                'confidence' => $confidence,
+            ], max(1, min(10, (int)ceil($risk / 10))));
+        }
+
+        if ($source === 'AIRLOCK' && is_string($ip) && filter_var($ip, FILTER_VALIDATE_IP) && self::config()['enabled']) {
+            $prometheus = '\\VisionGaia\\Integrity\\Modules\\Prometheus\\VIS_Prometheus';
+            if (class_exists($prometheus) && method_exists($prometheus, 'get_instance')) {
+                $penalty = max(0.0, min(80.0, ($risk * $confidence) / 125.0));
+                $prometheus::get_instance()->increase_threat_score($ip, $penalty, 'AIRLOCK_MALWARE_FINDING');
+            }
+        }
+
+        if ($risk >= 90 && $confidence >= 90 && self::config()['enabled']) {
+            self::engageDeception($source . ': High-confidence malware finding');
+        }
+    }
+
     /** @return array{enabled:bool,waf_penalty:float} */
     private static function config(): array {
         $raw = get_option('vis_trinity_config', []);

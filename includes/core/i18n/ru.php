@@ -1033,7 +1033,7 @@ return [
     // =========================================================================
     // 18. TRINITY GRID & TOPOLOGY
     // =========================================================================
-    'TRINITY GRID V7.6.0' => 'СЕТЬ TRINITY V7.6.0',
+    'TRINITY GRID V7.6.1' => 'СЕТЬ TRINITY V7.6.1',
     'Coordinated Real-Time Defense Interlock Matrix & Visual Topology' => 'Координированная матрица взаимодействия защиты и топология',
     'Koordinierte Echtzeit-Abwehrkopplungsmatrix & Visuelle Topologie' => 'Координированная матрица взаимодействия защиты и топология',
     'TRINITY: INTERLOCKED' => 'TRINITY: СИНХРОНИЗИРОВАНО',

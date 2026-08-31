@@ -16,6 +16,8 @@ final class VIS_Bootstrapper {
             
             static $map = [
                 'VIS_Scanner_Engine'        => 'includes/scanner/class-vis-scanner-engine.php',
+                'VIS_Scanner_Engine_Omega'  => 'includes/scanner/class-vis-scanner-engine.php',
+                'VIS_Malware_Engine'        => 'includes/scanner/class-vis-malware-engine.php',
                 'VIS_Security'              => 'includes/core/class-vis-security.php',
                 'VIS_Event_Bus'             => 'includes/core/class-vis-event-bus.php',
                 'VIS_Module_Registry'        => 'includes/core/class-vis-module-registry.php',

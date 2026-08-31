@@ -6,7 +6,9 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 final class VIS_Dashboard_Assets {
 
     public static function enqueue(): void {
-        $version = defined('VIS_VERSION') ? VIS_VERSION : 'omega';
+        $base_version = defined('VIS_VERSION') ? VIS_VERSION : 'omega';
+        $js_file = defined('VIS_PATH') ? VIS_PATH . 'assets/js/vis-scanner-client.js' : '';
+        $version = (file_exists($js_file)) ? $base_version . '.' . filemtime($js_file) : $base_version;
 
         wp_enqueue_style('vis-dashboard-css', VIS_URL . 'assets/css/vis-dashboard.css', [], $version);
         wp_enqueue_style('vis-security-center-css', VIS_URL . 'assets/css/vis-security-center.css', ['vis-dashboard-css'], $version);
