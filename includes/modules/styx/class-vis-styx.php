@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace VisionGaia\Integrity\Modules\Styx;
+namespace VisionGaia\GeDefense\Modules\Styx;
 
 if (!defined('ABSPATH')) exit;
 
@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) exit;
  * STATUS: DIAMANT VGT SUPREME (Adversarial Fixes Applied & Core Telemetry Control)
  * ARCHITECT: VGT Intelligence System
  */
-final class VIS_Styx {
+final class Styx {
 
     private static ?self $instance = null;
     
@@ -116,7 +116,7 @@ final class VIS_Styx {
             if ($this->audit_mode) return $preempt;
 
             // VGT NEMESIS INTEGRATION: Poisoned Response bei Exfiltration
-            if (class_exists('\VisionGaia\Integrity\Modules\Nemesis\VIS_Nemesis')) {
+            if (class_exists('\VisionGaia\GeDefense\Modules\Nemesis\Nemesis')) {
                  return $this->poison_response();
             }
             return new \WP_Error('vgt_styx_blocked', "VGT STYX: Outbound request to $host is strictly forbidden.");
@@ -248,4 +248,4 @@ final class VIS_Styx {
     }
 }
 
-VIS_Styx::get_instance();
+Styx::get_instance();

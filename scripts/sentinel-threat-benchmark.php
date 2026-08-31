@@ -4,7 +4,7 @@
  * VISIONGAIA TECHNOLOGY: VGT SENTINEL SECURITY BENCHMARK & THREAT AUDIT SUITE
  * PURPOSE: Automated In-Memory Validation of AEGIS, PROMETHEUS, and CERBERUS
  * STATUS: AUTHORIZED RESEARCH & REGRESSION BENCHMARK SUITE
- * VERSION: 7.6.1 OMEGA ASSURANCE
+ * VERSION: 8.0.0 OMEGA ASSURANCE
  * ==============================================================================
  * 
  * Usage:
@@ -256,7 +256,7 @@ final class SentinelBenchmarkRunner {
         ];
 
         // --- 6. PROMETHEUS BOTANICAL SWARM TEST ---
-        $prometheus_class = '\VisionGaia\Integrity\Modules\Prometheus\VIS_Prometheus';
+        $prometheus_class = '\VisionGaia\GeDefense\Modules\Prometheus\Prometheus';
         $swarm_ips = [];
         // Simulate 16 requests from different IPs sharing identical botanical header signature
         for ($i = 1; $i <= 16; $i++) {
@@ -337,7 +337,7 @@ final class SentinelBenchmarkRunner {
     private function print_banner(): void {
         echo BenchmarkColors::CYAN;
         echo "=====================================================================\n";
-        echo " VGT SENTINEL V7.6.1 SECURITY BENCHMARK & THREAT AUDIT SUITE\n";
+        echo " VGT SENTINEL V8.0.0 SECURITY BENCHMARK & THREAT AUDIT SUITE\n";
         echo " Automated In-Memory Regression & Protection Verification\n";
         echo "=====================================================================\n";
         echo BenchmarkColors::RESET;
@@ -390,7 +390,7 @@ final class SentinelBenchmarkRunner {
         
         $output = [
             'suite'            => 'VGT Sentinel Security Benchmark',
-            'version'          => '7.6.1',
+            'version'          => '8.0.0',
             'passed'           => $this->suite_passed,
             'timestamp'        => date('c'),
             'total_vectors'    => count($this->results),

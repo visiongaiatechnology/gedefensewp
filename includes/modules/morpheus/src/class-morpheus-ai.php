@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Morpheus;
+namespace VisionGaia\GeDefense\Modules\Morpheus;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 final class Morpheus_AI {
 
-    private Vis_Morpheus $core;
+    private Morpheus $core;
 
-    public function __construct( Vis_Morpheus $core ) {
+    public function __construct( Morpheus $core ) {
         $this->core = $core;
         add_action( 'vgt_morpheus_async_ai_build', [ $this, 'cron_trigger_ai' ] );
     }
@@ -63,7 +63,7 @@ final class Morpheus_AI {
         }
 
         if ($line_count >= 200 && !file_exists($processing_file)) {
-            Vis_Morpheus::ai_debug("Auto-Limit (200) erreicht für [$safe_caller]. Plane asynchrone WP-Cron Analyse.");
+            Morpheus::ai_debug("Auto-Limit (200) erreicht für [$safe_caller]. Plane asynchrone WP-Cron Analyse.");
             
             if ( ! wp_next_scheduled( 'vgt_morpheus_async_ai_build', [ $safe_caller ] ) ) {
                 wp_schedule_single_event( time(), 'vgt_morpheus_async_ai_build', [ $safe_caller ] );
@@ -77,7 +77,7 @@ final class Morpheus_AI {
         $processing_file = Morpheus_Path_Jail::file('audit', $slug, '.log.processing');
 
         if (file_exists($processing_file) || file_exists($log_file)) {
-            Vis_Morpheus::ai_debug("==== ASYNC CRON AI TRIGGER FOR [$slug] ====");
+            Morpheus::ai_debug("==== ASYNC CRON AI TRIGGER FOR [$slug] ====");
             $this->trigger_ai($slug, false);
         }
     }
@@ -107,9 +107,9 @@ final class Morpheus_AI {
             $log_content = substr( $log_content, 0, 24000 ) . "\n...[TRUNCATED_BY_VGT_TOKEN_LIMIT]...";
         }
 
-        Vis_Morpheus::$is_internal_action = true; 
+        Morpheus::$is_internal_action = true;
         try {
-            Vis_Morpheus::ai_debug("Starte I/O Request zu Groq für [$caller]...");
+            Morpheus::ai_debug("Starte I/O Request zu Groq für [$caller]...");
             
             $system_prompt = <<<EOT
 ROLE: You are AEGIS, a strict cyber-defense AI.
@@ -146,8 +146,8 @@ EOT;
                 } catch (\JsonException $e) {
                     $parsed_json = null;
                 }
-                if (is_array($parsed_json) && Vis_Morpheus::validate_matrix($parsed_json)) {
-                    Vis_Morpheus::ai_debug("Erfolg! Groq hat valide JSON-Matrix für [$caller] generiert.");
+                if (is_array($parsed_json) && Morpheus::validate_matrix($parsed_json)) {
+                    Morpheus::ai_debug("Erfolg! Groq hat valide JSON-Matrix für [$caller] generiert.");
                     $encoded = wp_json_encode($parsed_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
                     if (!is_string($encoded) || file_put_contents($proposed_file, $encoded, LOCK_EX) === false) {
                         throw new \StorageException('Proposed matrix write failed.');
@@ -161,17 +161,17 @@ EOT;
 
                     return ['success' => true, 'message' => 'Matrix successfully built.'];
                 } else {
-                    Vis_Morpheus::ai_debug("FEHLER: Groq hat korruptes JSON geliefert. Verwerfe Antwort.");
+                    Morpheus::ai_debug("FEHLER: Groq hat korruptes JSON geliefert. Verwerfe Antwort.");
                     self::restore_processing_log($processing_file, $log_file);
                     return ['success' => false, 'message' => 'AI returned invalid JSON structure.'];
                 }
             } else {
-                Vis_Morpheus::ai_debug("FEHLER: " . $api_response['message']);
+                Morpheus::ai_debug("FEHLER: " . $api_response['message']);
                 self::restore_processing_log($processing_file, $log_file);
                 return ['success' => false, 'message' => $api_response['message']];
             }
         } finally {
-            Vis_Morpheus::$is_internal_action = false; 
+            Morpheus::$is_internal_action = false;
         }
     }
 
@@ -231,7 +231,7 @@ EOT;
 
         if ( is_wp_error( $response ) ) {
             $err = $response->get_error_message();
-            Vis_Morpheus::ai_debug('Groq network failure: ' . $err);
+            Morpheus::ai_debug('Groq network failure: ' . $err);
             return ['success' => false, 'message' => 'Netzwerk/cURL Fehler: Upstream request failed.'];
         }
 
@@ -242,7 +242,7 @@ EOT;
             // Groq gibt bei Fehlern oft JSON zurück, extrahieren für bessere UX
             $parsed_err = json_decode($raw_body, true);
             $err_msg = isset($parsed_err['error']['message']) ? $parsed_err['error']['message'] : $raw_body;
-            Vis_Morpheus::ai_debug("Groq API HTTP $status_code: " . $err_msg);
+            Morpheus::ai_debug("Groq API HTTP $status_code: " . $err_msg);
             return ['success' => false, 'message' => "Groq API HTTP $status_code: Upstream request rejected."];
         }
 

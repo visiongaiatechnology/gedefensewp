@@ -15,7 +15,9 @@
         position: fixed; /* Nimmt die Sidebar aus dem HTML-Flow -> Verhindert das Wegdrücken des Contents */
         top: 32px;       /* Abstand für die WordPress Admin-Bar oben */
         height: calc(100vh - 32px);
-        z-index: 100;    /* Garantiert, dass sie über dem Content liegt */
+        max-height: calc(100vh - 32px);
+        z-index: 100;
+        overflow: hidden;    /* Garantiert, dass sie über dem Content liegt */
         
         background: var(--vgt-sidebar-bg);
         border-right: 1px solid var(--vgt-border);
@@ -66,9 +68,11 @@
 
     /* NAVIGATION AREA WITH CUSTOM SCROLLBAR */
     .vgt-sidebar-nav {
-        flex-grow: 1;
+        flex: 1 1 0%;
+        min-height: 0;
         overflow-y: auto;
-        padding: 16px 0;
+        overflow-x: hidden;
+        padding: 16px 0 24px 0;
         display: flex;
         flex-direction: column;
         gap: 4px;

@@ -11,11 +11,11 @@ final class VIS_Trinity_Grid {
         $dependencies = [
             'prometheus' => [
                 'path'  => 'includes/modules/prometheus/class-vis-prometheus.php',
-                'class' => '\\VisionGaia\\Integrity\\Modules\\Prometheus\\VIS_Prometheus',
+                'class' => '\\VisionGaia\\GeDefense\\Modules\\Prometheus\\Prometheus',
             ],
             'nemesis' => [
                 'path'  => 'includes/modules/nemesis/class-vis-nemesis.php',
-                'class' => '\\VisionGaia\\Integrity\\Modules\\Nemesis\\VIS_Nemesis',
+                'class' => '\\VisionGaia\\GeDefense\\Modules\\Nemesis\\Nemesis',
             ],
         ];
 
@@ -35,7 +35,7 @@ final class VIS_Trinity_Grid {
         $config = self::config();
         if (!$config['enabled']) return;
 
-        $prometheus = '\\VisionGaia\\Integrity\\Modules\\Prometheus\\VIS_Prometheus';
+        $prometheus = '\\VisionGaia\\GeDefense\\Modules\\Prometheus\\Prometheus';
         if (class_exists($prometheus) && method_exists($prometheus, 'get_instance')) {
             $prometheus::get_instance()->increase_threat_score(
                 $ip,
@@ -77,7 +77,7 @@ final class VIS_Trinity_Grid {
         }
 
         if ($source === 'AIRLOCK' && is_string($ip) && filter_var($ip, FILTER_VALIDATE_IP) && self::config()['enabled']) {
-            $prometheus = '\\VisionGaia\\Integrity\\Modules\\Prometheus\\VIS_Prometheus';
+            $prometheus = '\\VisionGaia\\GeDefense\\Modules\\Prometheus\\Prometheus';
             if (class_exists($prometheus) && method_exists($prometheus, 'get_instance')) {
                 $penalty = max(0.0, min(80.0, ($risk * $confidence) / 125.0));
                 $prometheus::get_instance()->increase_threat_score($ip, $penalty, 'AIRLOCK_MALWARE_FINDING');
@@ -100,7 +100,7 @@ final class VIS_Trinity_Grid {
     }
 
     private static function engageDeception(string $reason): void {
-        $nemesis = '\\VisionGaia\\Integrity\\Modules\\Nemesis\\VIS_Nemesis';
+        $nemesis = '\\VisionGaia\\GeDefense\\Modules\\Nemesis\\Nemesis';
         if (class_exists($nemesis) && method_exists($nemesis, 'get_instance')) {
             $nemesis::get_instance()->trigger_tarpit($reason);
         }

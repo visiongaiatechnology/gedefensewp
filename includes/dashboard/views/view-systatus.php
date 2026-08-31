@@ -118,6 +118,22 @@ $modules = [
         'meta'   => __('System Core Obfuscation', 'vgt-sentinel'),
         'icon'   => '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>'
     ],
+    'throneguard' => [
+        'name'   => __('THRONEGUARD', 'vgt-sentinel'),
+        'desc'   => __('Master Role Segregation & Superkey Lockdown', 'vgt-sentinel'),
+        'active' => class_exists('VIS_Throne_Guard') && (!empty($opt['throneguard_enabled']) || !empty($opt['throneguard_harden_admin'])),
+        'color'  => '#a855f7',
+        'meta'   => (!empty($opt['throneguard_harden_admin'])) ? __('Admin Hardened', 'vgt-sentinel') : __('Master Ready', 'vgt-sentinel'),
+        'icon'   => '<path d="M3 7l4 4 5-7 5 7 4-4-2 12H5L3 7z"></path><line x1="5" y1="22" x2="19" y2="22"></line>'
+    ],
+    'loginpager' => [
+        'name'   => __('LOGINPAGER', 'vgt-sentinel'),
+        'desc'   => __('Custom Auth Gateway & Visual Shield', 'vgt-sentinel'),
+        'active' => class_exists('VIS_LoginPager') && !empty($opt['loginpager_enabled']),
+        'color'  => '#06b6d4',
+        'meta'   => __('Branded Auth UI', 'vgt-sentinel'),
+        'icon'   => '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>'
+    ],
     'vlp' => [
         'name'   => __('SHADOW-NET', 'vgt-sentinel'),
         'desc'   => __('VisionLegalPro Asset Downloader', 'vgt-sentinel'),
@@ -197,22 +213,32 @@ $security_failures = array_values(array_filter($security_checks, static fn(array
     $score = 0;
     $score_details = [];
 
-    // Aegis (20%)
-    if (!empty($opt['aegis_enabled'])) {
-        $score += 20;
-        $score_details[] = ['name' => 'Aegis WAF', 'active' => true, 'weight' => 20];
-    } else {
-        $score_details[] = ['name' => 'Aegis WAF', 'active' => false, 'weight' => 20];
-    }
-
-    // Zeus (25%)
+    // Zeus (20%)
     $zeus_config = get_option('vis_zeus_config', []);
     $zeus_active = !empty($zeus_config);
     if ($zeus_active) {
-        $score += 25;
-        $score_details[] = ['name' => 'Zeus Defender', 'active' => true, 'weight' => 25];
+        $score += 20;
+        $score_details[] = ['name' => 'Zeus Defender', 'active' => true, 'weight' => 20];
     } else {
-        $score_details[] = ['name' => 'Zeus Defender', 'active' => false, 'weight' => 25];
+        $score_details[] = ['name' => 'Zeus Defender', 'active' => false, 'weight' => 20];
+    }
+
+    // Aegis (15%)
+    if (!empty($opt['aegis_enabled'])) {
+        $score += 15;
+        $score_details[] = ['name' => 'Aegis WAF', 'active' => true, 'weight' => 15];
+    } else {
+        $score_details[] = ['name' => 'Aegis WAF', 'active' => false, 'weight' => 15];
+    }
+
+    // ThroneGuard (15%)
+    $throne_status = class_exists('VIS_Throne_Guard') ? VIS_Throne_Guard::status() : [];
+    $throne_active = !empty($throne_status['harden_admin']) || !empty($throne_status['is_master']) || !empty($opt['throneguard_enabled']);
+    if ($throne_active) {
+        $score += 15;
+        $score_details[] = ['name' => 'ThroneGuard Master', 'active' => true, 'weight' => 15];
+    } else {
+        $score_details[] = ['name' => 'ThroneGuard Master', 'active' => false, 'weight' => 15];
     }
 
     // Prometheus (15%)
@@ -239,12 +265,12 @@ $security_failures = array_values(array_filter($security_checks, static fn(array
         $score_details[] = ['name' => 'Hades Stealth', 'active' => false, 'weight' => 10];
     }
 
-    // Cerberus (10%)
+    // Cerberus (5%)
     if (class_exists('VIS_Cerberus')) {
-        $score += 10;
-        $score_details[] = ['name' => 'Cerberus Perimeter', 'active' => true, 'weight' => 10];
+        $score += 5;
+        $score_details[] = ['name' => 'Cerberus Perimeter', 'active' => true, 'weight' => 5];
     } else {
-        $score_details[] = ['name' => 'Cerberus Perimeter', 'active' => false, 'weight' => 10];
+        $score_details[] = ['name' => 'Cerberus Perimeter', 'active' => false, 'weight' => 5];
     }
 
     // Airlock (5%)

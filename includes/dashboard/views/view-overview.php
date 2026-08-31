@@ -223,22 +223,32 @@ $wpdb->suppress_errors($suppress);
     $score = 0;
     $score_details = [];
 
-    // Aegis (20%)
-    if (!empty($opt['aegis_enabled'])) {
-        $score += 20;
-        $score_details[] = ['name' => 'Aegis WAF', 'active' => true, 'weight' => 20, 'tab' => 'aegis'];
-    } else {
-        $score_details[] = ['name' => 'Aegis WAF', 'active' => false, 'weight' => 20, 'tab' => 'aegis'];
-    }
-
-    // Zeus (25%)
+    // Zeus (20%)
     $zeus_config = get_option('vis_zeus_config', []);
     $zeus_active_check = !empty($zeus_config);
     if ($zeus_active_check) {
-        $score += 25;
-        $score_details[] = ['name' => 'Zeus Defender', 'active' => true, 'weight' => 25, 'tab' => 'zeus'];
+        $score += 20;
+        $score_details[] = ['name' => 'Zeus Defender', 'active' => true, 'weight' => 20, 'tab' => 'zeus'];
     } else {
-        $score_details[] = ['name' => 'Zeus Defender', 'active' => false, 'weight' => 25, 'tab' => 'zeus'];
+        $score_details[] = ['name' => 'Zeus Defender', 'active' => false, 'weight' => 20, 'tab' => 'zeus'];
+    }
+
+    // Aegis (15%)
+    if (!empty($opt['aegis_enabled'])) {
+        $score += 15;
+        $score_details[] = ['name' => 'Aegis WAF', 'active' => true, 'weight' => 15, 'tab' => 'aegis'];
+    } else {
+        $score_details[] = ['name' => 'Aegis WAF', 'active' => false, 'weight' => 15, 'tab' => 'aegis'];
+    }
+
+    // ThroneGuard (15%)
+    $throne_status = class_exists('VIS_Throne_Guard') ? VIS_Throne_Guard::status() : [];
+    $throne_active = !empty($throne_status['harden_admin']) || !empty($throne_status['is_master']) || !empty($opt['throneguard_enabled']);
+    if ($throne_active) {
+        $score += 15;
+        $score_details[] = ['name' => 'ThroneGuard Master', 'active' => true, 'weight' => 15, 'tab' => 'throneguard'];
+    } else {
+        $score_details[] = ['name' => 'ThroneGuard Master', 'active' => false, 'weight' => 15, 'tab' => 'throneguard'];
     }
 
     // Prometheus (15%)
@@ -265,12 +275,12 @@ $wpdb->suppress_errors($suppress);
         $score_details[] = ['name' => 'Hades Stealth', 'active' => false, 'weight' => 10, 'tab' => 'hades'];
     }
 
-    // Cerberus (10%)
+    // Cerberus (5%)
     if (class_exists('VIS_Cerberus')) {
-        $score += 10;
-        $score_details[] = ['name' => 'Cerberus Perimeter', 'active' => true, 'weight' => 10, 'tab' => 'cerberus'];
+        $score += 5;
+        $score_details[] = ['name' => 'Cerberus Perimeter', 'active' => true, 'weight' => 5, 'tab' => 'cerberus'];
     } else {
-        $score_details[] = ['name' => 'Cerberus Perimeter', 'active' => false, 'weight' => 10, 'tab' => 'cerberus'];
+        $score_details[] = ['name' => 'Cerberus Perimeter', 'active' => false, 'weight' => 5, 'tab' => 'cerberus'];
     }
 
     // Airlock (5%)

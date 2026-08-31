@@ -21,6 +21,12 @@ final class VIS_Dashboard_Assets {
         ]);
 
         wp_enqueue_script('vis-scanner-client', VIS_URL . 'assets/js/vis-scanner-client.js', ['jquery'], $version, true);
+        $activePage = isset($_GET['page']) && is_string($_GET['page']) ? sanitize_key($_GET['page']) : '';
+        $activeTab  = isset($_GET['tab']) && is_string($_GET['tab']) ? sanitize_key($_GET['tab']) : '';
+        if ($activeTab === 'loginpager' || $activePage === 'vgt-loginpager') {
+            wp_enqueue_style('vis-loginpager-admin', VIS_URL . 'includes/dashboard/views/loginpager/style.css', ['vis-dashboard-css'], $version);
+            wp_enqueue_script('vis-loginpager-admin', VIS_URL . 'assets/js/vis-loginpager-admin.js', [], $version, true);
+        }
         
         wp_localize_script('vis-scanner-client', 'vis_vars', [
             'nonce'   => wp_create_nonce('vis_nonce'),

@@ -14,13 +14,13 @@
 
 declare(strict_types=1);
 
-namespace VisionGaia\Integrity\Modules\Prometheus;
+namespace VisionGaia\GeDefense\Modules\Prometheus;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit('VGT_ACCESS_DENIED');
 }
 
-final class VIS_Prometheus {
+final class Prometheus {
 
     private static ?self $instance = null;
 
@@ -790,4 +790,4 @@ final class VIS_Prometheus {
     }
 }
 
-VIS_Prometheus::get_instance();
+Prometheus::get_instance();

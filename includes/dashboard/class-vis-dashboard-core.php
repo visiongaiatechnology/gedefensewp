@@ -127,10 +127,36 @@ final class VIS_Dashboard_Core {
             'vgt-suite',
             [new VIS_Dashboard_View(), 'render']
         );
+
+        add_submenu_page(
+            'vgt-suite',
+            'ThroneGuard',
+            'ThroneGuard',
+            'manage_options',
+            'vgt-throneguard',
+            static function(): void {
+                $_GET['tab'] = 'throneguard';
+                (new VIS_Dashboard_View())->render();
+            }
+        );
+
+        add_submenu_page(
+            'vgt-suite',
+            'LoginPager',
+            'LoginPager',
+            'manage_options',
+            'vgt-loginpager',
+            static function(): void {
+                $_GET['tab'] = 'loginpager';
+                (new VIS_Dashboard_View())->render();
+            }
+        );
     }
 
     public function inject_assets(string $current_hook): void {
-        if ($current_hook !== $this->page_hook && (empty($_GET['page']) || $_GET['page'] !== 'vgt-suite')) return;
+        $allowed_pages = ['vgt-suite', 'vgt-throneguard', 'vgt-loginpager'];
+        $page = isset($_GET['page']) && is_string($_GET['page']) ? sanitize_key($_GET['page']) : '';
+        if (!in_array($page, $allowed_pages, true) && $current_hook !== $this->page_hook) return;
         VIS_Dashboard_Assets::enqueue();
     }
 }

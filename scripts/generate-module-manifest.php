@@ -30,6 +30,8 @@ $components = [
     'prometheus' => ['directory' => 'includes/modules/prometheus'],
     'styx' => ['directory' => 'includes/modules/styx'],
     'titan' => ['directory' => 'includes/modules/titan'],
+    'throneguard' => ['directory' => 'includes/modules/throneguard'],
+    'loginpager' => ['directory' => 'includes/modules/loginpager'],
     'trap' => ['directory' => 'includes/modules/trap'],
     'vault' => ['directory' => 'includes/modules/vault'],
     'zeus' => ['directory' => 'includes/modules/zeus'],

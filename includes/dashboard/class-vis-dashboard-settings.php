@@ -28,7 +28,11 @@ final class VIS_Dashboard_Settings {
 
         foreach ($raw_new as $key => $value) {
             $clean_key = sanitize_key($key);
-            if (in_array($clean_key, $textarea_whitelist, true)) {
+            if (in_array($clean_key, ['loginpager_bg_color', 'loginpager_accent'], true)) {
+                $new_sanitized[$clean_key] = sanitize_hex_color((string)$value) ?: ($clean_key === 'loginpager_accent' ? '#00f0ff' : '#070a13');
+            } elseif (in_array($clean_key, ['loginpager_bg_image', 'loginpager_logo'], true)) {
+                $new_sanitized[$clean_key] = class_exists('VIS_LoginPager') ? VIS_LoginPager::safe_url((string)$value) : esc_url_raw((string)$value, ['https', 'http']);
+            } elseif (in_array($clean_key, $textarea_whitelist, true)) {
                 $new_sanitized[$clean_key] = sanitize_textarea_field($value);
             } else {
                 $new_sanitized[$clean_key] = sanitize_text_field($value);
@@ -47,6 +51,7 @@ final class VIS_Dashboard_Settings {
             'zeus'       => ['zeus_enabled'],
             'vlp'        => ['vlp_enabled'],
             'airlock'    => ['airlock_enabled', 'airlock_obfuscate', 'airlock_max_mb', 'airlock_extensions'],
+            'loginpager' => ['loginpager_enabled', 'loginpager_bg_color', 'loginpager_accent', 'loginpager_bg_image', 'loginpager_logo', 'loginpager_title', 'loginpager_subtitle', 'loginpager_glass_blur'],
             'chronos'    => ['chronos_enabled', 'chronos_interval', 'chronos_email_to', 'chronos_email_subject'],
             'ghost_trap' => ['ghost_trap_enabled', 'ghost_trap_count', 'ghost_trap_exts', 'ghost_trap_style'],
             'modules'    => ['module_vlp_enabled', 'module_builder_enabled', 'module_seo_enabled'],
@@ -62,7 +67,8 @@ final class VIS_Dashboard_Settings {
                 'chronos_enabled',
                 'styx_enabled', 'styx_block_wp_telemetry',
                 'gorgon_enabled', 'kernel_enabled', 'filesystem_enabled',
-                'airlock_enabled'
+                'airlock_enabled',
+                'throneguard_enabled', 'loginpager_enabled'
             ]
         ];
         
@@ -89,6 +95,13 @@ final class VIS_Dashboard_Settings {
         // Setup Wizard: Complete Onboarding Integrations
         if ($context === 'setup_wizard') {
             update_option('vgt_setup_wizard_completed', 1);
+
+            if (!empty($updated_config['throneguard_enabled']) && class_exists('VIS_Throne_Guard')) {
+                VIS_Throne_Guard::provision_current_master();
+            }
+            if (class_exists('VIS_Throne_Guard')) {
+                VIS_Throne_Guard::apply_administrator_policy(!empty($updated_config['throneguard_enabled']) && !empty($updated_config['throneguard_harden_admin']));
+            }
 
             if (!empty($_POST['groq_api_key'])) {
                 $key_val = sanitize_text_field($_POST['groq_api_key']);

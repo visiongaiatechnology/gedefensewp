@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Morpheus;
+namespace VisionGaia\GeDefense\Modules\Morpheus;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 final class Morpheus_Hypervisor {
 
-    private Vis_Morpheus $core;
+    private Morpheus $core;
 
-    public function __construct( Vis_Morpheus $core ) {
+    public function __construct( Morpheus $core ) {
         $this->core = $core;
         
         $this->load_dependencies();

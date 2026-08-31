@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Gorgon;
+namespace VisionGaia\GeDefense\Modules\Gorgon;
 
 if (!defined('ABSPATH')) exit('VGT Protocol: Direct access denied.');
 
@@ -15,9 +15,9 @@ final class Gorgon_Config {
     private array $config;
     private bool $vault_active;
     private string $node_id;
-    private Vis_Gorgon $core;
+    private Gorgon $core;
 
-    public function __construct(Vis_Gorgon $core) {
+    public function __construct(Gorgon $core) {
         $this->core = $core;
         
         $raw_config = get_option( 'vis_config', [] );

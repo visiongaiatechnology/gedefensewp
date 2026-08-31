@@ -11,48 +11,12 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 final class VIS_Bootstrapper {
 
     public static function register_autoloader(): void {
-        spl_autoload_register(static function (string $class): void {
-            if (strpos($class, 'VIS_') !== 0 && strpos($class, 'VGT\\') !== 0) return;
-            
-            static $map = [
-                'VIS_Scanner_Engine'        => 'includes/scanner/class-vis-scanner-engine.php',
-                'VIS_Scanner_Engine_Omega'  => 'includes/scanner/class-vis-scanner-engine.php',
-                'VIS_Malware_Engine'        => 'includes/scanner/class-vis-malware-engine.php',
-                'VIS_Security'              => 'includes/core/class-vis-security.php',
-                'VIS_Event_Bus'             => 'includes/core/class-vis-event-bus.php',
-                'VIS_Module_Registry'        => 'includes/core/class-vis-module-registry.php',
-                'VIS_Integration_Bus'        => 'includes/core/class-vis-integration-bus.php',
-                'VIS_Trinity_Grid'           => 'includes/core/class-vis-trinity-grid.php',
-                'VIS_AI_Gateway'             => 'includes/core/class-vis-ai-gateway.php',
-                'VIS_Module_Integrity'        => 'includes/core/class-vis-module-integrity.php',
-                'VIS_Security_Health'       => 'includes/core/class-vis-security-health.php',
-                'VIS_Aegis'                 => 'includes/modules/aegis/class-vis-aegis.php',
-                'VIS_Aegis_Oracle'          => 'includes/modules/aegis/class-vis-aegis-oracle.php',
-                'VIS_Titan'                 => 'includes/modules/titan/class-vis-titan.php',
-                'VIS_Hades'                 => 'includes/modules/hades/class-vis-hades.php',
-                'VIS_Oracle'                => 'includes/modules/oracle/class-vis-oracle.php',
-                'VIS_Chronos'               => 'includes/modules/chronos/class-vis-chronos.php',
-                'VIS_Ghost_Trap'            => 'includes/modules/trap/class-vis-ghost-trap.php',
-                'VIS_Airlock'               => 'includes/modules/airlock/class-vis-airlock.php',
-                'VIS_Styx'                  => 'includes/modules/styx/class-vis-styx.php',
-                'VIS_Key_Vault'             => 'includes/modules/vault/class-vis-key-vault.php',
-                'VIS_Cerberus'              => 'includes/modules/cerberus/class-vis-cerberus.php',
-                'VIS_Filesystem_Guard'      => 'includes/modules/filesystem/class-vis-filesystem-guard.php',
-                'VIS_Kernel_Sentinel'       => 'includes/modules/kernel/class-vis-kernel-sentinel.php',
-                'VIS_Zeus'                  => 'includes/modules/zeus/class-vis-zeus.php',
-                'VIS_I18n'                  => 'includes/core/class-vis-i18n.php',
-                'VIS_Dashboard_Core'        => 'includes/dashboard/class-vis-dashboard-core.php',
-                'VIS_Dashboard_View'        => 'includes/dashboard/class-vis-dashboard-view.php',
-                'VIS_Compatibility_Manager' => 'includes/compatibility/class-vis-compatibility-manager.php',
-            ];
-
-            if (isset($map[$class])) {
-                $file = VIS_PATH . $map[$class];
-                if (is_readable($file)) {
-                    require_once $file;
-                }
-            }
-        });
+        $compatibility = VIS_PATH . 'includes/core/class-namespace-compatibility.php';
+        if (!is_readable($compatibility)) {
+            self::trigger_fail_close('NAMESPACE_KERNEL', 'Compatibility boundary unavailable.');
+        }
+        require_once $compatibility;
+        \VisionGaia\GeDefense\Core\NamespaceCompatibility::register();
     }
 
     private static function trigger_fail_close(string $module, string $reason = ''): void {
@@ -62,7 +26,43 @@ final class VIS_Bootstrapper {
         die("<h1>VGT SYSTEM HALT</h1><p>INTEGRITY COMPROMISED. Critical module [{$module}] failed to load. Fail-Close sequence initiated to protect host environment. " . ($reason ? "($reason)" : "") . "</p>");
     }
 
+    public static function ensure_sovereign_temp_dir(): void {
+        $base_dir = defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR . '/uploads' : '';
+        if (empty($base_dir)) return;
+
+        $temp_dir = wp_normalize_path($base_dir . '/vgt-temp');
+        if (!is_dir($temp_dir)) {
+            @wp_mkdir_p($temp_dir);
+            if (is_dir($temp_dir)) {
+                $ht = $temp_dir . '/.htaccess';
+                if (!file_exists($ht)) {
+                    @file_put_contents($ht, "Order deny,allow\nDeny from all\n");
+                }
+                $idx = $temp_dir . '/index.php';
+                if (!file_exists($idx)) {
+                    @file_put_contents($idx, "<?php // Silence is golden\n");
+                }
+            }
+        }
+
+        if (is_dir($temp_dir) && is_writable($temp_dir)) {
+            if (!defined('WP_TEMP_DIR')) {
+                define('WP_TEMP_DIR', $temp_dir);
+            }
+            @ini_set('upload_tmp_dir', $temp_dir);
+            @ini_set('sys_temp_dir', $temp_dir);
+
+            add_filter('temp_dir', static function(string $dir) use ($temp_dir): string {
+                if (!is_dir($dir) || !is_writable($dir)) {
+                    return rtrim($temp_dir, '/') . '/';
+                }
+                return $dir;
+            }, 1, 1);
+        }
+    }
+
     public static function engage_phase_1(array $config): void {
+        self::ensure_sovereign_temp_dir();
         
         // Initialize Multilanguage Matrix (I18n)
         if (class_exists('VIS_I18n')) {
@@ -102,10 +102,10 @@ final class VIS_Bootstrapper {
         $core_modules = [
             'oracle'     => ['path' => 'includes/modules/oracle/class-vis-oracle.php', 'class' => 'VIS_Oracle', 'default' => true, 'critical' => false],
             'zeus'       => ['path' => 'includes/modules/zeus/class-vis-zeus.php', 'class' => 'VIS_Zeus', 'default' => true, 'critical' => true],
-            'prometheus' => ['path' => 'includes/modules/prometheus/class-vis-prometheus.php', 'class' => '\VisionGaia\Integrity\Modules\Prometheus\VIS_Prometheus', 'default' => false, 'critical' => false],
-            'nemesis'    => ['path' => 'includes/modules/nemesis/class-vis-nemesis.php', 'class' => '\VisionGaia\Integrity\Modules\Nemesis\VIS_Nemesis', 'default' => false, 'critical' => false],
-            'morpheus'   => ['path' => 'includes/modules/morpheus/class-vis-morpheus.php', 'class' => '\VGT\Sentinel\Modules\Morpheus\Vis_Morpheus', 'default' => true, 'critical' => true],
-            'gorgon'     => ['path' => 'includes/modules/gorgon/class-vis-gorgon.php', 'class' => '\VGT\Sentinel\Modules\Gorgon\Vis_Gorgon', 'default' => true, 'critical' => false],
+            'prometheus' => ['path' => 'includes/modules/prometheus/class-vis-prometheus.php', 'class' => '\VisionGaia\GeDefense\Modules\Prometheus\Prometheus', 'default' => false, 'critical' => false],
+            'nemesis'    => ['path' => 'includes/modules/nemesis/class-vis-nemesis.php', 'class' => '\VisionGaia\GeDefense\Modules\Nemesis\Nemesis', 'default' => false, 'critical' => false],
+            'morpheus'   => ['path' => 'includes/modules/morpheus/class-vis-morpheus.php', 'class' => '\VisionGaia\GeDefense\Modules\Morpheus\Morpheus', 'default' => true, 'critical' => true],
+            'gorgon'     => ['path' => 'includes/modules/gorgon/class-vis-gorgon.php', 'class' => '\VisionGaia\GeDefense\Modules\Gorgon\Gorgon', 'default' => true, 'critical' => false],
         ];
 
         foreach ($core_modules as $mod_key => $mod_data) {
@@ -153,7 +153,13 @@ final class VIS_Bootstrapper {
         if (class_exists('VIS_Ghost_Trap')) new VIS_Ghost_Trap();
         if (class_exists('VIS_Chronos')) VIS_Chronos::instance();
         if (class_exists('VIS_Kernel_Sentinel')) new VIS_Kernel_Sentinel();
-        if (class_exists('VIS_Styx')) VIS_Styx::get_instance();
+        if (class_exists('\VisionGaia\GeDefense\Modules\Styx\Styx')) {
+            \VisionGaia\GeDefense\Modules\Styx\Styx::get_instance();
+        }
+        // ThroneGuard is a fixed core component: its activation and recovery
+        // endpoints must remain reachable before enforcement is enabled.
+        if (class_exists('VIS_Throne_Guard')) VIS_Throne_Guard::get_instance();
+        if (!empty($config['loginpager_enabled']) && class_exists('VIS_LoginPager')) VIS_LoginPager::get_instance();
         
         $vault_path = VIS_PATH . 'includes/modules/vault/class-vis-key-vault.php';
         if (is_readable($vault_path)) {

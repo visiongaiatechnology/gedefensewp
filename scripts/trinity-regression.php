@@ -2,8 +2,8 @@
 // STATUS: DIAMANT VGT SUPREME
 declare(strict_types=1);
 
-namespace VisionGaia\Integrity\Modules\Prometheus {
-    final class VIS_Prometheus {
+namespace VisionGaia\GeDefense\Modules\Prometheus {
+    final class Prometheus {
         private static ?self $instance = null;
         public float $amount = 0.0;
         public string $ip = '';
@@ -15,8 +15,8 @@ namespace VisionGaia\Integrity\Modules\Prometheus {
     }
 }
 
-namespace VisionGaia\Integrity\Modules\Nemesis {
-    final class VIS_Nemesis {
+namespace VisionGaia\GeDefense\Modules\Nemesis {
+    final class Nemesis {
         private static ?self $instance = null;
         public int $signals = 0;
         public static function get_instance(): self { return self::$instance ??= new self(); }
@@ -53,8 +53,8 @@ namespace {
     $_SERVER['HTTP_X_FORWARDED_FOR'] = '1.1.1.1, 8.8.8.8';
     if (VIS_Security::client_ip() !== '1.1.1.1') $failures[] = 'Canonical trusted-proxy identity failed.';
     VIS_Trinity_Grid::onAegisStrike('198.51.100.9', 'sqli_union');
-    $prometheus = \VisionGaia\Integrity\Modules\Prometheus\VIS_Prometheus::get_instance();
-    $nemesis = \VisionGaia\Integrity\Modules\Nemesis\VIS_Nemesis::get_instance();
+    $prometheus = \VisionGaia\GeDefense\Modules\Prometheus\Prometheus::get_instance();
+    $nemesis = \VisionGaia\GeDefense\Modules\Nemesis\Nemesis::get_instance();
     if ($prometheus->ip !== '198.51.100.9' || $prometheus->amount !== 100.0) {
         $failures[] = 'AEGIS strike was not routed through bounded Prometheus scoring.';
     }

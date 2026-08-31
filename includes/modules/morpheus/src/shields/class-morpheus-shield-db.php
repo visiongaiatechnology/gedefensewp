@@ -1,24 +1,24 @@
 <?php
 declare(strict_types=1);
 
-namespace VGT\Sentinel\Modules\Morpheus;
+namespace VisionGaia\GeDefense\Modules\Morpheus;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 final class Morpheus_Shield_DB {
 
-    private Vis_Morpheus $core;
+    private Morpheus $core;
     private Morpheus_Tracer $tracer;
     private Morpheus_UI $ui;
 
-    public function __construct( Vis_Morpheus $core, Morpheus_Tracer $tracer, Morpheus_UI $ui ) {
+    public function __construct( Morpheus $core, Morpheus_Tracer $tracer, Morpheus_UI $ui ) {
         $this->core = $core;
         $this->tracer = $tracer;
         $this->ui = $ui;
     }
 
     public function intercept_database_query( string $query ): string {
-        if ( Vis_Morpheus::$is_internal_action ) return $query; 
+        if ( Morpheus::$is_internal_action ) return $query;
         if ( empty( trim( $query ) ) ) return (string) $query;
 
         // 1. FILE I/O RCE Check (Unabhängig vom Caller)

@@ -607,10 +607,10 @@ final class VIS_Aegis {
                 );
             }
 
-            if (self::$gorgon_reputation_cache === null && class_exists('\VGT\Sentinel\Modules\Gorgon\Vis_Gorgon')) {
+            if (self::$gorgon_reputation_cache === null && class_exists('\VisionGaia\GeDefense\Modules\Gorgon\Gorgon')) {
                 try {
                     $reputation_ip = defined('VIS_RESOLVED_IP') ? VIS_RESOLVED_IP : $this->get_secure_ip();
-                    self::$gorgon_reputation_cache = (int) \VGT\Sentinel\Modules\Gorgon\Vis_Gorgon::get_instance()->query_global_reputation($reputation_ip);
+                    self::$gorgon_reputation_cache = (int) \VisionGaia\GeDefense\Modules\Gorgon\Gorgon::get_instance()->query_global_reputation($reputation_ip);
                 } catch (\Throwable $e) {
                     self::$gorgon_reputation_cache = 0;
                 }

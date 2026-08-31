@@ -6,19 +6,21 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
 final class VIS_Security_Center {
     private const MODULES = [
-        'kernel' => ['label' => 'Kernel Sentinel', 'zone' => 'Trust Core', 'path' => 'includes/modules/kernel/class-vis-kernel-sentinel.php', 'class' => 'VIS_Kernel_Sentinel', 'rights' => ['request:inspect', 'vault:read', 'event:emit']],
-        'aegis' => ['label' => 'Aegis Firewall', 'zone' => 'Enforcement', 'path' => 'includes/modules/aegis/class-vis-aegis.php', 'class' => 'VIS_Aegis', 'rights' => ['request:inspect', 'request:block', 'upload:scan', 'event:emit']],
-        'zeus' => ['label' => 'Zeus Pre-Boot WAF', 'zone' => 'Enforcement', 'path' => 'includes/modules/zeus/class-vis-zeus.php', 'class' => 'VIS_Zeus', 'rights' => ['config:compile', 'filesystem:guarded-write', 'request:block']],
-        'cerberus' => ['label' => 'Cerberus Ban Engine', 'zone' => 'Enforcement', 'path' => 'includes/modules/cerberus/class-vis-cerberus.php', 'class' => 'VIS_Cerberus', 'rights' => ['identity:score', 'database:ban-write', 'request:block']],
-        'prometheus' => ['label' => 'Prometheus Behavior', 'zone' => 'Detection', 'path' => 'includes/modules/prometheus/class-vis-prometheus.php', 'class' => 'VisionGaia\\Integrity\\Modules\\Prometheus\\VIS_Prometheus', 'rights' => ['request:observe', 'score:write', 'event:emit']],
-        'airlock' => ['label' => 'Airlock Scanner', 'zone' => 'Detection', 'path' => 'includes/modules/airlock/class-vis-airlock.php', 'class' => 'VIS_Airlock', 'rights' => ['upload:read', 'upload:scan', 'quarantine:write']],
-        'nemesis' => ['label' => 'Nemesis Deception', 'zone' => 'Deception', 'path' => 'includes/modules/nemesis/class-vis-nemesis.php', 'class' => 'VisionGaia\\Integrity\\Modules\\Nemesis\\VIS_Nemesis', 'rights' => ['request:observe', 'decoy:write', 'event:emit']],
-        'morpheus' => ['label' => 'Morpheus Sandbox', 'zone' => 'Analysis', 'path' => 'includes/modules/morpheus/class-vis-morpheus.php', 'class' => 'VGT\\Sentinel\\Modules\\Morpheus\\Vis_Morpheus', 'rights' => ['event:read', 'analysis:execute', 'recommendation:write']],
-        'vault' => ['label' => 'Key Vault', 'zone' => 'Trust Core', 'path' => 'includes/modules/vault/class-vis-key-vault.php', 'class' => 'VIS_Key_Vault', 'rights' => ['secret:read', 'secret:write', 'crypto:execute']],
-        'titan' => ['label' => 'Titan Hardening', 'zone' => 'Policy', 'path' => 'includes/modules/titan/class-vis-titan.php', 'class' => 'VIS_Titan', 'rights' => ['header:write', 'policy:enforce', 'filesystem:guarded-write']],
+        'kernel' => ['label' => 'Kernel Sentinel', 'zone' => 'Trust Core', 'path' => 'includes/modules/kernel/class-vis-kernel-sentinel.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Kernel\\KernelSentinel', 'rights' => ['request:inspect', 'vault:read', 'event:emit']],
+        'aegis' => ['label' => 'Aegis Firewall', 'zone' => 'Enforcement', 'path' => 'includes/modules/aegis/class-vis-aegis.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Aegis\\Aegis', 'rights' => ['request:inspect', 'request:block', 'upload:scan', 'event:emit']],
+        'zeus' => ['label' => 'Zeus Pre-Boot WAF', 'zone' => 'Enforcement', 'path' => 'includes/modules/zeus/class-vis-zeus.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Zeus\\Zeus', 'rights' => ['config:compile', 'filesystem:guarded-write', 'request:block']],
+        'cerberus' => ['label' => 'Cerberus Ban Engine', 'zone' => 'Enforcement', 'path' => 'includes/modules/cerberus/class-vis-cerberus.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Cerberus\\Cerberus', 'rights' => ['identity:score', 'database:ban-write', 'request:block']],
+        'prometheus' => ['label' => 'Prometheus Behavior', 'zone' => 'Detection', 'path' => 'includes/modules/prometheus/class-vis-prometheus.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Prometheus\\Prometheus', 'rights' => ['request:observe', 'score:write', 'event:emit']],
+        'airlock' => ['label' => 'Airlock Scanner', 'zone' => 'Detection', 'path' => 'includes/modules/airlock/class-vis-airlock.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Airlock\\Airlock', 'rights' => ['upload:read', 'upload:scan', 'quarantine:write']],
+        'nemesis' => ['label' => 'Nemesis Deception', 'zone' => 'Deception', 'path' => 'includes/modules/nemesis/class-vis-nemesis.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Nemesis\\Nemesis', 'rights' => ['request:observe', 'decoy:write', 'event:emit']],
+        'morpheus' => ['label' => 'Morpheus Sandbox', 'zone' => 'Analysis', 'path' => 'includes/modules/morpheus/class-vis-morpheus.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Morpheus\\Morpheus', 'rights' => ['event:read', 'analysis:execute', 'recommendation:write']],
+        'vault' => ['label' => 'Key Vault', 'zone' => 'Trust Core', 'path' => 'includes/modules/vault/class-vis-key-vault.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Vault\\KeyVault', 'rights' => ['secret:read', 'secret:write', 'crypto:execute']],
+        'titan' => ['label' => 'Titan Hardening', 'zone' => 'Policy', 'path' => 'includes/modules/titan/class-vis-titan.php', 'class' => 'VisionGaia\\GeDefense\\Modules\\Titan\\Titan', 'rights' => ['header:write', 'policy:enforce', 'filesystem:guarded-write']],
         'vlp' => ['label' => 'Privacy & Shadow Net', 'zone' => 'Application', 'path' => 'includes/VLP/vision-legal-pro.php', 'class' => 'VisionLegalPro_Core', 'config_key'=>'module_vlp_enabled', 'rights' => ['telemetry:ingest', 'asset:mirror', 'privacy:enforce']],
         'builder' => ['label' => 'VGT Builder', 'zone' => 'Application', 'path' => 'includes/builder/builder.php', 'class' => 'VGT_Builder', 'config_key'=>'module_builder_enabled', 'rights' => ['content:read', 'content:write', 'preview:sandbox']],
         'seo' => ['label' => 'VisionGaiaSEO', 'zone' => 'Application', 'path' => 'includes/VisionGaiaSEO/visiongaia-seo-architect.php', 'class' => 'VG_SEO_Bootstrapper', 'config_key'=>'module_seo_enabled', 'rights' => ['content:read', 'metadata:write', 'redirect:write']],
+        'throneguard' => ['label' => 'ThroneGuard Master', 'zone' => 'Privilege Boundary', 'path' => 'includes/modules/throneguard/class-vis-throne-guard.php', 'class' => 'VIS_Throne_Guard', 'config_key'=>'throneguard_enabled', 'rights' => ['role:protect', 'cap:reconcile', 'session:lock', 'superkey:verify']],
+        'loginpager' => ['label' => 'LoginPager Gateway', 'zone' => 'Application', 'path' => 'includes/modules/loginpager/class-vis-loginpager.php', 'class' => 'VIS_LoginPager', 'config_key'=>'loginpager_enabled', 'rights' => ['login:style', 'branding:enforce']],
     ];
 
     public static function snapshot(bool $deep = false): array {
@@ -88,6 +90,8 @@ final class VIS_Security_Center {
             self::check('uploads', 'Upload origin primitive', 'Runtime', function_exists('is_uploaded_file') && class_exists('finfo'), 8, 'Upload provenance and content MIME verification are available.'),
             self::check('security_gate', 'Regression gate deployed', 'Assurance', is_file(VIS_PATH . 'scripts/security-regression.php'), 8, 'Zero-dependency adversarial build gate is present.'),
             self::check('emergency_bypass', 'Static bypass absence', 'Policy', !self::contains_in_php('VGT_' . 'EMERGENCY_' . 'OVERRIDE'), 10, 'No static firewall bypass is present.'),
+            self::check('throneguard_master', 'ThroneGuard Master Boundary', 'Privilege', class_exists('VIS_Throne_Guard') && (count(get_users(['role' => 'master', 'fields' => 'ids'])) > 0 || current_user_can('manage_options')), 10, 'Master role segregation and superkey lockdown protection are active.'),
+            self::check('throneguard_hardening', 'Admin Capability Boundary', 'Privilege', class_exists('VIS_Throne_Guard') && (!empty(get_option('vis_config', [])['throneguard_harden_admin'])), 9, 'Dangerous capabilities are stripped from standard administrator accounts.', 'warn'),
         ];
         if ($deep) {
             $checks[] = self::check('php_integrity', 'PHP source readability', 'Integrity', self::all_php_readable(), 9, 'All deployed PHP sources are readable and hashable.');
