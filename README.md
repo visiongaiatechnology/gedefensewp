@@ -2,7 +2,7 @@
 
 # 🛡️ GeDefense WP — Open Core
 
-### Суверенная система безопасности WordPress
+### Sovereign WordPress Security Fabric
 
 [![Version](https://img.shields.io/badge/version-8.0.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
@@ -14,7 +14,7 @@
 [![Strict Types](https://img.shields.io/badge/PHP-strict_types-5C2D91?style=for-the-badge)](#zero-dependency-philosophy)
 [![Local First](https://img.shields.io/badge/design-local--first-2EA44F?style=for-the-badge)](#security-design-principles)
 
-**WAF · RASP · ПОВЕДЕНЧЕСКАЯ ЗАЩИТА · DECEPTION · ЦЕЛОСТНОСТЬ ФАЙЛОВ · КОНТРОЛЬ ИСХОДЯЩЕГО ТРАФИКА · HARDENING · КРИПТОГРАФИЧЕСКОЕ ХРАНИЛИЩЕ · OPEN CORE**
+**WAF · RASP · BEHAVIORAL DEFENSE · DECEPTION · FILE INTEGRITY · EGRESS CONTROL · HARDENING · CRYPTOGRAPHIC VAULT · OPEN CORE**
 
 </div>
 
@@ -22,135 +22,136 @@
 
 <img width="2332" height="1183" alt="image" src="https://github.com/user-attachments/assets/b97ed4da-f7a1-4343-a46d-ab8bb1e3feb9" />
 
-## Обзор
 
-**GeDefense WP — Open Core** — это модульная платформа безопасности WordPress без внешних зависимостей, разработанная как **многоуровневое ядро безопасности и матрица активной защиты** для PHP 8.1–8.4 и WordPress 6.0+.
+## Overview
 
-Вместо того чтобы рассматривать безопасность WordPress как единый набор правил межсетевого экрана, GeDefense WP объединяет несколько защитных уровней в единый согласованный конвейер обработки запросов и защиты во время выполнения:
+**GeDefense WP — Open Core** is a modular, zero-dependency WordPress security platform designed as a **multi-tier security kernel and active defense matrix** for PHP 8.1–8.4 and WordPress 6.0+.
 
-- отклонение запросов до основной загрузки;
-- инспекция Web Application Firewall;
-- поведенческая оценка угроз;
-- согласованная оркестрация ответных действий;
-- криптографическая проверка собственной целостности;
+Instead of treating WordPress security as a single firewall rule set, GeDefense WP combines multiple defensive layers into one coordinated request and runtime pipeline:
+
+- pre-boot request rejection;
+- Web Application Firewall inspection;
+- behavioral threat scoring;
+- coordinated response orchestration;
+- cryptographic self-integrity verification;
 - Runtime Application Self-Protection;
-- проверка загрузок и файлов;
-- hardening WordPress;
-- сокрытие административных путей;
-- honeypot-ловушки и deception;
-- zero-trust контроль исходящего трафика;
-- фоновое сканирование целостности;
-- криптографическое хранение секретов;
-- аудит состояния безопасности.
+- upload and file sanity inspection;
+- WordPress hardening;
+- admin-path cloaking;
+- honeypots and deception;
+- zero-trust outbound egress control;
+- background integrity scanning;
+- cryptographic secrets storage; and
+- security posture auditing.
 
-Ядро спроектировано так, чтобы оставаться **полностью функциональной независимой open-source платформой безопасности**. Дополнительные бизнес- и прикладные модули могут подключаться через реестр модулей Open Core.
+The core is designed to remain **fully functional as an independent open-source security platform**. Optional business and application modules can be added through the Open Core module registry.
 
-> GeDefense WP строится вокруг одного принципа: **чем глубже запрос продвигается внутрь стека приложения, тем больше доверия он должен заслужить.**
+> GeDefense WP is built around one principle: **a request should earn trust as it moves deeper into the application stack.**
 
 ---
 
-## Содержание
+## Table of Contents
 
-- [Архитектура](#архитектура)
-- [Конвейер безопасности](#многофазный-протокол-запуска)
-- [Матрица основных модулей](#матрица-основных-модулей)
+- [Architecture](#architecture)
+- [Security Pipeline](#multi-phase-ignition-protocol)
+- [Core Module Matrix](#core-module-matrix)
 - [AEGIS — Deep Packet Inspection WAF](#1-aegis--deep-packet-inspection-waf)
-- [PROMETHEUS — поведенческий горизонт угроз](#2-prometheus--поведенческий-горизонт-угроз)
-- [TRINITY GRID — матрица координации защиты](#3-trinity-grid--матрица-координации-защиты)
+- [PROMETHEUS — Behavioral Threat Horizon](#2-prometheus--behavioral-threat-horizon)
+- [TRINITY GRID — Defense Interlock Matrix](#3-trinity-grid--defense-interlock-matrix)
 - [Self-Integrity Engine](#4-self-integrity-engine)
 - [MORPHEUS — RASP](#5-morpheus--runtime-application-self-protection)
 - [NEMESIS — Deception Grid](#6-nemesis--deception-grid)
-- [TITAN — Hardening WordPress](#7-titan--hardening-wordpress)
-- [HADES — сокрытие административной области](#8-hades--динамическое-сокрытие-административной-области)
-- [CERBERUS — периметровый межсетевой экран](#9-cerberus--периметровый-межсетевой-экран)
-- [ZEUS — фильтр до загрузки WordPress](#10-zeus--фильтр-запросов-до-загрузки)
-- [AIRLOCK — инспекция загрузок](#11-airlock--инспекция-входящих-файлов)
-- [GHOST TRAP — honeypot-уровень](#12-ghost-trap--honeypot-уровень)
-- [STYX — защита исходящего трафика](#13-styx--защита-исходящего-трафика)
-- [CHRONOS — автономный сканер](#14-chronos--автономный-сканер)
-- [KEY VAULT](#15-key-vault--криптографическое-хранение-секретов)
-- [ORACLE — аудит безопасности](#16-oracle--движок-аудита-безопасности)
-- [Реестр модулей / Open Core](#17-реестр-модулей--расширение-open-core)
-- [Философия Zero Dependency](#философия-zero-dependency)
-- [Режимы безопасности](#режимы-безопасности)
-- [Производительность](#производительность)
-- [Тестирование](#assurance--регрессионное-тестирование)
-- [Принципы проектирования безопасности](#принципы-проектирования-безопасности)
-- [Модель Open Core](#модель-open-core)
-- [Ответственное раскрытие уязвимостей](#ответственное-раскрытие-уязвимостей)
-- [Лицензия](#лицензия)
-- [Журнал изменений](#журнал-изменений)
+- [TITAN — WordPress Hardening](#7-titan--wordpress-hardening)
+- [HADES — Admin Stealth](#8-hades--dynamic-admin-stealth)
+- [CERBERUS — Perimeter Firewall](#9-cerberus--perimeter-firewall)
+- [ZEUS — Pre-Boot Filter](#10-zeus--pre-boot-request-filter)
+- [AIRLOCK — Upload Inspection](#11-airlock--ingress-file-inspection)
+- [GHOST TRAP — Honeypot Layer](#12-ghost-trap--honeypot-layer)
+- [STYX — Egress Shield](#13-styx--outbound-egress-shield)
+- [CHRONOS — Autonomous Scanner](#14-chronos--autonomous-scanner)
+- [KEY VAULT](#15-key-vault--cryptographic-secret-storage)
+- [ORACLE — Security Audit](#16-oracle--security-audit-engine)
+- [Module Registry / Open Core](#17-module-registry--open-core-expansion)
+- [Zero-Dependency Philosophy](#zero-dependency-philosophy)
+- [Security Modes](#security-modes)
+- [Performance](#performance)
+- [Testing](#assurance--regression-testing)
+- [Security Design Principles](#security-design-principles)
+- [Open Core Model](#open-core-model)
+- [Security Disclosure](#security-disclosure)
+- [License](#license)
+- [Changelog](#changelog)
 
 ---
 
-# Архитектура
+# Architecture
 
-GeDefense WP организован как многоуровневая защитная среда, работающая до, во время и после обычного выполнения WordPress.
+GeDefense WP is organized as a layered security fabric that operates before, during and after normal WordPress execution.
 
 All GeDefense-owned runtime APIs use the canonical `VisionGaia\GeDefense` namespace. Core, dashboard, scanner and module symbols are separated below that root. Pre-8.0 `VisionGaia\Integrity` and `VGT\Sentinel` names are isolated inside the central compatibility boundary. Existing global `VIS_` implementation symbols remain ABI-compatible for WordPress hooks and third-party add-ons, but new integrations must use the canonical API.
 
 ```mermaid
 flowchart TD
-    A[Входящий HTTP / HTTPS запрос]
-    A --> L0[Уровень 0<br/>ZEUS + CERBERUS]
-    L0 --> L1[Уровень 1<br/>Self-Integrity Engine]
-    L1 --> L23[Уровни 2-3<br/>AEGIS + PROMETHEUS]
-    L23 --> L45[Уровни 4-5<br/>TITAN + HADES + NEMESIS + GHOST TRAP]
-    L45 --> L67[Уровни 6-7<br/>MORPHEUS + AIRLOCK + STYX]
-    L67 --> WP[WordPress Core / Темы / Плагины]
-    PROM[TRINITY GRID] -. координирует .-> L0
-    PROM -. координирует .-> L23
-    PROM -. координирует .-> L45
-    CHR[CHRONOS] -. плановая проверка целостности .-> WP
-    ORA[ORACLE] -. состояние безопасности .-> WP
-    VLT[KEY VAULT] -. защищённые секреты .-> L23
+    A[Incoming HTTP / HTTPS Request]
+
+    A --> L0[Layer 0<br/>ZEUS + CERBERUS]
+    L0 --> L1[Layer 1<br/>Self-Integrity Engine]
+    L1 --> L23[Layers 2-3<br/>AEGIS + PROMETHEUS]
+    L23 --> L45[Layers 4-5<br/>TITAN + HADES + NEMESIS + GHOST TRAP]
+    L45 --> L67[Layers 6-7<br/>MORPHEUS + AIRLOCK + STYX]
+    L67 --> WP[WordPress Core / Themes / Plugins]
+
+    PROM[TRINITY GRID] -. coordinates .-> L0
+    PROM -. coordinates .-> L23
+    PROM -. coordinates .-> L45
+
+    CHR[CHRONOS] -. scheduled integrity .-> WP
+    ORA[ORACLE] -. security posture .-> WP
+    VLT[KEY VAULT] -. protected secrets .-> L23
 ```
 
-Архитектура намеренно разделяет:
+The architecture deliberately separates:
 
 ```text
-Фильтрация входящего трафика
+Ingress Filtering
        ↓
-Поведенческий анализ
+Behavioral Analysis
        ↓
-Проверка целостности
+Integrity Verification
        ↓
-Hardening WordPress
+WordPress Hardening
        ↓
-Deception- и trap-уровни
+Deception & Trap Layers
        ↓
-Защита во время выполнения
+Runtime Protection
        ↓
-Контроль исходящего трафика
+Egress Control
        ↓
-Фоновая проверка целостности и аудит
+Background Integrity & Audit
 ```
 
 ---
 
-# Многофазный протокол запуска
+# Multi-Phase Ignition Protocol
 
-Входящие запросы проходят через детерминированный многоэтапный конвейер:
+Incoming requests pass through a deterministic multi-stage pipeline:
 
 ```text
-[ ВХОДЯЩИЙ HTTP / HTTPS ЗАПРОС ]
+[ INCOMING HTTP / HTTPS REQUEST ]
                  │
                  ▼
-
-[ УРОВЕНЬ 0 ]
+[ LAYER 0 ]
   ├─ Pre-Boot Invariant Guard
   ├─ CERBERUS L1 Ban Matrix
   └─ ZEUS 6G / Static Fast-Kill Filters
                  │
                  ▼
-
-[ УРОВЕНЬ 1 ]
-  └─ Проверка собственной целостности
-     └─ Проверка Manifest / Merkle Root
+[ LAYER 1 ]
+  └─ Self-Integrity Verification
+     └─ Manifest / Merkle Root Validation
                  │
                  ▼
-
-[ УРОВНИ 2–3 ]
+[ LAYERS 2–3 ]
   ├─ AEGIS Deep Packet Inspection
   │   ├─ GET
   │   ├─ POST
@@ -160,39 +161,35 @@ Deception- и trap-уровни
   └─ PROMETHEUS Behavioral Scoring
                  │
                  ▼
-
-[ УРОВНИ 4–5 ]
+[ LAYERS 4–5 ]
   ├─ TITAN Hardening
   ├─ HADES Admin Stealth
   ├─ NEMESIS Deception Grid
   └─ GHOST TRAP
                  │
                  ▼
-
-[ УРОВНИ 6–7 ]
+[ LAYERS 6–7 ]
   ├─ MORPHEUS RASP
   ├─ AIRLOCK File Inspector
   └─ STYX Outbound Egress Shield
                  │
                  ▼
-
-[ WORDPRESS CORE / ТЕМЫ / ПЛАГИНЫ ]
+[ WORDPRESS CORE / THEMES / PLUGINS ]
                  │
                  ▼
-
 [ CHRONOS / ORACLE / TELEMETRY / INTEGRITY ]
 ```
 
 ---
 
-# Матрица основных модулей
+# Core Module Matrix
 
-| # | Модуль | Роль в безопасности | Уровень / домен |
+| # | Module | Security Role | Layer / Domain |
 |---:|---|---|---|
 | 1 | **AEGIS** | Deep Packet Inspection WAF | Ingress / L3-L7 |
-| 2 | **PROMETHEUS** | Поведенческая оценка угроз | Behavioral / L7 |
-| 3 | **TRINITY GRID** | Координация ответных действий | Cross-Layer |
-| 4 | **SELF-INTEGRITY ENGINE** | Merkle-проверка ядра | Integrity / L1 |
+| 2 | **PROMETHEUS** | Behavioral Threat Scoring | Behavioral / L7 |
+| 3 | **TRINITY GRID** | Coordinated Response Orchestration | Cross-Layer |
+| 4 | **SELF-INTEGRITY ENGINE** | Merkle-Based Core Verification | Integrity / L1 |
 | 5 | **MORPHEUS** | Runtime Application Self-Protection | Runtime / L7 |
 | 6 | **NEMESIS** | Cyber Deception & Canary Grid | Deception / L7 |
 | 7 | **TITAN** | WordPress Hardening & Anti-Enumeration | Hardening / L4 |
@@ -217,26 +214,26 @@ Deception- и trap-уровни
 **Core class:** `VisionGaia\GeDefense\Modules\Aegis\Aegis`
 **Path:** `includes/modules/aegis/class-vis-aegis.php`
 
-AEGIS — основной движок инспекции запросов на уровне приложения.
+AEGIS is the primary application-layer request inspection engine.
 
-### Основные механизмы
+### Core mechanisms
 
-- двухфазный конвейер инспекции;
-- быстрое сопоставление сигнатур до глубокой нормализации;
-- сворачивание SQL-комментариев;
-- нормализация null-byte;
-- нормализация разрезанных кавычек и слешей;
-- нормализация Unicode homoglyph;
-- рекурсивная инспекция payload;
-- анализ вложенного JSON;
-- проверка multipart-метаданных загрузок;
-- инспекция HTTP-заголовков;
-- настраиваемые лимиты тела запроса;
-- кэширование скомпилированных шаблонов в памяти.
+- two-phase inspection pipeline;
+- fast signature matching before deep normalization;
+- SQL comment collapsing;
+- null-byte normalization;
+- quote/slash slicing normalization;
+- Unicode homoglyph normalization;
+- recursive payload inspection;
+- nested JSON analysis;
+- multipart upload metadata inspection;
+- HTTP header inspection;
+- configurable request-body limits;
+- compiled-pattern memory caching.
 
-### Покрытие обнаружения
+### Detection coverage
 
-AEGIS предназначен для обнаружения паттернов запросов, связанных со следующими классами атак:
+AEGIS is designed to identify request patterns associated with:
 
 ```text
 SQL Injection
@@ -269,7 +266,7 @@ File Inclusion
 ├─ RFI
 └─ directory traversal
 
-Дополнительные классы
+Additional Classes
 ├─ PHP object injection
 ├─ PHAR-oriented payloads
 ├─ SSRF
@@ -277,70 +274,70 @@ File Inclusion
 └─ ingress header smuggling
 ```
 
-### Границы инспекции
+### Inspection boundaries
 
-Целевые значения реализации по умолчанию:
+Default implementation targets:
 
 ```text
-Объём инспекции body: 1 MiB
-Лимит инспекции заголовков: 64 KiB
-Глубина рекурсивного payload: до 15 уровней
+Body inspection chunk: 1 MiB
+Header inspection limit: 64 KiB
+Recursive payload depth: up to 15 levels
 ```
 
-### Режимы работы
+### Operating modes
 
 **Learning Mode**
 
-- пассивная инспекция;
-- телеметрия безопасности;
-- без автоматической блокировки IP;
-- подходит для staging-среды и построения baseline.
+- passive inspection;
+- security telemetry;
+- no automatic IP ban;
+- suitable for staging and baseline observation.
 
 **Strict Mode**
 
-- завершение запроса;
-- ответ HTTP 403;
-- событие угрозы передаётся в Prometheus;
-- дальнейшая эскалация в Cerberus через координированную матрицу реагирования.
+- request termination;
+- HTTP 403 response;
+- threat event forwarded to Prometheus;
+- escalation path into Cerberus through the coordinated response matrix.
 
-### Опциональный AI Oracle Bridge
+### Optional AI Oracle Bridge
 
-AEGIS может опционально передавать ранее неизвестные payload во внешний AI-мост анализа, настроенный через защищённое хранилище ключей.
+AEGIS can optionally delegate previously unseen payloads to an external AI analysis bridge configured through the protected key vault.
 
-AI-путь является **дополнительным аналитическим уровнем**, а не заменой детерминированных локальных механизмов безопасности.
+The AI path is an **optional analytical supplement**, not a replacement for deterministic local security controls.
 
 ---
 
-# 2. PROMETHEUS — поведенческий горизонт угроз
+# 2. PROMETHEUS — Behavioral Threat Horizon
 
 **Classification:** Layer 7 Behavioral Analysis & Threat Horizon Engine  
 **Namespace:** `VisionGaia\GeDefense\Modules\Prometheus\Prometheus`
 
-Prometheus оценивает поведение отдельных клиентов и сетевых диапазонов, а не рассматривает каждый запрос как полностью изолированное событие.
+Prometheus evaluates behavior across individual clients and network ranges rather than treating every request as an isolated event.
 
-### Оценка угрозы
+### Threat scoring
 
-Каждый клиент может накапливать динамический score на основании наблюдаемого поведения.
+Each client can accumulate a dynamic score based on observed behavior.
 
-Пример матрицы штрафов:
+Example penalty matrix:
 
-| Сигнал | Примерный вес |
+| Signal | Example Weight |
 |---|---:|
-| Запрещённый HTTP-метод | `+30.0` |
+| Disallowed HTTP method | `+30.0` |
 | Null-byte / traversal anomalies | `+50.0` |
-| Повторные запросы к чувствительным путям | `+25.0` |
-| Burst-частота запросов | `+20.0` |
+| Repeated requests to sensitive paths | `+25.0` |
+| Burst request frequency | `+20.0` |
 | AEGIS WAF strike | `+50.0` |
 
-### Затухание угрозы
+### Threat decay
 
-Затухание score по умолчанию:
+Default score decay:
 
 ```text
 0.2 points / second
 ```
 
-Механизм затухания позволяет временно подозрительным, но легитимным клиентам со временем вернуться к нормальному уровню риска.
+The decay mechanism allows temporarily suspicious but legitimate clients to recover over time.
 
 ### Event horizons
 
@@ -354,54 +351,54 @@ Score 100
 Cerberus Escalation Threshold
 ```
 
-### Корреляция подсетей
+### Subnet correlation
 
-Prometheus может коррелировать поведение в пределах `/24` сетевого горизонта для выявления паттернов, соответствующих:
+Prometheus can correlate behavior across a `/24` network horizon to identify patterns consistent with:
 
 - rotating proxies;
-- распределённым сканерам;
-- координированной bot-активности;
-- burst-разведке.
+- distributed scanners;
+- coordinated bot activity;
+- burst reconnaissance.
 
-### Конкурентный доступ
+### Concurrency
 
-Атомарные стратегии блокировок и fallback через блокировки БД применяются для уменьшения race condition при высокой параллельности запросов.
+Atomic locking strategies and database-lock fallbacks are used to reduce race conditions under high request concurrency.
 
 ---
 
-# 3. TRINITY GRID — матрица координации защиты
+# 3. TRINITY GRID — Defense Interlock Matrix
 
-**Классификация:** Cross-Layer Orchestration & Coordinated Response Grid
+**Classification:** Cross-Layer Orchestration & Coordinated Response Grid
 
-TRINITY GRID объединяет четыре ключевые защитные системы:
+TRINITY GRID connects four core defensive systems:
 
 ```text
-           ┌─────────┐
-           │  AEGIS  │
-           └────┬────┘
-                │
-                ▼
-        ┌──────────────┐
-        │  PROMETHEUS  │
-        └──────┬───────┘
+          ┌─────────┐
+          │  AEGIS  │
+          └────┬────┘
                │
-        ┌──────┴────────┐
-        ▼               ▼
-┌──────────┐       ┌──────────┐
-│ NEMESIS  │       │ CERBERUS │
-└──────────┘       └──────────┘
+               ▼
+       ┌──────────────┐
+       │  PROMETHEUS  │
+       └──────┬───────┘
+              │
+      ┌───────┴────────┐
+      ▼                ▼
+┌──────────┐      ┌──────────┐
+│ NEMESIS  │      │ CERBERUS │
+└──────────┘      └──────────┘
 ```
 
-### Модель эскалации
+### Escalation model
 
-1. AEGIS обнаруживает вредоносный синтаксис.
-2. Prometheus увеличивает поведенческий threat score.
-3. Повторная активность пересекает порог deception.
-4. Nemesis может перевести клиента в tarpit- или decoy-процесс.
-5. Устойчивая враждебная активность пересекает event horizon.
-6. Cerberus выполняет периметровое отклонение.
+1. AEGIS detects malicious syntax.
+2. Prometheus increases behavioral threat score.
+3. Repeated activity crosses the deception threshold.
+4. Nemesis can move the client into a tarpit or decoy workflow.
+5. Persistent hostile behavior crosses the event horizon.
+6. Cerberus performs perimeter rejection.
 
-Такой подход позволяет не превращать каждый подозрительный запрос в немедленную постоянную блокировку, но при этом быстро эскалировать защиту против устойчиво враждебного поведения.
+This avoids making every suspicious request an immediate permanent ban while still allowing fast escalation against persistent hostile behavior.
 
 ---
 
@@ -411,18 +408,18 @@ TRINITY GRID объединяет четыре ключевые защитные
 **Class:** `VisionGaia\GeDefense\Core\ModuleIntegrity`
 **Path:** `includes/core/class-vis-module-integrity.php`
 
-Уровень self-integrity проверяет критические компоненты GeDefense WP относительно криптографического trust anchor.
+The self-integrity layer verifies critical GeDefense WP components against a cryptographic trust anchor.
 
-### Основные механизмы
+### Core mechanisms
 
-- SHA-256 digest манифеста;
-- trust anchor `VIS_MANIFEST_DIGEST`;
-- Merkle-style проверка файлов;
-- проверка ключевых компонентов безопасности;
-- сравнение в постоянном времени через `hash_equals`;
-- немедленное обнаружение несоответствия целостности.
+- SHA-256 manifest digest;
+- `VIS_MANIFEST_DIGEST` trust anchor;
+- Merkle-style file verification;
+- validation of core security components;
+- constant-time comparisons through `hash_equals`;
+- immediate integrity mismatch detection.
 
-### Модель целостности
+### Integrity model
 
 ```text
 Trusted Manifest Digest
@@ -433,15 +430,15 @@ Component Hashes
           ▼
 Merkle / Aggregate Verification
           │
-      ┌───┴────┐
-      │        │
-    MATCH   MISMATCH
-      │        │
-      ▼        ▼
-  Continue  Security Event
+     ┌────┴────┐
+     │         │
+   MATCH    MISMATCH
+     │         │
+     ▼         ▼
+ Continue   Security Event
 ```
 
-Механизм проверяет **целостность кода**, а не семантическую корректность внешних данных или сторонних систем.
+The mechanism verifies **code integrity**, not the semantic correctness of external data or third-party systems.
 
 ---
 
@@ -450,30 +447,30 @@ Merkle / Aggregate Verification
 **Classification:** Layer 7 In-Memory Execution Protection  
 **Namespace:** `VisionGaia\GeDefense\Modules\Morpheus\Morpheus`
 
-Morpheus защищает критическое состояние WordPress во время выполнения.
+Morpheus protects critical WordPress state during runtime.
 
-### Видимость runtime-контекста
+### Runtime visibility
 
-Morpheus может анализировать контекст call stack, чтобы определить, какой плагин или компонент инициировал чувствительную операцию.
+Morpheus can inspect call-stack context to determine which plugin or component initiated sensitive operations.
 
-### Защита SQL DML
+### SQL DML protection
 
-Чувствительные таблицы WordPress могут быть защищены от несанкционированных паттернов изменения, включая:
+Sensitive WordPress tables can be guarded against unauthorized mutation patterns, including:
 
 ```text
 wp_users
 wp_usermeta
 ```
 
-Цель — обнаруживать или блокировать неожиданные операции, связанные с:
+The objective is to detect or block unexpected operations associated with:
 
-- изменением паролей;
-- повышением привилегий;
-- несанкционированными изменениями административного состояния.
+- password manipulation;
+- privilege escalation;
+- unauthorized administrative state changes.
 
-### SSRF / Network Guard
+### SSRF / network guard
 
-Morpheus может блокировать несанкционированные исходящие запросы к локальным или чувствительным metadata-адресам, например:
+Morpheus can block unauthorized outbound requests targeting local or metadata-sensitive destinations such as:
 
 ```text
 127.0.0.1
@@ -481,9 +478,9 @@ localhost
 169.254.169.254
 ```
 
-### Защищённые настройки WordPress
+### Protected WordPress options
 
-Критические опции могут контролироваться или защищаться, включая:
+Critical options can be monitored or protected, including:
 
 ```text
 siteurl
@@ -491,17 +488,17 @@ home
 active_plugins
 ```
 
-### Режимы
+### Modes
 
 **Audit Mode**
 
-- наблюдение за внутренним поведением плагинов;
-- построение модели разрешённых операций;
-- генерация телеметрии.
+- observe internal plugin behavior;
+- build an allowed-operation model;
+- generate telemetry.
 
 **Enforcement Mode**
 
-- блокировка операций вне утверждённой матрицы безопасности.
+- block operations outside the approved security matrix.
 
 ---
 
@@ -510,11 +507,11 @@ active_plugins
 **Classification:** Layer 7 Counterintelligence & Deception Matrix  
 **Namespace:** `VisionGaia\GeDefense\Modules\Nemesis\Nemesis`
 
-Nemesis — deception-уровень GeDefense WP.
+Nemesis is the deception layer of GeDefense WP.
 
-### Decoy-цели
+### Decoy targets
 
-Примеры имитируемых ценных путей:
+Examples include simulated high-value paths such as:
 
 ```text
 .env
@@ -522,44 +519,44 @@ wp-config.php.bak
 phpmyadmin
 ```
 
-### Ограниченные deception-ответы
+### Bounded deception responses
 
-Подозрительные автоматизированные клиенты получают небольшие, конечные decoy-ответы без раскрытия реального состояния приложения и без удержания PHP workers в открытом состоянии.
+Suspicious automated clients receive small, finite decoy responses without exposing real application state or holding PHP workers open.
 
-### Криптографические canary
+### Cryptographic canaries
 
-Canary-значения на базе HMAC-SHA256 могут внедряться в контролируемые области для последующей корреляции утечек.
+HMAC-SHA256-backed canary values can be inserted into controlled locations for later leak correlation.
 
-### Полиморфное искажение данных
+### Polymorphic data poisoning
 
-При соответствующей настройке данные, видимые scraper-клиентам, уже классифицированным как враждебная автоматизация, могут намеренно изменяться.
+When configured, scraper-facing data can be altered for clients already classified as hostile automation.
 
-### Граница защитного реагирования
+### Defensive response boundary
 
-Nemesis ограничен защитной телеметрией, canary-механизмами, ограниченными decoy-ответами и content deception. Runtime-пути не генерируют response bombs, cookie bombs, terminal-control payload и не удерживают workers длительными задержками.
+Nemesis is restricted to defensive telemetry, canaries, bounded decoy responses and content deception. Runtime paths do not emit response bombs, cookie bombs, terminal-control payloads or long-running worker delays.
 
 ---
 
-# 7. TITAN — Hardening WordPress
+# 7. TITAN — WordPress Hardening
 
 **Classification:** Layer 4 System Hardening & Anti-Enumeration Shield  
 **Class:** `VisionGaia\GeDefense\Modules\Titan\Titan`
 **Path:** `includes/modules/titan/class-vis-titan.php`
 
-Titan уменьшает ненужную поверхность атаки WordPress.
+Titan reduces unnecessary WordPress exposure.
 
-### Hardening-контроли
+### Hardening controls
 
-- блокировка author enumeration;
-- защита от REST user enumeration;
-- блокировка XML-RPC;
-- блокировка редактора файлов;
+- author-enumeration blocking;
+- REST user enumeration protection;
+- XML-RPC lockdown;
+- file editor lockdown;
 - `DISALLOW_FILE_EDIT`;
-- скрытие version tag WordPress;
-- удаление `X-Powered-By`;
-- уменьшение server fingerprint.
+- WordPress version tag suppression;
+- `X-Powered-By` removal;
+- server fingerprint reduction.
 
-Примеры защищённых маршрутов:
+Example protected routes:
 
 ```text
 /?author=1
@@ -569,15 +566,15 @@ Titan уменьшает ненужную поверхность атаки Word
 
 ---
 
-# 8. HADES — динамическое сокрытие административной области
+# 8. HADES — Dynamic Admin Stealth
 
 **Classification:** Layer 7 Identity & Route Cloaking  
 **Class:** `VisionGaia\GeDefense\Modules\Hades\Hades`
 **Path:** `includes/modules/hades/class-vis-hades.php`
 
-Hades уменьшает прямую публичную экспозицию административной поверхности входа.
+Hades reduces direct exposure of administrative login surfaces.
 
-### Модель безопасности
+### Security model
 
 ```text
 Public Request
@@ -590,34 +587,34 @@ Standard wp-login.php / wp-admin
       └─ No Handshake → 404-style response
 ```
 
-### Возможности
+### Features
 
-- динамический admin access handshake;
-- подавление прямого login-route;
-- имитация 404 для неавторизованных запросов;
-- привязка ephemeral session-cookie;
-- уменьшение публичной экспозиции административных точек входа.
+- dynamic admin access handshake;
+- direct login-route suppression;
+- 404 mimicry for unauthorized requests;
+- ephemeral session-cookie binding;
+- reduced public exposure of administrative entry points.
 
 ---
 
-# 9. CERBERUS — периметровый межсетевой экран
+# 9. CERBERUS — Perimeter Firewall
 
 **Classification:** Layer 0/1 Instant Drop Barrier  
 **Class:** `VisionGaia\GeDefense\Modules\Cerberus\Cerberus`
 **Path:** `includes/modules/cerberus/class-vis-cerberus.php`
 
-Cerberus предназначен для максимально раннего отклонения уже известных враждебных клиентов.
+Cerberus is designed to reject already-known hostile clients as early as possible.
 
-### Характеристики
+### Characteristics
 
-- очень ранний приоритет загрузки;
-- in-memory проверка IP там, где она доступна;
-- поддержка APCu/shared-cache;
-- поддержка IPv4 и IPv6 CIDR;
-- Cloudflare-aware проверка client-IP;
-- минимальный путь формирования ответа при отклонении.
+- very early boot priority;
+- in-memory IP lookup where available;
+- APCu/shared-cache support;
+- IPv4 and IPv6 CIDR support;
+- Cloudflare-aware client-IP validation;
+- minimal-response rejection path.
 
-### Цель
+### Goal
 
 ```text
 Known Hostile Client
@@ -634,48 +631,48 @@ Immediate Reject
 
 ---
 
-# 10. ZEUS — фильтр запросов до загрузки
+# 10. ZEUS — Pre-Boot Request Filter
 
 **Classification:** Layer 0 Ultra-Lightweight Request Filter  
 **Class:** `VisionGaia\GeDefense\Modules\Zeus\Zeus`
 **Path:** `includes/modules/zeus/class-vis-zeus.php`
 
-Zeus выполняет низкозатратную фильтрацию до более глубокой инспекции приложения.
+Zeus performs low-cost filtering before deeper application inspection.
 
-### Возможности
+### Capabilities
 
-- blacklist-правила в стиле 6G;
-- фильтрация вредоносных query string;
-- фильтрация плохих user-agent;
-- фильтрация аномалий referrer;
-- отклонение malformed URI;
-- emergency recovery / bypass-механизм при ошибочной конфигурации.
+- 6G-style blacklist rules;
+- malicious query-string filtering;
+- bad user-agent filtering;
+- referrer anomaly filtering;
+- malformed URI rejection;
+- emergency recovery / bypass mechanism for misconfiguration.
 
 ---
 
-# 11. AIRLOCK — инспекция входящих файлов
+# 11. AIRLOCK — Ingress File Inspection
 
 **Classification:** Layer 7 Ingress Data Sandbox  
 **Class:** `VisionGaia\GeDefense\Modules\Airlock\Airlock`
 **Path:** `includes/modules/airlock/class-vis-airlock.php`
 
-Airlock оценивает загруженные файлы на основе содержимого, а не доверяет только расширению имени файла.
+Airlock evaluates uploaded files using content-aware checks rather than trusting file extensions.
 
-### Механизмы инспекции
+### Inspection mechanisms
 
-- проверка magic bytes;
+- magic-byte verification;
 - MIME validation;
-- санитизация SVG XML;
-- удаление встроенных script/event;
-- обнаружение `javascript:` payload;
-- защита от XML entity expansion;
-- анализ энтропии;
-- обнаружение polyglot-файлов;
-- выявление скрытых PHP-сигнатур в метаданных изображений.
+- SVG XML sanitization;
+- embedded script/event removal;
+- `javascript:` payload detection;
+- XML entity expansion defense;
+- entropy analysis;
+- polyglot detection;
+- hidden PHP signature detection in image metadata.
 
-### Примеры SVG-защиты
+### SVG security examples
 
-Airlock предназначен для отклонения или санитизации конструкций вида:
+Airlock is designed to reject or sanitize constructs such as:
 
 ```html
 <script>
@@ -683,19 +680,19 @@ onload=
 javascript:
 ```
 
-а также небезопасных паттернов расширения XML entity.
+and unsafe XML entity expansion patterns.
 
 ---
 
-# 12. GHOST TRAP — honeypot-уровень
+# 12. GHOST TRAP — Honeypot Layer
 
 **Classification:** Layer 7 Active Lure Engine  
 **Class:** `VisionGaia\GeDefense\Modules\Trap\GhostTrap`
 **Path:** `includes/modules/trap/class-vis-ghost-trap.php`
 
-Ghost Trap создаёт ложные ресурсы, к которым легитимный пользователь обращаться не должен.
+Ghost Trap generates decoy resources that should never be requested by legitimate users.
 
-Примеры:
+Examples:
 
 ```text
 backup.sql
@@ -704,72 +701,72 @@ database.dump
 .aws/credentials
 ```
 
-Обращение к decoy-маршруту может рассматриваться как высококонфидентный признак автоматизированной разведки и эскалироваться в общую защитную матрицу.
+Access to a decoy route can be treated as high-confidence automated reconnaissance and escalated into the broader defense matrix.
 
 ---
 
-# 13. STYX — защита исходящего трафика
+# 13. STYX — Outbound Egress Shield
 
 **Classification:** Layer 7 Egress Control & Supply-Chain Guard  
 **Class:** `VisionGaia\GeDefense\Modules\Styx\Styx`
 **Path:** `includes/modules/styx/class-vis-styx.php`
 
-Styx контролирует исходящий HTTP-трафик WordPress.
+Styx monitors outbound WordPress HTTP traffic.
 
-### Основной механизм
+### Core mechanism
 
-Точка интеграции:
+Integration point:
 
 ```text
 pre_http_request
 ```
 
-### Цели
+### Objectives
 
-- контроль исходящих адресатов;
+- outbound destination control;
 - egress allowlisting;
-- устойчивость к эксфильтрации;
-- containment скомпрометированного плагина;
-- опциональное ограничение WordPress core telemetry;
-- сокращение неконтролируемых соединений со сторонними сервисами.
+- exfiltration resistance;
+- compromised-plugin containment;
+- optional restriction of WordPress core telemetry;
+- reduced uncontrolled third-party communication.
 
-Styx особенно актуален там, где WordPress должен работать в рамках **local-first или restricted-egress policy**.
+Styx is especially relevant where WordPress must operate under a **local-first or restricted-egress policy**.
 
 ---
 
-# 14. CHRONOS — автономный сканер
+# 14. CHRONOS — Autonomous Scanner
 
 **Classification:** Asynchronous Background Integrity Daemon  
 **Class:** `VisionGaia\GeDefense\Modules\Chronos\Chronos`
 **Path:** `includes/modules/chronos/class-vis-chronos.php`
 
-Chronos выполняет плановую проверку целостности и мониторинг файловой системы.
+Chronos performs scheduled integrity and filesystem monitoring.
 
-### Настраиваемые интервалы
+### Configurable intervals
 
-Примеры интервалов:
+Example schedules range from:
 
 ```text
-15 минут
-   ↓
-ежечасно
-   ↓
-каждые несколько часов
-   ↓
-ежедневно
+15 minutes
+      ↓
+hourly
+      ↓
+multi-hour
+      ↓
+daily
 ```
 
-### Контролируемые области
+### Monitored areas
 
 - GeDefense Core;
 - WordPress Core;
-- плагины;
-- темы;
-- выбранные прикладные пути.
+- plugins;
+- themes;
+- selected application paths.
 
-### Оповещения
+### Alerting
 
-Шаблоны уведомлений могут включать переменные:
+Alert templates can include variables such as:
 
 ```text
 {site_url}
@@ -779,24 +776,24 @@ Chronos выполняет плановую проверку целостнос�
 
 ---
 
-# 15. KEY VAULT — криптографическое хранение секретов
+# 15. KEY VAULT — Cryptographic Secret Storage
 
 **Classification:** Cryptographic Key Management  
 **Class:** `VisionGaia\GeDefense\Modules\Vault\KeyVault`
 
-Key Vault защищает чувствительные значения конфигурации, такие как API credentials и токены модулей.
+The Key Vault protects sensitive configuration values such as API credentials and module tokens.
 
-### Криптографические механизмы
+### Cryptographic mechanisms
 
-Поддерживаемый дизайн включает:
+Supported design includes:
 
 - Libsodium Secretbox;
 - AES-256-GCM;
 - authenticated encryption;
-- AAD-style привязку идентификаторов;
-- защищённое хранение API-ключей.
+- AAD-style identifier binding;
+- protected API-key storage.
 
-Примеры классов секретов:
+Example secret classes:
 
 ```text
 AI Provider Keys
@@ -805,63 +802,63 @@ Private Integration Secrets
 Module Credentials
 ```
 
-Чувствительные значения никогда не должны попадать в репозиторий.
+Sensitive values should never be committed to the repository.
 
 ---
 
-# 16. ORACLE — движок аудита безопасности
+# 16. ORACLE — Security Audit Engine
 
 **Classification:** Static Security & Configuration Auditing  
 **Class:** `VisionGaia\GeDefense\Modules\Oracle\Oracle`
 **Path:** `includes/modules/oracle/class-vis-oracle.php`
 
-Oracle оценивает состояние безопасности WordPress и PHP по двенадцати основным направлениям.
+Oracle evaluates WordPress and PHP security posture across twelve primary vectors.
 
-| # | Проверка |
+| # | Audit |
 |---:|---|
-| 1 | защита `wp-config.php` |
-| 2 | недоступность `debug.log` извне |
-| 3 | блокировка редактора файлов |
-| 4 | энтропия WordPress salts |
-| 5 | hardening префикса БД |
-| 6 | проверка учётной записи `admin` по умолчанию |
-| 7 | защита от enumeration пользовательских ID |
-| 8 | принудительное использование HTTPS / TLS |
-| 9 | экспозиция server signature |
-| 10 | состояние PHP display-errors |
-| 11 | защита от directory browsing |
-| 12 | корректная передача authentication headers |
+| 1 | `wp-config.php` protection |
+| 2 | `debug.log` secrecy |
+| 3 | file-editor lockdown |
+| 4 | WordPress salt entropy |
+| 5 | database prefix hardening |
+| 6 | default `admin` account check |
+| 7 | user-ID enumeration protection |
+| 8 | HTTPS / TLS enforcement |
+| 9 | server-signature exposure |
+| 10 | PHP display-errors posture |
+| 11 | directory browsing protection |
+| 12 | authentication-header propagation |
 
 ---
 
-# 17. РЕЕСТР МОДУЛЕЙ — расширение Open Core
+# 17. MODULE REGISTRY — Open Core Expansion
 
 **Classification:** Extensible Module Architecture  
 **Class:** `VisionGaia\GeDefense\Core\ModuleRegistry`
 **Path:** `includes/core/class-vis-module-registry.php`
 
-Реестр модулей предоставляет слой расширения для GeDefense WP Open Core.
+The module registry provides the expansion layer for GeDefense WP Open Core.
 
-Ядро остаётся полностью работоспособным само по себе, а дополнительные модули могут распространяться как подписанные или отдельно упакованные расширения.
+The core remains independently usable while optional modules can be distributed as signed or separately packaged extensions.
 
-### Планируемые / доступные модули экосистемы
+### Planned / available ecosystem modules
 
 #### Vision Legal Pro — VLP
 
-Функциональность, ориентированная на приватность и compliance, включая:
+Privacy and compliance-oriented functionality, including:
 
 - privacy controls;
-- локальное зеркалирование assets;
+- local asset mirroring;
 - consent-oriented workflows;
-- local-first обработку данных.
+- local-first data handling.
 
 #### Lightweight Builder
 
-Высокопроизводительная визуальная система компоновки и компонентов, предназначенная для отказа от overhead тяжёлых page builder.
+A high-performance visual layout and component system designed to avoid heavyweight page-builder overhead.
 
 #### GEO Architect
 
-Generative Engine Optimization и инструменты семантических сущностей для AI-oriented поиска и discovery-систем.
+Generative Engine Optimization and semantic entity tooling for AI-oriented search and discovery systems.
 
 ---
 
@@ -907,31 +904,30 @@ LoginPager transforms the native WordPress authentication endpoint (`wp-login.ph
 
 # Zero-Dependency Philosophy
 
-GeDefense WP намеренно минимизирует количество сторонних runtime-зависимостей.
+GeDefense WP intentionally minimizes third-party runtime dependencies.
 
 ### PHP
 
 ```php
 <?php
-
 declare(strict_types=1);
 ```
 
-### Цели проектирования
+### Design goals
 
 - PHP 8.1–8.4;
 - WordPress 6.0+;
-- отсутствие внешних PHP vendor-библиотек в ядре;
-- отсутствие обязательной runtime-зависимости от Composer;
-- оптимизированная локальная автозагрузка проекта;
-- нативные API WordPress / PHP;
-- Libsodium при наличии;
-- отсутствие обязательного внешнего frontend CDN;
-- UI assets, которые могут полностью отрисовываться локально.
+- zero external PHP vendor libraries in the core;
+- no mandatory Composer runtime dependency;
+- optimized project-local autoloading;
+- native WordPress / PHP APIs;
+- Libsodium where available;
+- no mandatory external frontend CDN;
+- locally renderable UI assets.
 
-### Почему это важно
+### Why this matters
 
-Каждая сторонняя runtime-зависимость потенциально создаёт:
+Every third-party runtime dependency introduces potential:
 
 ```text
 Supply Chain Risk
@@ -942,17 +938,17 @@ Version Conflicts
 Additional Audit Surface
 ```
 
-Подход zero-dependency не устраняет программные риски полностью, но намеренно сокращает количество внешне контролируемых runtime-компонентов внутри trusted computing base.
+The zero-dependency approach does not eliminate software risk, but it deliberately reduces the number of externally controlled runtime components in the trusted computing base.
 
 ---
 
-# Режимы безопасности
+# Security Modes
 
-Несколько модулей GeDefense предоставляют явные режимы работы вместо принудительного использования одного универсального enforcement-профиля.
+Several GeDefense modules expose explicit operating modes rather than forcing one universal enforcement profile.
 
 ## Learning / Audit
 
-Предназначен для первоначального развёртывания и наблюдения.
+Designed for initial deployment and observation.
 
 ```text
 Inspect
@@ -964,7 +960,7 @@ Do Not Aggressively Block
 
 ## Enforcement / Strict
 
-Предназначен для hardened-развёртываний.
+Designed for hardened deployments.
 
 ```text
 Inspect
@@ -975,15 +971,15 @@ Enforce
 Escalate
 ```
 
-Перед включением агрессивных policy в production администраторы должны сначала построить baseline легитимного поведения приложения.
+Administrators should baseline legitimate application behavior before enabling aggressive policies on production systems.
 
 ---
 
-# Производительность
+# Performance
 
 The current GeDefense WP 8.0.0 technical profile defines the following internal benchmark targets/results:
 
-| Метрика | GeDefense WP |
+| Metric | GeDefense WP |
 |---|---:|
 | **L0 rejection latency** | `0.08 ms` |
 | **WAF inspection time** | `0.35 ms` |
@@ -992,13 +988,13 @@ The current GeDefense WP 8.0.0 technical profile defines the following internal 
 | **Primary architecture** | Memory-cache first |
 | **Control model** | Local / on-premise |
 
-> Показатели производительности зависят от PHP runtime, доступности cache, стека WordPress, hosting environment, формы запроса и включённых модулей безопасности. Перед использованием этих цифр для capacity planning воспроизводите benchmark в собственной среде.
+> Performance figures depend on PHP runtime, cache availability, WordPress stack, hosting environment, request shape and enabled security modules. Reproduce benchmarks in your own environment before using them for capacity planning.
 
 ---
 
-# Assurance & регрессионное тестирование
+# Assurance & Regression Testing
 
-Репозиторий включает отдельные regression- и benchmark-gates.
+The repository includes dedicated regression and benchmark gates.
 
 ```bash
 php scripts/security-regression.php
@@ -1012,24 +1008,24 @@ php scripts/integrity-baseline-regression.php
 php scripts/sentinel-threat-benchmark.php
 ```
 
-Эти тесты предназначены для проверки:
+These tests are intended to exercise:
 
 - security invariants;
-- регрессионных сценариев WAF;
-- runtime-контролей Morpheus;
+- WAF regression cases;
+- Morpheus runtime controls;
 - integrity baselines;
-- поведения обнаружения угроз;
-- чувствительных к производительности путей безопасности.
+- threat-detection behavior;
+- performance-sensitive security paths.
 
-Security-релиз не должен считаться проверенным только потому, что плагин успешно активируется в WordPress.
+A security release should not be treated as validated solely because the plugin activates successfully in WordPress.
 
 ---
 
-# Принципы проектирования безопасности
+# Security Design Principles
 
 ## 1. Defense in Depth
 
-Ни один отдельный модуль не рассматривается как единственная граница безопасности.
+No single module is treated as the only security boundary.
 
 ```text
 Pre-Boot
@@ -1049,57 +1045,57 @@ Integrity
 
 ## 2. Local First
 
-Состояние безопасности и решения по безопасности по возможности должны оставаться локальными.
+Security state and security decisions should remain local wherever possible.
 
-## 3. Детерминированные контроли до AI
+## 3. Deterministic Controls Before AI
 
-Детерминированная логика безопасности остаётся основным enforcement-уровнем.
+Deterministic security logic remains the primary enforcement layer.
 
-Опциональный AI-анализ является дополнительным.
+Optional AI analysis is supplemental.
 
-## 4. Минимальная Trusted Computing Base
+## 4. Minimal Trusted Computing Base
 
-Ядро избегает ненужных runtime-зависимостей.
+The core avoids unnecessary runtime dependencies.
 
-## 5. Явное Enforcement
+## 5. Explicit Enforcement
 
-Агрессивные enforcement-режимы должны включаться осознанно и предварительно проверяться.
+Aggressive enforcement modes should be consciously enabled and validated.
 
-## 6. Наблюдаемая безопасность
+## 6. Observable Security
 
-Защитные действия должны создавать пригодную для анализа телеметрию, а не превращаться в невидимое фоновое поведение.
+Security actions should create usable telemetry rather than becoming invisible background behavior.
 
-## 7. Deception без зависимости от него
+## 7. Deception Without Dependency
 
-Honeypot и canary-механизмы дополняют традиционную защиту, а не заменяют её.
-
----
-
-# Модель Open Core
-
-GeDefense WP выпускается как платформа **Open Core**.
-
-### Open Core означает:
-
-- security-core доступен в исходном коде под AGPLv3;
-- ядро полностью функционально само по себе;
-- ядро содержит основную архитектуру безопасности;
-- опциональные ecosystem-модули могут расширять бизнес- или прикладную функциональность;
-- развёртывания могут оставаться локальными и полностью контролироваться оператором.
-
-Цель — не публиковать намеренно урезанную демоверсию.
-
-Цель — создать аудитируемую основу безопасности, которую можно расширять, не превращая базовый защитный слой в обязательный облачный сервис.
+Honeypots and canaries complement conventional defense rather than replacing it.
 
 ---
 
-# Ответственное раскрытие уязвимостей
+# Open Core Model
 
-Security software следует тестировать агрессивно, однако уязвимости, затрагивающие реальных пользователей, должны раскрываться ответственно.
+GeDefense WP is released as an **Open Core** platform.
 
-Пожалуйста, **не публикуйте немедленно эксплуатируемые уязвимости, действующие учётные данные, приватные ключи или чувствительные production-данные в публичном issue**.
+### Open Core means:
 
-Полезный отчёт об уязвимости должен включать:
+- the security core is source available under AGPLv3;
+- the core is independently functional;
+- the core contains the primary security architecture;
+- optional ecosystem modules can extend business or application functionality;
+- deployments can remain local and self-controlled.
+
+The goal is not to publish a deliberately crippled demo.
+
+The goal is to establish an auditable security foundation that can be extended without turning the base protection layer into a mandatory cloud service.
+
+---
+
+# Security Disclosure
+
+Security software should be tested aggressively — but vulnerabilities affecting real users should be disclosed responsibly.
+
+Please **do not publish immediately exploitable vulnerabilities, live credentials, private keys or sensitive production data in a public issue**.
+
+A useful vulnerability report should include:
 
 ```text
 Affected Version
@@ -1113,51 +1109,51 @@ Relevant Logs
 Proof of Concept, where appropriate
 ```
 
-Если в репозитории существует `SECURITY.md`, следуйте описанному в нём процессу disclosure.
+If a `SECURITY.md` file exists in the repository, follow the disclosure process defined there.
 
 ---
 
-# Уведомление о безопасности
+# Security Notice
 
-GeDefense WP — защитное программное обеспечение.
+GeDefense WP is defensive security software.
 
-Некоторые модули включают deception, honeypot и ограниченные decoy-ответы. Эти механизмы остаются локальными, конечными и защитными.
+Some modules include deception, honeypots and bounded decoy responses. These mechanisms remain local, finite and defensive.
 
-GeDefense WP не гарантирует, что установка WordPress станет неуязвимой.
+GeDefense WP does not guarantee that a WordPress installation is invulnerable.
 
-Безопасность также зависит от:
+Security also depends on:
 
 - WordPress Core;
-- сторонних тем и плагинов;
+- third-party themes and plugins;
 - PHP;
-- веб-сервера;
-- базы данных;
-- операционной системы;
-- конфигурации хостинга;
-- безопасности администраторов;
-- учётных данных;
-- резервных копий;
-- дисциплины обновлений;
-- окружающей сетевой архитектуры.
+- the web server;
+- the database;
+- the operating system;
+- hosting configuration;
+- administrator security;
+- credentials;
+- backups;
+- update discipline; and
+- the surrounding network architecture.
 
 ---
 
-# Требования
+# Requirements
 
-| Компонент | Требование |
+| Component | Requirement |
 |---|---|
 | **PHP** | 8.1–8.4 |
 | **WordPress** | 6.0+ |
 | **PHP mode** | Strict Types |
-| **External PHP libraries** | Не требуются ядром |
-| **Libsodium** | Рекомендуется для нативных криптографических операций |
-| **Object cache** | Опционально; APCu / совместимые cache-механизмы могут улучшить fast-path поведение |
+| **External PHP libraries** | None required by core |
+| **Libsodium** | Recommended for native cryptographic operations |
+| **Object cache** | Optional; APCu / compatible cache paths can improve fast-path behavior |
 
 ---
 
-# Лицензия
+# License
 
-GeDefense WP Open Core распространяется под:
+GeDefense WP Open Core is licensed under the:
 
 ## GNU Affero General Public License v3.0
 
@@ -1167,17 +1163,19 @@ SPDX identifier:
 AGPL-3.0-or-later
 ```
 
-Полные условия лицензии см. в:
+See:
 
 [LICENSE](LICENSE)
 
-Если GeDefense WP модифицируется и эксплуатируется через сеть, ознакомьтесь с требованиями AGPLv3 по доступности исходного кода, применимыми к вашему развёртыванию.
+for the complete license terms.
 
-Товарные знаки третьих сторон, марки WordPress, брендинг VisionGaia Technology и отдельно распространяемые add-on-модули могут подпадать под собственные уведомления или политики.
+If GeDefense WP is modified and operated over a network, review the AGPLv3 source-availability requirements applicable to your deployment.
+
+Third-party trademarks, WordPress marks, VisionGaia Technology branding and separately distributed add-ons may be subject to their own notices or policies.
 
 ---
 
-# Журнал изменений
+# Changelog
 
 ## 8.0.0 — Apex Sovereign Cyber Defense & Privilege Boundary Architecture
 
@@ -1233,11 +1231,11 @@ AGPL-3.0-or-later
 
 ## 7.5.2 — Initial Open-Core Release
 
-- опубликовано первое полное Open Core ядро безопасности, матрица модулей, assurance-suite и архитектурная документация.
+- published the first complete Open Core security kernel, module matrix, assurance suite and architecture documentation.
 
 ---
 
-# Состояние проекта
+# Project Status
 
 ```text
 Product:       GeDefense WP
@@ -1257,7 +1255,7 @@ Dependencies:  Zero external PHP vendor libraries
 
 ## GeDefense WP 8.0.0 — Open Core
 
-**СУВЕРЕННАЯ БЕЗОПАСНОСТЬ WORDPRESS**
+**SOVEREIGN WORDPRESS SECURITY**
 
 **AEGIS · PROMETHEUS · TRINITY GRID · MORPHEUS · NEMESIS · TITAN · HADES · CERBERUS · ZEUS · AIRLOCK · GHOST TRAP · STYX · CHRONOS · KEY VAULT · ORACLE**
 
