@@ -112,7 +112,14 @@
         button.textContent = 'COMPILING…';
         try {
             const response = await fetch(cfg.ajaxUrl, {method: 'POST', credentials: 'same-origin', body: new FormData(zeusForm)});
-            const payload = await response.json();
+            const rawText = await response.text();
+            let payload;
+            try {
+                payload = JSON.parse(rawText);
+            } catch {
+                const cleanSnippet = rawText.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+                throw new Error(cleanSnippet.substring(0, 240) || `HTTP ${response.status}: Server returned an invalid response.`);
+            }
             if (!response.ok || payload?.success !== true) throw new Error(String(payload?.data?.message || `HTTP ${response.status}`));
             showModal('WAF COMPILED & DEPLOYED', String(payload?.data?.message || 'Policy deployed.'), 'success', () => window.location.reload());
         } catch (error) {

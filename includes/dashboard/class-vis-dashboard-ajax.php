@@ -5,11 +5,12 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
 /**
  * VGT OMEGA PROTOCOL - MASTER AJAX CONTROLLER
- * STATUS: PLATIN (Gorgon-Routing delegiert zur Auflösung von Race-Conditions)
+ * STATUS: DIAMANT VGT SUPREME
  */
 final class VIS_Dashboard_Ajax {
 
-    private static function ensure_zeus_dependencies(): void {
+    public static function ensure_zeus_dependencies(): void {
+        require_once dirname(__DIR__, 1) . '/core/class-vis-security.php';
         $zeus_src_dir = dirname(__DIR__, 1) . '/modules/zeus/src/';
         require_once $zeus_src_dir . 'class-zeus-vault-resolver.php';
         require_once $zeus_src_dir . 'class-zeus-policy-manager.php';
@@ -61,9 +62,11 @@ final class VIS_Dashboard_Ajax {
     
 
     private static function verify_privileges(string $nonce_action, string $nonce_key = 'nonce'): void {
-        check_ajax_referer($nonce_action, $nonce_key);
+        if (!check_ajax_referer($nonce_action, $nonce_key, false)) {
+            wp_send_json_error(['message' => 'VGT_SECURITY_VIOLATION: Nonce verification failed or session expired. Please refresh the page.'], 403);
+        }
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'VGT_UNAUTHORIZED_ACCESS']);
+            wp_send_json_error(['message' => 'VGT_UNAUTHORIZED_ACCESS'], 403);
         }
     }
 
@@ -190,7 +193,7 @@ final class VIS_Dashboard_Ajax {
             wp_send_json_error(['message' => 'Request rejected for security reasons.'], 403);
         } catch (StorageException $e) {
             error_log('[ZEUS STORAGE] ' . $e->getMessage());
-            wp_send_json_error(['message' => $e->getMessage() ?: 'A server error occurred.'], 500);
+            wp_send_json_error(['message' => 'A server storage error occurred.'], 500);
         } catch (Throwable $e) {
             error_log('[ZEUS FATAL] ' . $e->getMessage());
             wp_send_json_error(['message' => 'Critical system fault.'], 500);

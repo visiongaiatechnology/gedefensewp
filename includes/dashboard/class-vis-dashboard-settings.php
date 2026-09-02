@@ -1,4 +1,5 @@
 <?php
+// STATUS: DIAMANT VGT SUPREME
 declare(strict_types=1);
 
 if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
@@ -10,6 +11,9 @@ final class VIS_Dashboard_Settings {
     }
 
     private static function handle_standard_config(): void {
+        if (function_exists('wp_doing_ajax') ? wp_doing_ajax() : (defined('DOING_AJAX') && DOING_AJAX)) {
+            return;
+        }
         if (!current_user_can('manage_options')) return;
         if (!isset($_POST['vis_context']) || !isset($_POST['_wpnonce'])) {
             return;
@@ -172,8 +176,25 @@ final class VIS_Dashboard_Settings {
 
             if (!empty($_POST['groq_api_key'])) {
                 $key_val = is_string($_POST['groq_api_key']) ? sanitize_text_field(wp_unslash($_POST['groq_api_key'])) : '';
-                if (class_exists('VIS_Key_Vault')) {
-                    VIS_Key_Vault::save_key('vis_aegis_ai_key', $key_val);
+                if ($key_val !== '') {
+                    if (!class_exists('VIS_Key_Vault') && is_readable(VIS_PATH . 'includes/modules/vault/class-vis-key-vault.php')) {
+                        require_once VIS_PATH . 'includes/modules/vault/class-vis-key-vault.php';
+                    }
+                    if (class_exists('VIS_Key_Vault')) {
+                        VIS_Key_Vault::save_key('vis_aegis_ai_key', $key_val);
+                    }
+                }
+            }
+
+            if (!empty($_POST['vis_aegis_oracle_key'])) {
+                $aegis_key = is_string($_POST['vis_aegis_oracle_key']) ? trim(sanitize_text_field(wp_unslash($_POST['vis_aegis_oracle_key']))) : '';
+                if ($aegis_key !== '') {
+                    if (!class_exists('VIS_Key_Vault') && is_readable(VIS_PATH . 'includes/modules/vault/class-vis-key-vault.php')) {
+                        require_once VIS_PATH . 'includes/modules/vault/class-vis-key-vault.php';
+                    }
+                    if (class_exists('VIS_Key_Vault')) {
+                        VIS_Key_Vault::save_key('vis_aegis_ai_key', $aegis_key);
+                    }
                 }
             }
 
@@ -300,7 +321,11 @@ final class VIS_Dashboard_Settings {
         if ($context === 'all' || $context === 'zeus' || isset($_POST['vgt_zeus_form_submit'])) {
             VIS_Dashboard_Ajax::ensure_zeus_dependencies();
             if (class_exists('\VisionGaia\GeDefense\Modules\Zeus\Zeus_Config_Repository')) {
-                \VisionGaia\GeDefense\Modules\Zeus\Zeus_Config_Repository::save(wp_unslash($_POST));
+                try {
+                    \VisionGaia\GeDefense\Modules\Zeus\Zeus_Config_Repository::save(wp_unslash($_POST));
+                } catch (\Throwable $e) {
+                    error_log('[ZEUS CONFIG SAVE] ' . $e->getMessage());
+                }
             }
         }
 

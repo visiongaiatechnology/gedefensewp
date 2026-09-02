@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace VisionGaia\GeDefense\Modules\Zeus;
 
+use \ValidationException;
+use \SecurityException;
+use \StorageException;
+use \RuntimeException;
+use \Throwable;
+
 if ( ! defined( 'ABSPATH' ) ) exit('VGT_ACCESS_DENIED');
 
 class VIS_Zeus_Env {
@@ -191,33 +197,42 @@ class VIS_Zeus_Env {
     }
 
     private function atomic_replace(string $destination, string $content, int $mode, ?string $temporary = null): void {
-        $resolved_root = realpath(ABSPATH);
-        $resolved_dir = realpath(dirname($destination));
-        if ($resolved_root === false
-            || $resolved_dir === false
-            || !is_dir($resolved_dir)
-            || ($resolved_dir !== $resolved_root
-                && !str_starts_with($resolved_dir, $resolved_root . DIRECTORY_SEPARATOR))) {
+        $normalize = static fn(string $p): string => function_exists('wp_normalize_path') ? wp_normalize_path($p) : str_replace('\\', '/', $p);
+
+        $raw_root = realpath(ABSPATH);
+        $raw_dir  = realpath(dirname($destination));
+        if ($raw_root === false || $raw_dir === false || !is_dir($raw_dir)) {
+            throw new SecurityException('Zeus configuration path escaped jail.');
+        }
+
+        $resolved_root = rtrim($normalize($raw_root), '/') . '/';
+        $resolved_dir  = rtrim($normalize($raw_dir), '/') . '/';
+
+        if ($resolved_dir !== $resolved_root && !str_starts_with($resolved_dir, $resolved_root)) {
             throw new SecurityException('Zeus configuration path escaped jail.');
         }
 
         $temporary ??= $destination . '.tmp.' . bin2hex(random_bytes(16));
-        if (!str_starts_with($temporary, $resolved_dir . DIRECTORY_SEPARATOR)) {
+        $norm_temporary = $normalize($temporary);
+        if (!str_starts_with($norm_temporary, $resolved_dir)) {
             throw new SecurityException('Zeus staging path escaped jail.');
         }
         if (file_put_contents($temporary, $content, LOCK_EX) === false
-            || !chmod($temporary, $mode)
             || !hash_equals(hash('sha256', $content), (string)hash_file('sha256', $temporary))) {
             if (is_file($temporary)) @unlink($temporary);
             throw new StorageException('Zeus configuration staging failed.');
         }
+        @chmod($temporary, $mode);
 
         if (!@rename($temporary, $destination)) {
-            if (!$this->locked_replace_existing($destination, $content, $mode)) {
-                if (is_file($temporary)) @unlink($temporary);
-                throw new StorageException('Zeus atomic configuration write failed.');
+            if (is_file($destination)) @unlink($destination);
+            if (!@rename($temporary, $destination)) {
+                if (!$this->locked_replace_existing($destination, $content, $mode)) {
+                    if (is_file($temporary)) @unlink($temporary);
+                    throw new StorageException('Zeus atomic configuration write failed.');
+                }
+                @unlink($temporary);
             }
-            @unlink($temporary);
         }
 
         clearstatcache(true, $destination);
@@ -283,7 +298,7 @@ class VIS_Zeus_Env {
         if (!fflush($handle)) {
             return false;
         }
-        return !function_exists('fsync') || fsync($handle);
+        return !function_exists('fsync') || @fsync($handle);
     }
 }
 

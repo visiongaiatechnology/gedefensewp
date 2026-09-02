@@ -112,6 +112,28 @@ $aegisToggle = static function(string $name, bool $enabled, string $label): void
         
         <p><?php esc_html_e('Generative KI-Heuristik-Engine für Zero-Day-Payload-Analysen und kontextuelle Angriffsidentifikation.', 'vgt-sentinel'); ?></p>
 
+        <!-- Dedicated AEGIS Oracle API Key Input -->
+        <div class="vgt-titan-fields" style="margin-top: 14px; margin-bottom: 16px;">
+            <label class="vgt-titan-wide-field">
+                <span style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span><?php esc_html_e('Groq AI API Key (System-Identifier: vis_aegis_ai_key)', 'vgt-sentinel'); ?></span>
+                    <?php if ($is_oracle_active): ?>
+                        <span style="font: 700 10px monospace; color: #34d399; background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3); padding: 3px 8px; border-radius: 4px;">
+                            <?php esc_html_e('IM KRYPTO-TRESOR VERSIEGELT', 'vgt-sentinel'); ?>
+                        </span>
+                    <?php else: ?>
+                        <span style="font: 700 10px monospace; color: #fb7185; background: rgba(251, 113, 133, 0.12); border: 1px solid rgba(251, 113, 133, 0.3); padding: 3px 8px; border-radius: 4px;">
+                            <?php esc_html_e('SCHLÜSSEL FEHLT', 'vgt-sentinel'); ?>
+                        </span>
+                    <?php endif; ?>
+                </span>
+                <input type="password" name="vis_aegis_oracle_key" value="" placeholder="<?php echo $is_oracle_active ? '•••••••••••••••••••••••••••••••• (' . esc_attr__('Schlüssel aktiv versiegelt — leer lassen um unverändert zu lassen', 'vgt-sentinel') . ')' : 'gsk_xxxxxxxxxxxxxxxxxxxxxxxx'; ?>" autocomplete="new-password">
+                <small style="color: var(--vgt-text-dim); margin-top: 6px; display: block; line-height: 1.4;">
+                    <?php esc_html_e('Trage hier deinen Groq API Key ein. Er wird beim Speichern automatisch unter dem festgelegten Identifier vis_aegis_ai_key per AES-256-GCM hardware-gebunden im Krypto-Tresor versiegelt.', 'vgt-sentinel'); ?>
+                </small>
+            </label>
+        </div>
+
         <div class="vgt-oracle-diagnostics" data-oracle-active="<?php echo $is_oracle_active ? '1' : '0'; ?>" style="margin-top: 14px; background: rgba(3, 8, 16, 0.6); padding: 18px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.12);">
             <div class="vgt-oracle-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="<?php echo esc_attr__('Groq Verbindungsgeschwindigkeit', 'vgt-sentinel'); ?>" style="background: rgba(255,255,255,0.06); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
                 <span id="vgt-oracle-meter-fill" style="display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #c084fc, #5eead4); transition: width 0.3s ease;"></span>
@@ -121,15 +143,16 @@ $aegisToggle = static function(string $name, bool $enabled, string $label): void
                 <span id="vgt-oracle-grade" style="font: 600 12px/1 ui-monospace, monospace; color: #7dd3fc;"><?php esc_html_e('Noch nicht getestet', 'vgt-sentinel'); ?></span>
             </div>
             
-            <div class="vgt-titan-actions" style="margin-top: 0;">
+            <div class="vgt-titan-actions" style="margin-top: 0; gap: 10px; flex-wrap: wrap;">
+                <button type="submit" name="vis_save_config" value="1" style="background: rgba(192, 132, 252, 0.15); border-color: #c084fc; color: #e9d5ff;">
+                    <?php esc_html_e('ORACLE KEY SPEICHERN', 'vgt-sentinel'); ?>
+                </button>
                 <button type="button" id="vgt-oracle-ping" <?php disabled(!$is_oracle_active); ?> style="<?php echo !$is_oracle_active ? 'opacity:0.4; cursor:not-allowed;' : ''; ?>">
                     <?php esc_html_e('GROQ PING-TEST STARTEN', 'vgt-sentinel'); ?>
                 </button>
-                <?php if (!$is_oracle_active): ?>
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=vgt-suite&tab=vault')); ?>" class="vgt-titan-download">
-                        <?php esc_html_e('Oracle Key im Tresor hinterlegen', 'vgt-sentinel'); ?>
-                    </a>
-                <?php endif; ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=vgt-suite&tab=vault&key_id=vis_aegis_ai_key')); ?>" class="vgt-titan-download">
+                    <?php echo $is_oracle_active ? esc_html__('Key im Krypto-Tresor verwalten', 'vgt-sentinel') : esc_html__('Oracle Key im Krypto-Tresor hinterlegen', 'vgt-sentinel'); ?>
+                </a>
             </div>
             <p id="vgt-oracle-ping-status" class="vgt-oracle-ping-status" aria-live="polite" style="margin-top: 12px; font-size: 11px; color: #94a3b8; font-family: ui-monospace, monospace;">
                 <?php echo $is_oracle_active ? esc_html__('Misst TLS-, Authentifizierungs- und API-Latenz ohne Prompt- oder Inhaltsübertragung.', 'vgt-sentinel') : esc_html__('Zuerst einen Groq-Key im Schlüssel-Tresor hinterlegen.', 'vgt-sentinel'); ?>

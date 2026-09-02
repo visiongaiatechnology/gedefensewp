@@ -11,6 +11,7 @@ if (!class_exists('VIS_Key_Vault')) {
 
 $registered_keys = VIS_Key_Vault::get_registry();
 $status_msg = isset($_GET['vault-status']) && is_string($_GET['vault-status']) ? sanitize_key(wp_unslash($_GET['vault-status'])) : '';
+$prefill_key_id = isset($_GET['key_id']) && is_string($_GET['key_id']) ? sanitize_key(wp_unslash($_GET['key_id'])) : '';
 ?>
 
 <section class="vgt-titan" aria-label="Krypto Vault Key Management">
@@ -42,6 +43,14 @@ $status_msg = isset($_GET['vault-status']) && is_string($_GET['vault-status']) ?
     <?php elseif ($status_msg === 'terminated'): ?>
         <div class="vgt-titan-findings"><p class="is-critical"><?php esc_html_e('Asset irreversibel aus der Matrix gelöscht.', 'vgt-sentinel'); ?></p></div>
     <?php endif; ?>
+    <?php if ($prefill_key_id === 'vis_aegis_ai_key'): ?>
+        <div class="vgt-titan-findings" style="border-color: rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.08);">
+            <p style="color: #c084fc;">
+                <strong><?php esc_html_e('AEGIS ORACLE SCHLÜSSEL-KONFIGURATION:', 'vgt-sentinel'); ?></strong>
+                <?php esc_html_e('Der System-Identifier vis_aegis_ai_key wurde automatisch vorausgefüllt. Gib unten einfach deinen Groq API Key ein und klicke auf „IN VAULT VERSIEGELN“. Danach ist das Aegis Oracle sofort einsatzbereit.', 'vgt-sentinel'); ?>
+            </p>
+        </div>
+    <?php endif; ?>
 
     <!-- SECTION 1: SEAL NEW SECRET -->
     <section class="vgt-titan-panel">
@@ -59,7 +68,7 @@ $status_msg = isset($_GET['vault-status']) && is_string($_GET['vault-status']) ?
             <div class="vgt-titan-fields">
                 <label>
                     <span><?php esc_html_e('Key Identifier (Unique System-ID)', 'vgt-sentinel'); ?></span>
-                    <input type="text" name="key_identifier" placeholder="vis_aegis_ai_key" required autocomplete="off">
+                    <input type="text" name="key_identifier" value="<?php echo esc_attr($prefill_key_id); ?>" placeholder="vis_aegis_ai_key" required autocomplete="off">
                 </label>
                 <label>
                     <span><?php esc_html_e('Raw API Key (Plaintext)', 'vgt-sentinel'); ?></span>
