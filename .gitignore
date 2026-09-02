@@ -32,3 +32,8 @@ tests/_output/
 *.zip
 test_scan_uploads/
 
+
+# VGT Runtime Deployment Artifacts (Local only)
+.user.ini
+*.tmp
+*.lkg.php

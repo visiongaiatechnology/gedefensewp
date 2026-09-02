@@ -15,11 +15,13 @@ $components = [
     'compatibility' => ['directory' => 'includes/compatibility'],
     'core' => ['directory' => 'includes/core'],
     'dashboard' => ['directory' => 'includes/dashboard'],
+    'xdr' => ['directory' => 'includes/xdr'],
     'scanner' => ['directory' => 'includes/scanner'],
     'aegis' => ['directory' => 'includes/modules/aegis'],
     'airlock' => ['directory' => 'includes/modules/airlock'],
     'cerberus' => ['directory' => 'includes/modules/cerberus'],
     'chronos' => ['directory' => 'includes/modules/chronos'],
+    'downloads' => ['directory' => 'includes/modules/downloads'],
     'filesystem' => ['directory' => 'includes/modules/filesystem'],
     'gorgon' => ['directory' => 'includes/modules/gorgon'],
     'hades' => ['directory' => 'includes/modules/hades'],
@@ -131,4 +133,29 @@ if (!rename($temporary, $directory . '/module-manifest.json')) {
 }
 @chmod($directory . '/module-manifest.json', 0600);
 
-echo 'VGT MODULE MANIFEST: GENERATED digest=' . hash('sha256', $json) . PHP_EOL;
+$digest = hash('sha256', $json);
+
+$entrypoints = [
+    $root . '/gedefense-wp.php',
+    $root . '/0vision-integrity-sentinel.php',
+    $root . '/vision-integrity-sentinel.php',
+];
+foreach ($entrypoints as $entrypoint) {
+    if (is_file($entrypoint)) {
+        $source = file_get_contents($entrypoint);
+        if (is_string($source) && preg_match("/define\('VIS_MANIFEST_DIGEST',\s*'([a-f0-9]{64})'\);/", $source)) {
+            $updated = preg_replace(
+                "/define\('VIS_MANIFEST_DIGEST',\s*'([a-f0-9]{64})'\);/",
+                "define('VIS_MANIFEST_DIGEST', '{$digest}');",
+                $source,
+                1
+            );
+            if (is_string($updated)) {
+                file_put_contents($entrypoint, $updated, LOCK_EX);
+                echo 'VGT TRUST ANCHOR: UPDATED in ' . basename($entrypoint) . PHP_EOL;
+            }
+        }
+    }
+}
+
+echo 'VGT MODULE MANIFEST: GENERATED digest=' . $digest . PHP_EOL;

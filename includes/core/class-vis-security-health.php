@@ -8,20 +8,20 @@ final class VIS_Security_Health {
     /** @return array<int, array{id:string,label:string,status:string,severity:int,detail:string}> */
     public static function run(): array {
         $checks = [
-            self::pattern_absent('no_tls_bypass', 'No disabled TLS verification', '/sslverify\s*=>\s*false/i', 9),
-            self::pattern_absent('no_wildcard_cors', 'No wildcard telemetry CORS', '/Access-Control-Allow-Origin:\s*\*/i', 8),
-            self::pattern_absent('no_static_fallback_secret', 'No static Zeus fallback secret', '/vgt_' . 'fallback_secret/i', 8),
-            self::pattern_absent('no_raw_wp_redirect', 'No raw wp_redirect calls', '/\bwp_redirect\s*\(/i', 6),
-            self::pattern_absent('no_error_reporting_zero', 'No disabled PHP error reporting handler', '/error_reporting\s*\(\s*0\s*\)/i', 7),
-            self::pattern_absent('no_x_xss_protection', 'No deprecated browser XSS header', '/X-' . 'XSS-Protection/i', 5),
-            self::pattern_absent('no_dangerous_file_size_pattern', 'No client-side upload size trust', '/\$' . '_FILES\s*\[[^\]]+\]\s*\[\s*[\'"]size[\'"]\s*\]/i', 8),
-            self::pattern_present('safe_http_core', 'Safe HTTP validator available', '/function\s+validate_public_http_url\s*\(/i', 7, VIS_PATH . 'includes/core/class-vis-security.php'),
-            self::pattern_present('event_bus_core', 'Security event bus available', '/final\s+class\s+VIS_Event_Bus/i', 6, VIS_PATH . 'includes/core/class-vis-event-bus.php'),
-            self::pattern_present('vault_versioned_payload', 'Vault payload versioning active', '/PAYLOAD_PREFIX\s*=\s*[\'"]vgt1:/i', 7, VIS_PATH . 'class-vis-vault.php'),
-            self::pattern_present('dattrack_nonce', 'Dattrack nonce verification active', '/wp_verify_nonce\(\$nonce,\s*[\'"]vgt_dattrack_pulse[\'"]\)/i', 7, VIS_PATH . 'includes/VLP/includes/modules/dattrack/class-collector.php'),
-            self::pattern_present('airlock_uploaded_file', 'Airlock verifies uploaded tmp origin', '/is_uploaded_file\s*\(/i', 7, VIS_PATH . 'includes/modules/airlock/src/class-airlock-scanner.php'),
-                        self::pattern_present('throneguard_core', 'ThroneGuard privilege boundary active', '/final\s+class\s+VIS_Throne_Guard/i', 9, VIS_PATH . 'includes/modules/throneguard/class-vis-throne-guard.php'),
-            self::pattern_present('loginpager_core', 'LoginPager gateway active', '/final\s+class\s+VIS_LoginPager/i', 6, VIS_PATH . 'includes/modules/loginpager/class-vis-loginpager.php'),
+            self::pattern_absent('no_tls_bypass', __('No disabled TLS verification', 'vgt-sentinel'), '/sslverify\s*=>\s*false/i', 9),
+            self::pattern_absent('no_wildcard_cors', __('No wildcard telemetry CORS', 'vgt-sentinel'), '/Access-Control-Allow-Origin:\s*\*/i', 8),
+            self::pattern_absent('no_static_fallback_secret', __('No static Zeus fallback secret', 'vgt-sentinel'), '/vgt_' . 'fallback_secret/i', 8),
+            self::pattern_absent('no_raw_wp_redirect', __('No raw wp_redirect calls', 'vgt-sentinel'), '/\bwp_redirect\s*\(/i', 6),
+            self::pattern_absent('no_error_reporting_zero', __('No disabled PHP error reporting handler', 'vgt-sentinel'), '/error_reporting\s*\(\s*0\s*\)/i', 7),
+            self::pattern_absent('no_x_xss_protection', __('No deprecated browser XSS header', 'vgt-sentinel'), '/X-' . 'XSS-Protection/i', 5),
+            self::pattern_absent('no_dangerous_file_size_pattern', __('No client-side upload size trust', 'vgt-sentinel'), '/\$' . '_FILES\s*\[[^\]]+\]\s*\[\s*[\'"]size[\'"]\s*\]/i', 8),
+            self::pattern_present('safe_http_core', __('Safe HTTP validator available', 'vgt-sentinel'), '/function\s+validate_public_http_url\s*\(/i', 7, VIS_PATH . 'includes/core/class-vis-security.php'),
+            self::pattern_present('event_bus_core', __('Security event bus available', 'vgt-sentinel'), '/final\s+class\s+VIS_Event_Bus/i', 6, VIS_PATH . 'includes/core/class-vis-event-bus.php'),
+            self::pattern_present('vault_versioned_payload', __('Vault payload versioning active', 'vgt-sentinel'), '/PAYLOAD_PREFIX\s*=\s*[\'"]vgt1:/i', 7, VIS_PATH . 'class-vis-vault.php'),
+            self::pattern_present('dattrack_nonce', __('Dattrack nonce verification active', 'vgt-sentinel'), '/wp_verify_nonce\(\$nonce,\s*[\'"]vgt_dattrack_pulse[\'"]\)/i', 7, VIS_PATH . 'includes/VLP/includes/modules/dattrack/class-collector.php'),
+            self::pattern_present('airlock_uploaded_file', __('Airlock verifies uploaded tmp origin', 'vgt-sentinel'), '/is_uploaded_file\s*\(/i', 7, VIS_PATH . 'includes/modules/airlock/src/class-airlock-scanner.php'),
+            self::pattern_present('throneguard_core', __('ThroneGuard privilege boundary active', 'vgt-sentinel'), '/final\s+class\s+VIS_Throne_Guard/i', 9, VIS_PATH . 'includes/modules/throneguard/class-vis-throne-guard.php'),
+            self::pattern_present('loginpager_core', __('LoginPager gateway active', 'vgt-sentinel'), '/final\s+class\s+VIS_LoginPager/i', 6, VIS_PATH . 'includes/modules/loginpager/class-vis-loginpager.php'),
             self::legacy_gorgon_inactive(),
         ];
 
@@ -51,7 +51,7 @@ final class VIS_Security_Health {
             'label' => $label,
             'status' => $matches === [] ? 'pass' : 'fail',
             'severity' => $severity,
-            'detail' => $matches === [] ? 'Pattern absent.' : implode(', ', array_slice($matches, 0, 3)),
+            'detail' => $matches === [] ? __('Pattern absent.', 'vgt-sentinel') : implode(', ', array_slice($matches, 0, 3)),
         ];
     }
 
@@ -63,7 +63,7 @@ final class VIS_Security_Health {
             'label' => $label,
             'status' => $ok ? 'pass' : 'fail',
             'severity' => $severity,
-            'detail' => $ok ? 'Pattern present.' : 'Pattern missing in ' . str_replace(VIS_PATH, '', $file),
+            'detail' => $ok ? __('Pattern present.', 'vgt-sentinel') : sprintf(__('Pattern missing in %s', 'vgt-sentinel'), str_replace(VIS_PATH, '', $file)),
         ];
     }
 
@@ -76,10 +76,10 @@ final class VIS_Security_Health {
 
         return [
             'id' => 'gorgon_single_router',
-            'label' => 'Gorgon modular router is authoritative',
+            'label' => __('Gorgon modular router is authoritative', 'vgt-sentinel'),
             'status' => $ok ? 'pass' : 'fail',
             'severity' => 7,
-            'detail' => $ok ? 'Legacy root router is not registered.' : 'Legacy root router still registers AJAX endpoints.',
+            'detail' => $ok ? __('Legacy root router is not registered.', 'vgt-sentinel') : __('Legacy root router still registers AJAX endpoints.', 'vgt-sentinel'),
         ];
     }
 

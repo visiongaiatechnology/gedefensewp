@@ -51,6 +51,17 @@ final class VIS_Cerberus {
         return self::$instance;
     }
 
+    public static function __callStatic(string $name, array $arguments): mixed {
+        $inst = self::instance();
+        if ($name === 'unban_ip') {
+            return $inst->unban_target(...$arguments);
+        }
+        if (method_exists($inst, $name)) {
+            return $inst->$name(...$arguments);
+        }
+        throw new BadMethodCallException("Method VIS_Cerberus::{$name} does not exist.");
+    }
+
     public function __construct() {
         if (self::$instance !== null) {
             return;
@@ -59,8 +70,9 @@ final class VIS_Cerberus {
         self::$instance = $this;
         
         global $wpdb;
-        $this->table_bans = $wpdb->prefix . (defined('VIS_TABLE_BANS') ? VIS_TABLE_BANS : 'vis_apex_bans');
-        $this->table_strikes = $wpdb->prefix . 'vis_cerberus_strikes';
+        $prefix = isset($wpdb) && isset($wpdb->prefix) ? (string)$wpdb->prefix : 'wp_';
+        $this->table_bans = $prefix . (defined('VIS_TABLE_BANS') ? VIS_TABLE_BANS : 'vis_omega_bans');
+        $this->table_strikes = $prefix . (defined('VIS_TABLE_STRIKES') ? VIS_TABLE_STRIKES : 'vis_omega_strikes');
 
         $this->init_hooks();
     }
@@ -127,27 +139,54 @@ final class VIS_Cerberus {
     }
 
     /**
-     * [ DIAMANT FIX ]: O(1) Memory Cache Validation.
-     * Liest zu 99% aus dem RAM (wp_cache) statt pro Request die MySQL-DB zu blockieren.
+     * [ DIAMANT FIX ]: O(1) Memory Cache & Hard Semantic TTL Enforcement.
+     * Temporary XDR bans expire immediately at enforcement time without Cron dependency.
      */
-    private function is_ip_banned(): bool {
-        if ($this->is_banned_memory_cache !== null) {
-            return $this->is_banned_memory_cache;
+    public function is_ip_banned(?string $custom_ip = null): bool {
+        $ip = $custom_ip !== null ? trim($custom_ip) : $this->get_validated_ip();
+        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return false;
         }
 
-        $ip = $this->get_validated_ip();
         $cache_key = 'vis_ban_status_' . md5($ip);
-        
+        $cached_type = wp_cache_get($cache_key . '_type', 'visiongaia_cerberus');
         $cached_status = wp_cache_get($cache_key, 'visiongaia_cerberus');
-        
+
         if ($cached_status !== false) {
-            $this->is_banned_memory_cache = (bool) $cached_status;
-            return $this->is_banned_memory_cache;
+            if ((int)$cached_status === 0) {
+                if ($custom_ip === null) $this->is_banned_memory_cache = false;
+                return false;
+            }
+            if ($cached_type === 'XDR') {
+                // Hard Semantic TTL: re-verify XDR status
+                if (class_exists('\VisionGaia\GeDefense\Xdr\ResponseEngine') && !\VisionGaia\GeDefense\Xdr\ResponseEngine::isIpRestricted($ip)) {
+                    wp_cache_delete($cache_key, 'visiongaia_cerberus');
+                    wp_cache_delete($cache_key . '_type', 'visiongaia_cerberus');
+                    if ($custom_ip === null) $this->is_banned_memory_cache = false;
+                    return false;
+                }
+            }
+            if ($custom_ip === null) $this->is_banned_memory_cache = true;
+            return true;
         }
 
         global $wpdb;
-        $id = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$this->table_bans} WHERE ip = %s LIMIT 1", $ip));
-        $is_banned = $id !== null;
+        $banRow = $wpdb->get_row($wpdb->prepare("SELECT id, reason FROM {$this->table_bans} WHERE ip = %s LIMIT 1", $ip), \ARRAY_A);
+        $is_banned = is_array($banRow) && isset($banRow['id']);
+        $is_xdr = false;
+
+        if ($is_banned) {
+            $reason = (string)($banRow['reason'] ?? '');
+            if (str_starts_with($reason, 'TRINITY_XDR:')) {
+                $is_xdr = true;
+                // [ DIAMANT VGT SUPREME ]: Hard Semantic TTL check at enforcement time
+                if (class_exists('\VisionGaia\GeDefense\Xdr\ResponseEngine')) {
+                    if (!\VisionGaia\GeDefense\Xdr\ResponseEngine::isIpRestricted($ip)) {
+                        $is_banned = false;
+                    }
+                }
+            }
+        }
 
         if (!$is_banned) {
             $cidr_bans = wp_cache_get('vis_cidr_bans', 'visiongaia_cerberus');
@@ -166,18 +205,22 @@ final class VIS_Cerberus {
                 }
             }
         }
-        $this->is_banned_memory_cache = $is_banned;
-        
-        // Cacht das Ergebnis für 5 Minuten im RAM (verhindert Ping of Death auf MySQL)
-        wp_cache_set($cache_key, (int) $is_banned, 'visiongaia_cerberus', 300);
+
+        if ($custom_ip === null) {
+            $this->is_banned_memory_cache = $is_banned;
+        }
+
+        if ($is_banned) {
+            wp_cache_set($cache_key, 1, 'visiongaia_cerberus', $is_xdr ? 60 : 300);
+            wp_cache_set($cache_key . '_type', $is_xdr ? 'XDR' : 'ADMIN', 'visiongaia_cerberus', $is_xdr ? 60 : 300);
+        } else {
+            wp_cache_set($cache_key, 0, 'visiongaia_cerberus', 60);
+            wp_cache_delete($cache_key . '_type', 'visiongaia_cerberus');
+        }
 
         return $is_banned;
     }
 
-    /**
-     * [ DIAMANT FIX ]: ATOMIC DATABASE INCREMENT (Anti-TOCTOU & Anti-State-Exhaustion)
-     * Keine Transients mehr! Absolut parallel-sicher und reinigt sich selbst.
-     */
     public function handle_failed_login(string $username): void {
         global $wpdb;
         $ip = $this->get_validated_ip();
@@ -282,8 +325,12 @@ final class VIS_Cerberus {
             $ip, $reason, current_time('mysql'), $uri
         ));
         
-        $this->is_banned_memory_cache = true;
-        wp_cache_set('vis_ban_status_' . md5($ip), 1, 'visiongaia_cerberus', 300);
+        $is_xdr = str_starts_with($reason, 'TRINITY_XDR:');
+        if ($this->cached_ip === $ip || (isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR'] === $ip)) {
+            $this->is_banned_memory_cache = true;
+        }
+        wp_cache_set('vis_ban_status_' . md5($ip), 1, 'visiongaia_cerberus', $is_xdr ? 60 : 300);
+        wp_cache_set('vis_ban_status_' . md5($ip) . '_type', $is_xdr ? 'XDR' : 'ADMIN', 'visiongaia_cerberus', $is_xdr ? 60 : 300);
 
         $this->schedule_os_firewall_sync();
     }
@@ -292,6 +339,26 @@ final class VIS_Cerberus {
         if (!str_contains($subnet, '/')) return;
         $this->ban_ip($subnet, $reason);
         wp_cache_delete('vis_cidr_bans', 'visiongaia_cerberus');
+    }
+
+    public function unban_target(string $target): bool {
+        $target = trim($target);
+        if (!self::valid_address_or_network($target)) {
+            throw new ValidationException('Invalid IP or CIDR format.');
+        }
+        global $wpdb;
+        $deleted = $wpdb->delete($this->table_bans, ['ip' => $target], ['%s']);
+        if ($deleted === false) throw new StorageException('Cerberus unban persistence failed.');
+
+        wp_cache_delete('vis_ban_status_' . md5($target), 'visiongaia_cerberus');
+        wp_cache_delete('vis_ban_status_' . md5($target) . '_type', 'visiongaia_cerberus');
+        wp_cache_delete('vis_cidr_bans', 'visiongaia_cerberus');
+        $this->schedule_os_firewall_sync();
+        return true;
+    }
+
+    public function unban_ip(string $ip): bool {
+        return $this->unban_target($ip);
     }
 
     private function schedule_os_firewall_sync(): void {
@@ -309,37 +376,41 @@ final class VIS_Cerberus {
         return (int)$prefix >= 0 && (int)$prefix <= strlen($packed) * 8;
     }
 
-    /**
-     * DYNAMIC OS FIREWALL SYNC (PRE-PHP PACKET DROP EXPORT)
-     * Exports active IP bans & subnets to atomic vault map files for webserver/OS firewall level drop.
-     */
     public function sync_os_firewall_rules(): void {
         global $wpdb;
         if (!isset($wpdb) || !($wpdb instanceof \wpdb)) return;
 
         $vault_dir = defined('VIS_VAULT_DIR') 
-            ? VIS_VAULT_DIR 
+            ? (str_ends_with(str_replace('\\', '/', VIS_VAULT_DIR), '/zeus') ? VIS_VAULT_DIR : VIS_VAULT_DIR . '/zeus')
             : (defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR . '/vgt-vault/zeus' : ABSPATH . 'wp-content/vgt-vault/zeus');
 
         if (!is_dir($vault_dir)) {
             @mkdir($vault_dir, 0700, true);
         }
 
-        $banned_ips = $wpdb->get_col("SELECT ip FROM {$this->table_bans} LIMIT 5000");
-        if (!is_array($banned_ips)) {
-            $banned_ips = [];
+        $bans = $wpdb->get_results("SELECT ip, reason FROM {$this->table_bans} LIMIT 5000", \ARRAY_A);
+        $clean_ips = [];
+        $hasXdr = class_exists('\VisionGaia\GeDefense\Xdr\ResponseEngine');
+
+        foreach (is_array($bans) ? $bans : [] as $row) {
+            $ip = (string)($row['ip'] ?? '');
+            $reason = (string)($row['reason'] ?? '');
+            if ($ip === '') continue;
+
+            // P1 EDGE TTL INVARIANT: Temporary XDR bans stay in PHP/APCu memory layer only.
+            // NEVER export short-lived XDR bans to static edge files where real-time expiration cannot be enforced.
+            if (str_starts_with($reason, 'TRINITY_XDR:')) {
+                continue;
+            }
+            $clean_ips[] = $ip;
         }
 
-        $rules = self::compile_os_firewall_rules($banned_ips);
+        $rules = self::compile_os_firewall_rules($clean_ips);
         self::atomic_file_write(wp_normalize_path($vault_dir . '/nginx_deny.conf'), $rules['nginx']);
         self::atomic_file_write(wp_normalize_path($vault_dir . '/nftables_drop.map'), $rules['nftables']);
         self::atomic_file_write(wp_normalize_path($vault_dir . '/htaccess_deny.conf'), $rules['apache']);
     }
 
-    /**
-     * @param array<int, mixed> $candidates
-     * @return array{nginx:string,apache:string,nftables:string,count:int}
-     */
     public static function compile_os_firewall_rules(array $candidates): array {
         $clean = [];
         foreach ($candidates as $candidate) {
@@ -382,13 +453,21 @@ final class VIS_Cerberus {
 
     private static function atomic_file_write(string $filepath, string $content): void {
         try {
+            $filepath = wp_normalize_path($filepath);
             $tmp_file = $filepath . '.tmp.' . bin2hex(random_bytes(8));
             if (@file_put_contents($tmp_file, $content, LOCK_EX) !== false) {
                 @chmod($tmp_file, 0600);
-                @rename($tmp_file, $filepath);
+                if (!@rename($tmp_file, $filepath)) {
+                    if (is_file($filepath)) @unlink($filepath);
+                    if (!@rename($tmp_file, $filepath)) {
+                        @copy($tmp_file, $filepath);
+                        @unlink($tmp_file);
+                    }
+                }
             } else {
-                @unlink($tmp_file);
+                @file_put_contents($filepath, $content, LOCK_EX);
             }
+            @chmod($filepath, 0600);
         } catch (\Throwable $e) {
             // VGT Fail-Safe
         }

@@ -39,15 +39,6 @@ if ($issues_count === 0) {
 <!-- =========================================================================================
      2. DECENTRALIZED ASSET INJECTION (CSS)
      ========================================================================================= -->
-<style>
-    <?php 
-    $filesystem_css_path = __DIR__ . '/filesystem/style.css';
-    if (is_readable($filesystem_css_path)) {
-        echo file_get_contents($filesystem_css_path);
-    }
-    ?>
-</style>
-
 <div class="vgt-apex-ui">
 
     <div class="vgt-glass-panel" style="border-top: 3px solid var(--vgt-neon-blue);">

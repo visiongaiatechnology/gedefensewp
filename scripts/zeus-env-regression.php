@@ -65,7 +65,9 @@ try {
         }
     }
 
-    echo "VGT ZEUS ENV: PASS\n";
+    @unlink(ABSPATH . '.user.ini');
+if (defined('VIS_PATH')) @unlink(VIS_PATH . '.user.ini');
+echo "VGT ZEUS ENV: PASS\n";
     remove_zeus_test_root($root);
     exit(0);
 } catch (Throwable $e) {

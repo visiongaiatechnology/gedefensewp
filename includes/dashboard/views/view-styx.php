@@ -1,236 +1,130 @@
 <?php
+// STATUS: DIAMANT VGT SUPREME
 declare(strict_types=1);
-/**
- * VISIONGAIATECHNOLOGY OMEGA PROTOCOL
- * View: STYX Dashboard (Outbound Executioner & Audit UI)
- * Status: PLATIN VGT STATUS (Hardened UI & i18n)
- */
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
 global $wpdb;
 $opt = get_option('vis_config', []);
 $is_enabled = !empty($opt['styx_enabled']);
-$audit_mode = !empty($opt['styx_audit_mode']); // LERN-MODUS: Loggen, aber nicht blocken
-$block_wp   = !empty($opt['styx_block_wp_telemetry']); // VGT: WP Core Telemetry Interlock
+$audit_mode = !empty($opt['styx_audit_mode']);
+$block_wp   = !empty($opt['styx_block_wp_telemetry']);
 $whitelist  = $opt['styx_whitelist'] ?? '';
 
 $table_logs = $wpdb->prefix . 'vis_styx_logs';
 
-// --- ZERO-COST REAL DATA AGGREGATION ---
 $total_blocked = 0;
 $total_allowed = 0;
 $unique_origins = 0;
 $real_logs = [];
 
-// Overhead-freier Schema-Check
-if ( get_option( 'vgt_styx_schema_ready' ) ) {
-    $suppress = $wpdb->suppress_errors(true);
-    
-    // Zähle blockierte Exfiltrationen
-    $total_blocked = (int) $wpdb->get_var("SELECT COUNT(id) FROM {$table_logs} WHERE status = 'BLOCKED'");
-    
-    // Zähle autorisierte Calls
-    $total_allowed = (int) $wpdb->get_var("SELECT COUNT(id) FROM {$table_logs} WHERE status = 'ALLOWED'");
-
-    // Zähle kompromittierte/aktive Plugins (Origins)
-    $unique_origins = (int) $wpdb->get_var("SELECT COUNT(DISTINCT origin) FROM {$table_logs}");
-
-    // Terminal Logs laden (Die letzten 50 Calls)
-    $real_logs = $wpdb->get_results("SELECT * FROM {$table_logs} ORDER BY timestamp DESC LIMIT 50");
-    
-    $wpdb->suppress_errors($suppress);
+$suppress = $wpdb->suppress_errors(true);
+if ($wpdb->get_var("SHOW TABLES LIKE '{$table_logs}'") === $table_logs) {
+    $total_blocked = (int)$wpdb->get_var("SELECT COUNT(id) FROM {$table_logs} WHERE status = 'BLOCKED'");
+    $total_allowed = (int)$wpdb->get_var("SELECT COUNT(id) FROM {$table_logs} WHERE status = 'ALLOWED'");
+    $unique_origins = (int)$wpdb->get_var("SELECT COUNT(DISTINCT origin) FROM {$table_logs}");
+    $real_logs = $wpdb->get_results("SELECT * FROM {$table_logs} ORDER BY timestamp DESC LIMIT 30");
 }
+$wpdb->suppress_errors($suppress);
 
-// UI Status Logik (Hardened String Assembly)
-$badge_class = 'offline';
-if (!$is_enabled) {
-    $badge_text = __('SHIELD OFFLINE', 'vgt-sentinel');
-} else {
-    if ($audit_mode) {
-        $badge_text = __('AUDIT MODE (LOGGING ONLY)', 'vgt-sentinel');
-        $badge_class = 'pending';
-    } else {
-        $badge_text = __('EXECUTIONER: STRICT MODE', 'vgt-sentinel');
-        $badge_class = 'active';
-    }
-    if ($block_wp) {
-        $badge_text .= ' ' . __('+ WP BLOCKED', 'vgt-sentinel');
-    }
-}
+$styxToggle = static function(string $name, bool $enabled, string $label): void {
+    echo '<label class="vgt-titan-toggle"><input type="checkbox" name="vis_config[' . esc_attr($name) . ']" value="1" ' . checked($enabled, true, false) . '><span aria-hidden="true"></span><b>' . esc_html($label) . '</b></label>';
+};
 ?>
 
-<!-- =========================================================================================
-     DECENTRALIZED ASSET INJECTION (CSS)
-     ========================================================================================= -->
-<style>
-    <?php 
-    $styx_css_path = __DIR__ . '/styx/style.css';
-    if (is_readable($styx_css_path)) {
-        echo file_get_contents($styx_css_path);
-    }
-    ?>
-</style>
+<section class="vgt-titan" aria-label="Styx Outbound Executioner">
+    <header class="vgt-titan-hero">
+        <div>
+            <p class="vgt-titan-kicker"><?php esc_html_e('OUTBOUND EXFILTRATION SHIELD & SHADOW ROUTER', 'vgt-sentinel'); ?></p>
+            <h2>STYX</h2>
+            <p><?php esc_html_e('Überwacht und blockiert alle ausgehenden HTTP/HTTPS-Verbindungen von WordPress-Plugins, verhindert C&C-Callbacks und Telemetrie-Leaks.', 'vgt-sentinel'); ?></p>
+        </div>
+        <div class="vgt-titan-state-stack" aria-label="Styx Status">
+            <span><small><?php esc_html_e('OUTBOUND SHIELD', 'vgt-sentinel'); ?></small><strong><?php echo $is_enabled ? ($audit_mode ? esc_html__('AUDIT MODE', 'vgt-sentinel') : esc_html__('STRICT', 'vgt-sentinel')) : esc_html__('OFFLINE', 'vgt-sentinel'); ?></strong></span>
+            <span><small><?php esc_html_e('BLOCKED CALLS', 'vgt-sentinel'); ?></small><strong style="color: #fb7185;"><?php echo esc_html((string)$total_blocked); ?></strong></span>
+            <span><small><?php esc_html_e('AUTHORIZED', 'vgt-sentinel'); ?></small><strong style="color: #5eead4;"><?php echo esc_html((string)$total_allowed); ?></strong></span>
+            <span><small><?php esc_html_e('WP TELEMETRY', 'vgt-sentinel'); ?></small><strong><?php echo $block_wp ? esc_html__('BLOCKED', 'vgt-sentinel') : esc_html__('ALLOWED', 'vgt-sentinel'); ?></strong></span>
+        </div>
+    </header>
 
-<div class="vgt-module-container styx-core">
+    <div class="vgt-titan-status-grid">
+        <article><small><?php esc_html_e('BLOCKED EXFILTRATIONS', 'vgt-sentinel'); ?></small><strong style="color: #fb7185;"><?php echo esc_html(number_format_i18n($total_blocked)); ?></strong></article>
+        <article><small><?php esc_html_e('AUTHORIZED EXTERNAL CALLS', 'vgt-sentinel'); ?></small><strong style="color: #5eead4;"><?php echo esc_html(number_format_i18n($total_allowed)); ?></strong></article>
+        <article><small><?php esc_html_e('MONITORED ORIGINS', 'vgt-sentinel'); ?></small><strong><?php echo esc_html(number_format_i18n($unique_origins)); ?></strong></article>
+        <article><small><?php esc_html_e('WP TELEMETRY INTERLOCK', 'vgt-sentinel'); ?></small><strong><?php echo $block_wp ? esc_html__('INTERLOCKED', 'vgt-sentinel') : esc_html__('PERMITTED', 'vgt-sentinel'); ?></strong></article>
+        <article><small><?php esc_html_e('INSPECTION ENGINE', 'vgt-sentinel'); ?></small><strong>WP_HTTP HOOK</strong></article>
+        <article><small><?php esc_html_e('SHADOW ROUTING', 'vgt-sentinel'); ?></small><strong>ACTIVE</strong></article>
+    </div>
+
     
-    <!-- HEADER SECTION -->
-    <div class="vgt-header">
-        <div class="vgt-title-group">
-            <h1 class="vgt-glitch-text styx-glitch" data-text="<?php echo esc_attr__('STYX EXECUTIONER', 'vgt-sentinel'); ?>">
-                <?php esc_html_e('STYX EXECUTIONER', 'vgt-sentinel'); ?>
-            </h1>
-            <p class="vgt-subtitle"><?php esc_html_e('Outbound Exfiltration Shield & Shadow-Router', 'vgt-sentinel'); ?></p>
-        </div>
-        <div class="vgt-status-badge <?php echo esc_attr($badge_class); ?>" id="styx-main-badge" style="<?php echo ($is_enabled && $block_wp) ? 'box-shadow: 0 0 20px rgba(188,19,254,0.3); border-color: rgba(188,19,254,0.5);' : ''; ?>">
-            <span class="pulse-dot" style="<?php echo ($is_enabled && $block_wp) ? 'background-color: #bc13fe;' : ''; ?>"></span> 
-            <span id="badge-text-styx"><?php echo esc_html($badge_text); ?></span>
-        </div>
-    </div>
+        <?php wp_nonce_field('vis_save_config'); ?>
+        <input type="hidden" name="vis_save_config" value="1">
+        <input type="hidden" name="vis_context" value="styx">
 
-    <!-- ABSOLUTE BULLETPROOF CONFIG TOGGLES -->
-    <div class="vgt-master-switch-panel">
-        <div class="panel-info">
-            <h3><?php esc_html_e('Outbound Telemetry Control', 'vgt-sentinel'); ?></h3>
-            <p><?php esc_html_e('Blockiert unautorisierte ausgehende HTTP-Requests. Verhindert, dass gehackte Plugins Daten an externe C&C-Server exfiltrieren. Nutze den Audit Mode, um das System zunächst im Lernmodus laufen zu lassen.', 'vgt-sentinel'); ?></p>
-            <p style="margin-top: 10px; color: #bc13fe; font-size: 0.85rem;"><strong><?php esc_html_e('WP CORE TELEMETRY:', 'vgt-sentinel'); ?></strong> <?php esc_html_e('Schalte diesen Switch ein, um native Verbindungen zur wp.org API zu kappen (Blockt Supply-Chain Leaks & Core-Updates).', 'vgt-sentinel'); ?></p>
-        </div>
-        <div class="panel-actions-group">
-            <!-- STYX MASTER SWITCH -->
-            <label class="vgt-pure-switch styx-switch" id="toggle-container-styx">
-                <input type="checkbox" name="vis_config[styx_enabled]" id="styx_enabled" value="1" <?php checked($is_enabled, true); ?>>
-                <span class="vgt-pure-slider"></span>
-                <div class="switch-label" id="toggle-label-styx">
-                    <?php echo $is_enabled ? esc_html__('ONLINE', 'vgt-sentinel') : esc_html__('STANDBY', 'vgt-sentinel'); ?>
+        <!-- SECTION 1: OUTBOUND CONTROLS -->
+        <section class="vgt-titan-panel">
+            <div class="vgt-titan-panel-head">
+                <div>
+                    <small><?php esc_html_e('01 / POLICY CONTROLS', 'vgt-sentinel'); ?></small>
+                    <h3><?php esc_html_e('Outbound HTTP Security & Telemetry Controls', 'vgt-sentinel'); ?></h3>
                 </div>
+            </div>
+            <div class="vgt-titan-toggle-grid">
+                <?php $styxToggle('styx_enabled', !empty($opt['styx_enabled']), 'STYX Executioner Master'); ?>
+                <?php $styxToggle('styx_audit_mode', !empty($opt['styx_audit_mode']), 'Audit Mode (Logging Only)'); ?>
+                <?php $styxToggle('styx_block_wp_telemetry', !empty($opt['styx_block_wp_telemetry']), 'Block WP Core Telemetry'); ?>
+            </div>
+            <label class="vgt-titan-wide-field">
+                <span><?php esc_html_e('Outbound Domain Whitelist (Eine pro Zeile)', 'vgt-sentinel'); ?></span>
+                <textarea name="vis_config[styx_whitelist]" rows="4" placeholder="api.stripe.com&#10;api.paypal.com"><?php echo esc_textarea($whitelist); ?></textarea>
             </label>
-            
-            <!-- AUDIT MODE SWITCH -->
-            <label class="vgt-pure-switch styx-audit-switch" id="toggle-container-audit">
-                <input type="checkbox" name="vis_config[styx_audit_mode]" id="styx_audit_mode" value="1" <?php checked($audit_mode, true); ?>>
-                <span class="vgt-pure-slider-audit"></span>
-                <div class="switch-label" id="toggle-label-audit" style="color: <?php echo $audit_mode ? '#ffbd2e' : '#666'; ?>;">
-                    <?php esc_html_e('AUDIT MODE', 'vgt-sentinel'); ?>
-                </div>
-            </label>
+            <div class="vgt-titan-actions">
+                <button type="submit"><?php esc_html_e('STYX EINSTELLUNGEN SPEICHERN', 'vgt-sentinel'); ?></button>
+            </div>
+        </section>
+    
 
-            <!-- WP TELEMETRY BLOCK SWITCH -->
-            <label class="vgt-pure-switch styx-wp-switch" id="toggle-container-wp">
-                <input type="checkbox" name="vis_config[styx_block_wp_telemetry]" id="styx_block_wp_telemetry" value="1" <?php checked($block_wp, true); ?>>
-                <span class="vgt-pure-slider-wp"></span>
-                <div class="switch-label" id="toggle-label-wp" style="color: <?php echo $block_wp ? '#bc13fe' : '#666'; ?>;">
-                    <?php esc_html_e('BLOCK WP CORE', 'vgt-sentinel'); ?>
-                </div>
-            </label>
-        </div>
-    </div>
-
-    <div id="styx-dynamic-content" class="<?php echo $is_enabled ? '' : 'vgt-disabled'; ?>">
-        
-        <!-- HIGH LEVEL KPI METRICS -->
-        <div class="vgt-kpi-matrix">
-            <div class="vgt-kpi-box styx-kpi-red">
-                <div class="kpi-icon">
-                    <svg class="vgt-icon" style="width:28px; height:28px;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                </div>
-                <div class="kpi-data">
-                    <span class="kpi-value" id="kpi-blocked"><?php echo esc_html(number_format_i18n($total_blocked)); ?></span>
-                    <span class="kpi-label"><?php esc_html_e('Blocked Exfiltrations', 'vgt-sentinel'); ?></span>
-                </div>
-                <div class="kpi-sparkline <?php echo $is_enabled ? 'pulse-fast' : ''; ?>"></div>
+    <!-- SECTION 2: TRAFFIC LEDGER -->
+    <section class="vgt-titan-panel">
+        <div class="vgt-titan-panel-head">
+            <div>
+                <small><?php esc_html_e('02 / OUTBOUND LEDGER', 'vgt-sentinel'); ?></small>
+                <h3><?php esc_html_e('Outbound Traffic Inspection Ledger', 'vgt-sentinel'); ?></h3>
             </div>
-            <div class="vgt-kpi-box styx-kpi-green">
-                <div class="kpi-icon">
-                    <svg class="vgt-icon" style="width:28px; height:28px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-                <div class="kpi-data">
-                    <span class="kpi-value" id="kpi-allowed"><?php echo esc_html(number_format_i18n($total_allowed)); ?></span>
-                    <span class="kpi-label"><?php esc_html_e('Authorized Calls', 'vgt-sentinel'); ?></span>
-                </div>
-                <div class="kpi-sparkline <?php echo $is_enabled ? 'pulse-medium' : ''; ?>"></div>
-            </div>
-            <div class="vgt-kpi-box styx-kpi-purple">
-                <div class="kpi-icon">
-                    <svg class="vgt-icon" style="width:28px; height:28px;" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                </div>
-                <div class="kpi-data">
-                    <span class="kpi-value" id="kpi-origins"><?php echo esc_html(number_format_i18n($unique_origins)); ?></span>
-                    <span class="kpi-label"><?php esc_html_e('Active Internal Origins', 'vgt-sentinel'); ?></span>
-                </div>
-                <div class="kpi-sparkline <?php echo $is_enabled ? 'pulse-slow' : ''; ?>" style="width: 100%; opacity: 0.8; transform: none;"></div>
-            </div>
+            <span class="vgt-titan-badge"><?php echo count($real_logs); ?> <?php esc_html_e('CALLS', 'vgt-sentinel'); ?></span>
         </div>
 
-        <!-- STYX WHITELIST PANEL -->
-        <div class="vgt-whitelist-panel styx-whitelist" style="margin-bottom: 30px;">
-            <div class="panel-header">
-                <h3><svg class="vgt-icon" style="color: #ff0055; width:20px; height:20px;" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg> <?php esc_html_e('ZERO-TRUST WHITELIST (Allowed Destinations)', 'vgt-sentinel'); ?></h3>
-                <p><?php esc_html_e('Trage hier die Domains ein, die kontaktiert werden dürfen (z.B. Lizenzen). Alles andere wird terminiert. Wildcards erlaubt (*.google.com).', 'vgt-sentinel'); ?></p>
+        <?php if (empty($real_logs)): ?>
+            <div class="vgt-titan-empty" style="padding: 24px 0; color: #5eead4; text-align: center;">
+                <?php esc_html_e('OUTBOUND SHIELD CLEAN — Keine ausgehenden Verbindungen protokolliert.', 'vgt-sentinel'); ?>
             </div>
-            <div class="panel-body">
-                <textarea name="vis_config[styx_whitelist]" id="styx_whitelist" class="vgt-textarea" placeholder="<?php echo esc_attr("api.rankmath.com\n*.wordpress.org"); ?>" rows="4" spellcheck="false"><?php echo esc_textarea($whitelist); ?></textarea>
-                <div class="vgt-form-hint"><?php esc_html_e('Hinweis: Core WordPress APIs (api.wordpress.org) werden nativ zugelassen, es sei denn der \'BLOCK WP CORE\' Switch ist aktiviert.', 'vgt-sentinel'); ?></div>
-            </div>
-        </div>
-
-        <!-- TACTICAL EVENT STREAM (DATA GRID) -->
-        <div class="vgt-terminal">
-            <div class="vgt-term-header">
-                <div class="vgt-term-buttons">
-                    <span class="btn-red"></span><span class="btn-yellow"></span><span class="btn-green"></span>
-                </div>
-                <div class="vgt-term-title"><?php esc_html_e('styx@vgt-ai:~/outbound-traffic$ tail -f /var/log/styx_exfiltration.log', 'vgt-sentinel'); ?></div>
-            </div>
-            <div class="vgt-term-body" id="styx-terminal" style="overflow-x: auto;">
-                <?php if ($is_enabled && !empty($real_logs)): ?>
-                    <table class="styx-data-grid">
-                        <thead>
-                            <tr>
-                                <th width="15%"><?php esc_html_e('TIMESTAMP', 'vgt-sentinel'); ?></th>
-                                <th width="20%"><?php esc_html_e('ORIGIN (PLUGIN/THEME)', 'vgt-sentinel'); ?></th>
-                                <th width="40%"><?php esc_html_e('TARGET HOST (DESTINATION)', 'vgt-sentinel'); ?></th>
-                                <th width="15%"><?php esc_html_e('STATUS', 'vgt-sentinel'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($real_logs as $log): 
-                            $time = wp_date('H:i:s', strtotime($log->timestamp));
-                            $is_blocked = ($log->status === 'BLOCKED');
-                            $status_color = $is_blocked ? '#ff0055' : '#00ffaa';
-                            $origin_color = str_contains((string)$log->origin, 'UNKNOWN') ? '#888' : '#bc13fe';
-                        ?>
-                            <tr>
-                                <td class="term-time">[<?php echo esc_html($time); ?>]</td>
-                                <td style="color: <?php echo esc_attr($origin_color); ?>; font-weight: bold; font-size: 11px;"><?php echo esc_html((string)$log->origin); ?></td>
-                                <td style="color: #ccc;"><?php echo esc_html((string)$log->host); ?> <br><span style="font-size: 9px; opacity: 0.5;"><?php echo esc_html((string)$log->url); ?></span></td>
-                                <td>
-                                    <span class="vgt-status-pill" style="border-color: <?php echo esc_attr($status_color); ?>; color: <?php echo esc_attr($status_color); ?>; background: rgba(<?php echo $is_blocked ? '255,0,85' : '0,255,170'; ?>, 0.1);">
-                                        <?php echo esc_html((string)$log->status); ?>
-                                    </span>
-                                </td>
-                            </tr>
+        <?php else: ?>
+            <div class="vgt-titan-table-wrap">
+                <table class="vgt-titan-table">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Timestamp', 'vgt-sentinel'); ?></th>
+                            <th><?php esc_html_e('Origin Plugin', 'vgt-sentinel'); ?></th>
+                            <th><?php esc_html_e('Target Host / URL', 'vgt-sentinel'); ?></th>
+                            <th><?php esc_html_e('Status', 'vgt-sentinel'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($real_logs as $l): ?>
+                        <tr>
+                            <td><code><?php echo esc_html((string)$l->timestamp); ?></code></td>
+                            <td><code><?php echo esc_html((string)$l->origin); ?></code></td>
+                            <td><span style="color:#cbd5e1;"><?php echo esc_html((string)$l->url); ?></span></td>
+                            <td>
+                                <strong style="color: <?php echo $l->status === 'BLOCKED' ? '#fb7185' : '#5eead4'; ?>;">
+                                    <?php echo esc_html((string)$l->status); ?>
+                                </strong>
+                            </td>
+                        </tr>
                         <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php elseif ($is_enabled): ?>
-                    <code class="sys-boot">[<?php echo wp_date('H:i:s'); ?>] <?php esc_html_e('[SYSTEM] Styx Executioner initialized. Outbound matrix is clean.', 'vgt-sentinel'); ?></code>
-                    <code class="log-info">[<?php echo wp_date('H:i:s'); ?>] <?php esc_html_e('[SYSTEM] Monitoring internal processes...', 'vgt-sentinel'); ?><span class="cursor-blink">_</span></code>
-                <?php else: ?>
-                    <code class="log-critical">[<?php echo wp_date('H:i:s'); ?>] <?php esc_html_e('[ERROR] Styx Executioner shutdown. Outbound traffic is completely unmonitored.', 'vgt-sentinel'); ?></code>
-                <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- =========================================================================================
-     ASSET INJECTION (JAVASCRIPT)
-     ========================================================================================= -->
-<script>
-    <?php 
-    $styx_js_path = __DIR__ . '/styx/script.js';
-    if (is_readable($styx_js_path)) {
-        include $styx_js_path;
-    }
-    ?>
-</script>
+        <?php endif; ?>
+    </section>
+</section>

@@ -12,6 +12,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const mockBtn = document.getElementById('lp-mock-btn');
     const mockDot = document.getElementById('lp-mock-dot');
 
+    const safeHttpUrl = (value) => {
+        if (value === '') return '';
+        try {
+            const parsed = new URL(value, window.location.origin);
+            return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+        } catch (error) {
+            return '';
+        }
+    };
+
     function syncBg(val) {
         preview.style.setProperty('--login-bg', val);
         preview.style.backgroundColor = val;
@@ -56,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const imgInput = document.getElementById('loginpager-image');
     if (imgInput instanceof HTMLInputElement) {
         imgInput.addEventListener('input', () => {
-            const clean = imgInput.value.trim().replace(/[()'"\\]/g, '');
+            const clean = safeHttpUrl(imgInput.value.trim());
             preview.style.setProperty('--login-image', clean === '' ? 'none' : `url('${clean}')`);
             preview.style.backgroundImage = clean === '' ? 'none' : `url('${clean}')`;
         });
@@ -70,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (logoInput instanceof HTMLInputElement) {
         logoInput.addEventListener('input', () => {
-            const clean = logoInput.value.trim().replace(/[()'"\\]/g, '');
+            const clean = safeHttpUrl(logoInput.value.trim());
             if (clean !== '') {
                 if (logoImg) logoImg.src = clean;
                 if (logoWrap) logoWrap.style.display = 'block';
@@ -99,4 +109,18 @@ document.addEventListener('DOMContentLoaded', () => {
             subText.textContent = subInput.value.trim() || 'ZERO-TRUST AUTHENTICATION GATEWAY';
         });
     }
+
+    document.querySelectorAll('.lp-swatch-btn[data-login-bg][data-login-accent]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const bg = button.getAttribute('data-login-bg') || '';
+            const accent = button.getAttribute('data-login-accent') || '';
+            if (!/^#[0-9a-f]{6}$/i.test(bg) || !/^#[0-9a-f]{6}$/i.test(accent)) return;
+            if (bgPicker instanceof HTMLInputElement) bgPicker.value = bg;
+            if (bgHex instanceof HTMLInputElement) bgHex.value = bg;
+            if (accentPicker instanceof HTMLInputElement) accentPicker.value = accent;
+            if (accentHex instanceof HTMLInputElement) accentHex.value = accent;
+            syncBg(bg);
+            syncAccent(accent);
+        });
+    });
 });

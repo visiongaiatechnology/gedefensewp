@@ -62,12 +62,11 @@ if (isset($_GET['settings-updated']) && $_GET['settings-updated'] === 'true') {
     return;
 }
 
-// IP Detection
-$user_ip = $_SERVER['REMOTE_ADDR'] ?? '';
-if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-    $user_ip = trim($ips[0]);
-}
+// Use the same trusted proxy-aware resolver as AEGIS and Prometheus.
+$user_ip = class_exists('VIS_Security') && method_exists('VIS_Security', 'client_ip')
+    ? VIS_Security::client_ip()
+    : (string)($_SERVER['REMOTE_ADDR'] ?? '');
+$user_ip = is_string($user_ip) && filter_var($user_ip, FILTER_VALIDATE_IP) !== false ? $user_ip : '';
 
 $aegis_whitelist = !empty($opt['aegis_whitelist_ips']) ? $opt['aegis_whitelist_ips'] : '';
 $prom_whitelist = !empty($opt['prometheus_whitelist_ips']) ? $opt['prometheus_whitelist_ips'] : '';
@@ -86,63 +85,7 @@ $site_url = site_url();
 <!-- =========================================================================================
      DECENTRALIZED ASSET INJECTION (CSS)
      ========================================================================================= -->
-<style>
-    <?php 
-    $wizard_css_path = __DIR__ . '/setup_wizard/style.css';
-    if (is_readable($wizard_css_path)) {
-        echo file_get_contents($wizard_css_path);
-    }
-    ?>
-    .vgt-wizard-card {
-        background: rgba(15, 23, 42, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        transition: all 0.2s ease;
-    }
-    .vgt-wizard-card:hover {
-        border-color: rgba(59, 130, 246, 0.3);
-        background: rgba(15, 23, 42, 0.6);
-    }
-    .vgt-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    .vgt-badge-tag {
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        padding: 3px 8px;
-        border-radius: 4px;
-        text-transform: uppercase;
-    }
-    .vgt-badge-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
-    .vgt-badge-green { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .vgt-badge-purple { background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); }
-    .vgt-badge-orange { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .vgt-badge-red { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .vgt-summary-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 12px;
-        margin-top: 15px;
-    }
-    .vgt-summary-item {
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        padding: 10px 14px;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 12px;
-    }
-</style>
-
-<div class="vgt-apex-ui">
+<div class="vgt-apex-ui" id="vgt-setup-wizard" data-site-url="<?php echo esc_url($site_url); ?>" data-next-label="<?php echo esc_attr__('Weiter →', 'vgt-sentinel'); ?>" data-activate-label="<?php echo esc_attr__('SICHERHEITSMODULE AKTIVIEREN →', 'vgt-sentinel'); ?>">
     <input type="hidden" name="vis_save_config" value="1">
     <input type="hidden" name="vis_context" value="setup_wizard">
 
@@ -422,7 +365,7 @@ $site_url = site_url();
                         <span><?php esc_html_e('REST-API User Enumeration blockieren', 'vgt-sentinel'); ?></span>
                     </label>
                     <label class="vgt-checkbox-label" style="display:flex; align-items:center; gap:6px; color:#fff; cursor:pointer;">
-                        <input type="checkbox" name="vis_config[titan_camouflage_mode]" value="1" <?php checked(!isset($opt['titan_camouflage_mode']) || !empty($opt['titan_camouflage_mode'])); ?>>
+                        <input type="checkbox" name="vis_config[titan_hide_version]" value="1" <?php checked(!isset($opt['titan_hide_version']) || !empty($opt['titan_hide_version'])); ?>>
                         <span><?php esc_html_e('WP-Versions-Header entfernen', 'vgt-sentinel'); ?></span>
                     </label>
                     <label class="vgt-checkbox-label" style="display:flex; align-items:center; gap:6px; color:#fff; cursor:pointer;">
@@ -595,130 +538,3 @@ $site_url = site_url();
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    let currentStep = 1;
-    const maxSteps = 7;
-    const siteUrl = '<?php echo esc_js($site_url); ?>';
-
-    const DOM = {
-        steps: document.querySelectorAll('.vgt-wizard-step'),
-        dots: document.querySelectorAll('.vgt-step-dot'),
-        btnNext: document.getElementById('btn-next'),
-        btnPrev: document.getElementById('btn-prev'),
-        hadesToggle: document.getElementById('hades-toggle'),
-        hadesInputs: document.getElementById('hades-inputs'),
-        hadesParam: document.getElementById('hades-param-input'),
-        hadesSecret: document.getElementById('hades-secret-input'),
-        hadesReview: document.getElementById('hades-review-block'),
-        hadesPreview: document.getElementById('hades-url-preview'),
-        standardReview: document.getElementById('standard-review-block'),
-        // Module check elements
-        cfgAegis: document.getElementById('cfg-aegis'),
-        cfgZeus: document.getElementById('cfg-zeus'),
-        cfgCerberus: document.getElementById('cfg-cerberus'),
-        cfgPrometheus: document.getElementById('cfg-prometheus'),
-        cfgMorpheus: document.getElementById('cfg-morpheus'),
-        cfgNemesis: document.getElementById('cfg-nemesis'),
-        cfgTrap: document.getElementById('cfg-trap'),
-        cfgTitan: document.getElementById('cfg-titan'),
-        cfgChronos: document.getElementById('cfg-chronos'),
-        // Summary elements
-        sumAegis: document.getElementById('sum-aegis'),
-        sumZeus: document.getElementById('sum-zeus'),
-        sumCerberus: document.getElementById('sum-cerberus'),
-        sumPrometheus: document.getElementById('sum-prometheus'),
-        sumMorpheus: document.getElementById('sum-morpheus'),
-        sumNemesis: document.getElementById('sum-nemesis'),
-        sumTrap: document.getElementById('sum-trap'),
-        sumTitan: document.getElementById('sum-titan'),
-        sumHades: document.getElementById('sum-hades'),
-        sumChronos: document.getElementById('sum-chronos')
-    };
-
-    const updateWizard = () => {
-        // Build URL Previews & Summary for step 7
-        if (currentStep === 7) {
-            const hasHades = DOM.hadesToggle && DOM.hadesToggle.checked;
-            const hadesK = (DOM.hadesParam && DOM.hadesParam.value.trim()) || 'vgt_access';
-            const hadesV = (DOM.hadesSecret && DOM.hadesSecret.value.trim()) || 'omega';
-
-            if (hasHades) {
-                DOM.hadesPreview.textContent = `${siteUrl}/wp-admin?${hadesK}=${hadesV}`;
-                DOM.hadesReview.style.display = 'block';
-                DOM.standardReview.style.display = 'none';
-            } else {
-                DOM.hadesReview.style.display = 'none';
-                DOM.standardReview.style.display = 'block';
-            }
-
-            // Update summary badges
-            const setSum = (el, chk) => {
-                if (!el) return;
-                const active = chk && chk.checked;
-                el.textContent = active ? 'AKTIV' : 'INAKTIV';
-                el.style.color = active ? '#10b981' : '#94a3b8';
-            };
-
-            setSum(DOM.sumAegis, DOM.cfgAegis);
-            setSum(DOM.sumZeus, DOM.cfgZeus);
-            setSum(DOM.sumCerberus, DOM.cfgCerberus);
-            setSum(DOM.sumPrometheus, DOM.cfgPrometheus);
-            setSum(DOM.sumMorpheus, DOM.cfgMorpheus);
-            setSum(DOM.sumNemesis, DOM.cfgNemesis);
-            setSum(DOM.sumTrap, DOM.cfgTrap);
-            setSum(DOM.sumTitan, DOM.cfgTitan);
-            setSum(DOM.sumHades, DOM.hadesToggle);
-            setSum(DOM.sumChronos, DOM.cfgChronos);
-        }
-
-        // Toggle step visibility
-        DOM.steps.forEach((step, idx) => {
-            step.classList.toggle('active', (idx + 1) === currentStep);
-        });
-
-        // Toggle step indicators
-        DOM.dots.forEach((dot, idx) => {
-            const stepNum = idx + 1;
-            dot.classList.toggle('active', stepNum === currentStep);
-            dot.classList.toggle('completed', stepNum < currentStep);
-        });
-
-        // Toggle action buttons
-        DOM.btnPrev.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
-        
-        if (currentStep === maxSteps) {
-            DOM.btnNext.innerHTML = '<?php echo esc_js(__('SICHERHEITSMODULE AKTIVIEREN &rarr;', 'vgt-sentinel')); ?>';
-            DOM.btnNext.type = 'submit';
-            DOM.btnNext.name = 'vis_save_config';
-            DOM.btnNext.value = '1';
-        } else {
-            DOM.btnNext.innerHTML = '<?php echo esc_js(__('Weiter &rarr;', 'vgt-sentinel')); ?>';
-            DOM.btnNext.type = 'button';
-            DOM.btnNext.removeAttribute('name');
-            DOM.btnNext.removeAttribute('value');
-        }
-    };
-
-    DOM.btnNext.addEventListener('click', (e) => {
-        if (currentStep < maxSteps) {
-            e.preventDefault();
-            currentStep++;
-            updateWizard();
-        }
-    });
-
-    DOM.btnPrev.addEventListener('click', () => {
-        if (currentStep > 1) {
-            currentStep--;
-            updateWizard();
-        }
-    });
-
-    if (DOM.hadesToggle && DOM.hadesInputs) {
-        DOM.hadesToggle.addEventListener('change', () => {
-            DOM.hadesInputs.style.display = DOM.hadesToggle.checked ? 'grid' : 'none';
-        });
-    }
-});
-</script>

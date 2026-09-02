@@ -84,7 +84,7 @@ if ($report && is_array($report)) {
             _n('%d Anomalie erkannt!', '%d Anomalien erkannt!', $changes_count, 'vgt-sentinel'),
             $changes_count
         );
-        $ui_int_icon_svg = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>';
+        $ui_int_icon_svg = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>';
     } elseif ($status === 'clean' || $status === 'init') {
         $integrity_status = 'SECURE';
         $ui_int_color  = '#00ffaa'; 
@@ -120,15 +120,15 @@ foreach ($opt as $key => $val) {
         $found_titan_keys++;
         if ($found_titan_keys <= 4) {
             $label = isset($known_titan_labels[$key]) ? $known_titan_labels[$key] : ucwords(str_replace(['titan_', '_'], ['', ' '], $key));
-            $titan_status_html .= "<div class='vgt-checklist-item'><svg class='vgt-icon' style='color:#00ffaa; width:12px; height:12px;' viewBox='0 0 24 24'><rect x='3' y='11' width='18' height='11' rx='2' ry='2'></rect><path d='M7 11V7a5 5 0 0 1 10 0v4'></path></svg> " . esc_html($label) . "</div>";
+            $titan_status_html .= "<div class='vgt-checklist-item'><svg width='18' height='18' fill='none' stroke='currentColor' class='vgt-icon' style='color:#00ffaa; width:12px; height:12px;' viewBox='0 0 24 24'><rect x='3' y='11' width='18' height='11' rx='2' ry='2'></rect><path d='M7 11V7a5 5 0 0 1 10 0v4'></path></svg> " . esc_html($label) . "</div>";
         }
     }
 }
 if ($titan_active_count === 0 && !empty($opt['titan_enabled'])) {
     $titan_active_count = 4;
-    $titan_status_html = "<div class='vgt-checklist-item'><svg class='vgt-icon' style='color:#00ffaa; width:12px; height:12px;' viewBox='0 0 24 24'><rect x='3' y='11' width='18' height='11' rx='2' ry='2'></rect><path d='M7 11V7a5 5 0 0 1 10 0v4'></path></svg> " . esc_html__('Kernel Hardening', 'vgt-sentinel') . "</div><div class='vgt-checklist-item'><svg class='vgt-icon' style='color:#00ffaa; width:12px; height:12px;' viewBox='0 0 24 24'><rect x='3' y='11' width='18' height='11' rx='2' ry='2'></rect><path d='M7 11V7a5 5 0 0 1 10 0v4'></path></svg> " . esc_html__('API Security Guard', 'vgt-sentinel') . "</div>";
+    $titan_status_html = "<div class='vgt-checklist-item'><svg width='18' height='18' fill='none' stroke='currentColor' class='vgt-icon' style='color:#00ffaa; width:12px; height:12px;' viewBox='0 0 24 24'><rect x='3' y='11' width='18' height='11' rx='2' ry='2'></rect><path d='M7 11V7a5 5 0 0 1 10 0v4'></path></svg> " . esc_html__('Kernel Hardening', 'vgt-sentinel') . "</div><div class='vgt-checklist-item'><svg width='18' height='18' fill='none' stroke='currentColor' class='vgt-icon' style='color:#00ffaa; width:12px; height:12px;' viewBox='0 0 24 24'><rect x='3' y='11' width='18' height='11' rx='2' ry='2'></rect><path d='M7 11V7a5 5 0 0 1 10 0v4'></path></svg> " . esc_html__('API Security Guard', 'vgt-sentinel') . "</div>";
 } elseif ($titan_active_count === 0) {
-    $titan_status_html = "<div class='vgt-checklist-item'><svg class='vgt-icon' style='color:#ff4d4d; width:12px; height:12px;' viewBox='0 0 24 24'><rect x='3' y='11' width='18' height='11' rx='2' ry='2'></rect><path d='M7 11V7a5 5 0 0 1 9.9-1'></path></svg> " . esc_html__('System Vulnerable', 'vgt-sentinel') . "</div>";
+    $titan_status_html = "<div class='vgt-checklist-item'><svg width='18' height='18' fill='none' stroke='currentColor' class='vgt-icon' style='color:#ff4d4d; width:12px; height:12px;' viewBox='0 0 24 24'><rect x='3' y='11' width='18' height='11' rx='2' ry='2'></rect><path d='M7 11V7a5 5 0 0 1 9.9-1'></path></svg> " . esc_html__('System Vulnerable', 'vgt-sentinel') . "</div>";
 }
 $titan_score = min(100, max(0, ($titan_active_count >= 4) ? 100 : ($titan_active_count * 25)));
 
@@ -185,7 +185,7 @@ $merged_logs = array_merge($sentinel_logs, $prom_logs);
 usort($merged_logs, function($a, $b) {
     return strtotime($b->timestamp) - strtotime($a->timestamp);
 });
-$final_logs = array_slice($merged_logs, 0, 50);
+$final_logs = array_slice($merged_logs, 0, 10);
 
 // 4. ORACLE THREAT INTELLIGENCE (LIMIT optimiert auf 10 für Omnipresent Logging Übersicht)
 $oracle_logs = [];
@@ -204,15 +204,6 @@ $wpdb->suppress_errors($suppress);
 <!-- =========================================================================================
      DECENTRALIZED ASSET INJECTION (CSS)
      ========================================================================================= -->
-<style>
-    <?php 
-    $overview_css_path = __DIR__ . '/overview/style.css';
-    if (is_readable($overview_css_path)) {
-        echo file_get_contents($overview_css_path);
-    }
-    ?>
-</style>
-
 <!-- =========================================================================================
      VIEW CONTENT - VGT SENTINEL CYBER DEFENSE COCKPIT
      ========================================================================================= -->
@@ -316,7 +307,7 @@ $wpdb->suppress_errors($suppress);
     <!-- FUTURISTIC HUD VITAL BAR -->
     <div class="vis-hud-bar" style="border-left-color: <?php echo esc_attr($score_color); ?>;">
         <div class="vis-hud-title">
-            <svg class="vgt-icon" style="width:20px; height:20px; color:<?php echo esc_attr($score_color); ?>;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+            <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:20px; height:20px; color:<?php echo esc_attr($score_color); ?>;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
             <?php esc_html_e('GEDEFENSE COMMAND CENTER', 'vgt-sentinel'); ?>
         </div>
         <div class="vis-hud-grid">
@@ -346,7 +337,7 @@ $wpdb->suppress_errors($suppress);
             <div class="vis-cyber-card" style="border-top: 3px solid <?php echo esc_attr($score_color); ?>;">
                 <div class="vis-cyber-card-header">
                     <h3>
-                        <svg class="vgt-icon" style="width:18px; height:18px; color:<?php echo esc_attr($score_color); ?>;" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:18px; height:18px; color:<?php echo esc_attr($score_color); ?>;" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
                         <?php esc_html_e('COCKPIT PROTECTION MATRIX', 'vgt-sentinel'); ?>
                     </h3>
                     <span class="vis-badge" style="background: <?php echo esc_attr($score_color); ?>20; color: <?php echo esc_attr($score_color); ?>; border: 1px solid <?php echo esc_attr($score_color); ?>40;"><?php echo esc_html($score_status); ?></span>
@@ -355,7 +346,7 @@ $wpdb->suppress_errors($suppress);
                 <div class="vgt-score-panel">
                     <div class="vgt-score-gauge-box">
                         <div class="vgt-gauge-circle-container">
-                            <svg viewBox="0 0 160 160" style="width: 160px; height: 160px; display: block;">
+                            <svg viewBox="0 0 160 160" class="vgt-gauge-svg">
                                 <circle class="vgt-gauge-circle-bg" cx="80" cy="80" r="70"></circle>
                                 <circle class="vgt-gauge-circle-val" cx="80" cy="80" r="70" 
                                         style="stroke: <?php echo esc_attr($score_color); ?>; stroke-dasharray: 439; stroke-dashoffset: <?php echo esc_attr((string)$dashoffset); ?>;"></circle>
@@ -392,26 +383,26 @@ $wpdb->suppress_errors($suppress);
             <div class="vis-cyber-card">
                 <div class="vis-cyber-card-header">
                     <h3>
-                        <svg class="vgt-icon" style="width:18px; height:18px; color:#00f2ff;" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:18px; height:18px; color:#00f2ff;" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
                         <?php esc_html_e('GLOBAL COGNITIVE INCIDENT PROTOCOLS', 'vgt-sentinel'); ?>
                     </h3>
                     <span class="vis-badge vis-badge-info"><?php esc_html_e('COMBINED LOGS', 'vgt-sentinel'); ?></span>
                 </div>
                 
                 <?php if(empty($final_logs)): ?>
-                    <div style="padding:40px; text-align:center; color:#888;">
-                        <svg class="vgt-icon" style="width:50px; height:50px; margin-bottom:15px; display:block; color:#10b981; margin-left:auto; margin-right:auto;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                        <h4 style="color:#fff; margin:0 0 5px 0;"><?php esc_html_e('SHIELD CLEAN', 'vgt-sentinel'); ?></h4>
-                        <p style="margin:0; font-size:12px;"><?php esc_html_e('Keine Sicherheitsvorfälle im Protokoll verzeichnet.', 'vgt-sentinel'); ?></p>
+                    <div style="padding:30px; text-align:center; color:#888;">
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:42px; height:42px; margin-bottom:12px; display:block; color:#10b981; margin-left:auto; margin-right:auto;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <h4 style="color:#fff; margin:0 0 4px 0; font-size:13px;"><?php esc_html_e('SHIELD CLEAN', 'vgt-sentinel'); ?></h4>
+                        <p style="margin:0; font-size:11px;"><?php esc_html_e('Keine Sicherheitsvorfälle im Protokoll verzeichnet.', 'vgt-sentinel'); ?></p>
                     </div>
                 <?php else: ?>
-                    <div class="vis-table-wrapper">
-                        <table class="vis-table">
+                    <div class="vis-table-wrapper" style="max-height: 400px; overflow-y: auto; overflow-x: auto;">
+                        <table class="vis-table" style="width: 100%; table-layout: fixed;">
                             <thead>
                                 <tr>
-                                    <th width="150"><?php esc_html_e('TIMESTAMP', 'vgt-sentinel'); ?></th>
-                                    <th width="140"><?php esc_html_e('SOURCE', 'vgt-sentinel'); ?></th>
-                                    <th width="130"><?php esc_html_e('IP ADDRESS', 'vgt-sentinel'); ?></th>
+                                    <th style="width: 135px;"><?php esc_html_e('TIMESTAMP', 'vgt-sentinel'); ?></th>
+                                    <th style="width: 100px;"><?php esc_html_e('SOURCE', 'vgt-sentinel'); ?></th>
+                                    <th style="width: 120px;"><?php esc_html_e('IP ADDRESS', 'vgt-sentinel'); ?></th>
                                     <th><?php esc_html_e('EVENT DETAILS', 'vgt-sentinel'); ?></th>
                                 </tr>
                             </thead>
@@ -425,7 +416,7 @@ $wpdb->suppress_errors($suppress);
                                 elseif ($log->module === 'STYX') $badge_style = 'background:rgba(255,0,60,0.15); color:#ff003c; border:1px solid rgba(255,0,60,0.4);';
                             ?>
                                 <tr>
-                                    <td class="text-mono" style="color:#777; font-size:11px;">
+                                    <td class="text-mono" style="color:#777; font-size:10px; white-space: nowrap;">
                                         <?php echo esc_html((string)$log->timestamp); ?>
                                     </td>
                                     <td>
@@ -433,10 +424,10 @@ $wpdb->suppress_errors($suppress);
                                             <?php echo esc_html((string)$log->module); ?>
                                         </span>
                                     </td>
-                                    <td class="text-mono" style="color:#00f2ff; font-size:11px;">
+                                    <td class="text-mono" style="color:#00f2ff; font-size:11px; white-space: nowrap;">
                                         <?php echo esc_html((string)$log->ip); ?>
                                     </td>
-                                    <td style="color:#aaa; font-size:12px; line-height: 1.4;">
+                                    <td style="color:#cbd5e1; font-size:11px; line-height: 1.4; overflow-wrap: anywhere; word-break: break-word;">
                                         <?php echo esc_html((string)$log->message); ?>
                                     </td>
                                 </tr>
@@ -451,40 +442,50 @@ $wpdb->suppress_errors($suppress);
             <div class="vis-cyber-card" style="border-top: 2px solid #00f2ff;">
                 <div class="vis-cyber-card-header">
                     <h3>
-                        <svg class="vgt-icon" style="width:18px; height:18px; color:#00f2ff;" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:18px; height:18px; color:#00f2ff;" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
                         <?php esc_html_e('ORACLE INTELLIGENCE AUDIT FEED', 'vgt-sentinel'); ?>
                     </h3>
                     <span class="vis-badge vis-badge-info"><?php esc_html_e('REAL-TIME', 'vgt-sentinel'); ?></span>
                 </div>
 
                 <?php if(empty($oracle_logs)): ?>
-                    <div style="padding:40px; text-align:center; color:#888;">
-                        <svg class="vgt-icon" style="width:50px; height:50px; margin-bottom:15px; display:block; color:#00f2ff; opacity: 0.3; margin-left:auto; margin-right:auto;" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                        <h4 style="color:#fff; margin:0 0 5px 0;"><?php esc_html_e('ORACLE STANDBY', 'vgt-sentinel'); ?></h4>
-                        <p style="margin:0; font-size:12px;"><?php esc_html_e('Das AI-Modell ist bereit. Es wartet auf eingehende Request-Analysen.', 'vgt-sentinel'); ?></p>
+                    <div style="padding:30px; text-align:center; color:#888;">
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:42px; height:42px; margin-bottom:12px; display:block; color:#00f2ff; opacity: 0.3; margin-left:auto; margin-right:auto;" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        <h4 style="color:#fff; margin:0 0 4px 0; font-size:13px;"><?php esc_html_e('ORACLE STANDBY', 'vgt-sentinel'); ?></h4>
+                        <p style="margin:0; font-size:11px;"><?php esc_html_e('Das AI-Modell ist bereit. Es wartet auf eingehende Request-Analysen.', 'vgt-sentinel'); ?></p>
                     </div>
                 <?php else: ?>
-                    <div class="vgt-oracle-list" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="vgt-oracle-list">
                         <?php foreach($oracle_logs as $olog): 
                             $is_block = ($olog->type === 'ZERO_DAY_BLOCK');
-                            $event_class = $is_block ? 'is-block' : 'is-safe';
-                            $verdict_label = $is_block ? __('BLOCK', 'vgt-sentinel') : __('SAFE', 'vgt-sentinel');
-                            $verdict_color = $is_block ? '#ff003c' : '#00ffaa';
+                            $verdict_label = $is_block ? __('BLOCKIERT', 'vgt-sentinel') : __('ERLAUBT', 'vgt-sentinel');
+                            $verdict_class = $is_block ? 'is-block' : 'is-safe';
                             $title_icon_path = $is_block ? '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>' : '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>';
                         ?>
-                            <div class="vgt-oracle-event <?php echo esc_attr($event_class); ?>">
+                            <div class="vgt-oracle-event">
                                 <div class="vgt-oracle-header vgt-accordion-trigger">
-                                    <span class="vgt-oracle-time"><?php echo esc_html((string)$olog->timestamp); ?></span>
-                                    <span class="vgt-oracle-ip"><?php esc_html_e('TARGET IP:', 'vgt-sentinel'); ?> <?php echo esc_html((string)$olog->ip); ?></span>
-                                    <span class="vgt-oracle-status"><?php esc_html_e('VERDICT:', 'vgt-sentinel'); ?> <span style="color:<?php echo esc_attr($verdict_color); ?>;"><?php echo esc_html($verdict_label); ?></span></span>
-                                    <span class="vgt-accordion-icon"><svg class="vgt-icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+                                    <div class="vgt-oracle-meta-row">
+                                        <span class="vgt-oracle-time"><?php echo esc_html((string)$olog->timestamp); ?></span>
+                                        <span class="vgt-oracle-ip-label">
+                                            <strong><?php esc_html_e('ZIEL-IP:', 'vgt-sentinel'); ?></strong>
+                                            <code><?php echo esc_html((string)$olog->ip); ?></code>
+                                        </span>
+                                        <span class="vgt-oracle-verdict-label">
+                                            <strong><?php esc_html_e('BEWERTUNG:', 'vgt-sentinel'); ?></strong>
+                                            <span class="vgt-oracle-badge <?php echo esc_attr($verdict_class); ?>"><?php echo esc_html($verdict_label); ?></span>
+                                        </span>
+                                    </div>
+                                    <span class="vgt-accordion-icon">
+                                        <svg width='16' height='16' fill='none' stroke='currentColor' class="vgt-icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </span>
                                 </div>
                                 
                                 <div class="vgt-oracle-body-wrapper">
                                     <div class="vgt-oracle-body">
                                         <div class="vgt-oracle-reasoning">
                                             <div class="vgt-oracle-title">
-                                                <svg class="vgt-icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><?php echo wp_kses_post($title_icon_path); ?></svg> <?php esc_html_e('HARMONY REASONING (AI AUDIT)', 'vgt-sentinel'); ?>
+                                                <svg width='14' height='14' fill='none' stroke='currentColor' class="vgt-icon" viewBox="0 0 24 24"><?php echo wp_kses_post($title_icon_path); ?></svg>
+                                                <?php esc_html_e('KI-BEGRÜNDUNG (AUDIT)', 'vgt-sentinel'); ?>
                                             </div>
                                             <div class="vgt-oracle-text">
                                                 <?php echo wp_kses_post(nl2br(esc_html((string)$olog->ai_reason))); ?>
@@ -492,12 +493,10 @@ $wpdb->suppress_errors($suppress);
                                         </div>
                                         
                                         <div class="vgt-oracle-payload">
-                                            <div class="vgt-oracle-title" style="color: #888;">
-                                                <svg class="vgt-icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> <?php esc_html_e('RAW PAYLOAD (INTERCEPTED)', 'vgt-sentinel'); ?>
+                                            <div class="vgt-oracle-title" style="color: #94a3b8;">
+                                                &lt;&gt; <?php esc_html_e('ROH-PAYLOAD (ABGEFANGEN)', 'vgt-sentinel'); ?>
                                             </div>
-                                            <div class="vgt-payload-container">
-                                                <pre><code><?php echo esc_html((string)$olog->message); ?></code></pre>
-                                            </div>
+                                            <pre><code><?php echo esc_html((string)$olog->message); ?></code></pre>
                                         </div>
                                     </div>
                                 </div>
@@ -510,12 +509,38 @@ $wpdb->suppress_errors($suppress);
 
         <!-- RIGHT SIDEBAR PANEL -->
         <div class="vis-sidebar-panel">
+
+            <!-- CYBER DEFENSE AIRSPACE RADAR (ANIMATED COCKPIT DISPLAY) -->
+            <div class="vis-cyber-card vis-card-radar">
+                <div class="vis-cyber-card-header">
+                    <h3>
+                        <svg class="vgt-icon" style="color:#00f2ff;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                        <?php esc_html_e('CYBER DEFENSE RADAR', 'vgt-sentinel'); ?>
+                    </h3>
+                    <span class="vis-badge vis-badge-info"><?php esc_html_e('SWEEPING', 'vgt-sentinel'); ?></span>
+                </div>
+                <div class="vis-radar-container">
+                    <div class="vis-radar-sweep"></div>
+                    <div class="vis-radar-ring ring-30"></div>
+                    <div class="vis-radar-ring ring-60"></div>
+                    <div class="vis-radar-ring ring-90"></div>
+                    <div class="vis-radar-axis-h"></div>
+                    <div class="vis-radar-axis-v"></div>
+                    <div class="vis-radar-blip blip-1"></div>
+                    <div class="vis-radar-blip blip-2"></div>
+                    <div class="vis-radar-blip blip-3"></div>
+                </div>
+                <div class="vis-radar-telemetry">
+                    <span><?php esc_html_e('GRID SCAN: ACTIVE', 'vgt-sentinel'); ?></span>
+                    <span><?php esc_html_e('VECTORS: 0/12 CRIT', 'vgt-sentinel'); ?></span>
+                </div>
+            </div>
             
             <!-- CORE VITALITY GRAPH / SHIELD -->
             <div class="vis-cyber-card vis-card-aegis">
                 <div class="vis-cyber-card-header">
                     <h3>
-                        <svg class="vgt-icon" style="width:18px; height:18px; color:#00ffaa;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:18px; height:18px; color:#00ffaa;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                         <?php esc_html_e('CORE SHIELD VITALITY', 'vgt-sentinel'); ?>
                     </h3>
                     <span class="vis-badge vis-badge-success"><?php esc_html_e('SHIELDED', 'vgt-sentinel'); ?></span>
@@ -545,7 +570,7 @@ $wpdb->suppress_errors($suppress);
             <div class="vis-cyber-card vis-card-integrity-baseline">
                 <div class="vis-cyber-card-header">
                     <h3>
-                        <svg class="vgt-icon" style="width:18px; height:18px; color:#00f2ff;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:18px; height:18px; color:#00f2ff;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                         <?php esc_html_e('INTEGRITY baseline', 'vgt-sentinel'); ?>
                     </h3>
                     <span class="vis-badge" style="background: <?php echo esc_attr($ui_int_color); ?>20; color: <?php echo esc_attr($ui_int_color); ?>; border: 1px solid <?php echo esc_attr($ui_int_color); ?>40;"><?php echo esc_html($integrity_status); ?></span>
@@ -553,7 +578,7 @@ $wpdb->suppress_errors($suppress);
                 
                 <div class="vis-integrity-sidebar-detail">
                     <div class="vis-integrity-circle-box" style="color: <?php echo esc_attr($ui_int_color); ?>;">
-                        <svg class="vgt-icon" style="width:24px; height:24px;" viewBox="0 0 24 24">
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:24px; height:24px;" viewBox="0 0 24 24">
                             <?php echo wp_kses_post($ui_int_icon_svg); ?>
                         </svg>
                     </div>
@@ -563,7 +588,7 @@ $wpdb->suppress_errors($suppress);
                     </p>
                     <a href="?page=vgt-suite&tab=integrity" class="vis-btn-sidebar-action <?php echo ($integrity_status === 'ANOMALY') ? 'vis-btn-sidebar-danger' : ''; ?>">
                         <?php echo ($integrity_status === 'ANOMALY') ? esc_html__('ANOMALIEN BEHEBEN', 'vgt-sentinel') : esc_html__('SCAN MANAGER', 'vgt-sentinel'); ?>
-                        <svg class="vgt-icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:12px; height:12px;" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                     </a>
                 </div>
             </div>
@@ -572,7 +597,7 @@ $wpdb->suppress_errors($suppress);
             <div class="vis-cyber-card vis-card-license">
                 <div class="vis-cyber-card-header">
                     <h3>
-                        <svg class="vgt-icon" style="width:18px; height:18px; color:#3b82f6;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:18px; height:18px; color:#3b82f6;" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                         <?php esc_html_e('OPEN CORE EDITION', 'vgt-sentinel'); ?>
                     </h3>
                     <span class="vis-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight:700;"><?php esc_html_e('SOVEREIGN (AGPLv3)', 'vgt-sentinel'); ?></span>
@@ -592,23 +617,23 @@ $wpdb->suppress_errors($suppress);
                 
                 <ul class="vis-feature-list" style="margin-top:16px;">
                     <li>
-                        <svg class="vgt-icon" style="color:#10b981; width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="color:#10b981; width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         <?php esc_html_e('Zero-Latency Pre-Boot Kernel WAF', 'vgt-sentinel'); ?>
                     </li>
                     <li>
-                        <svg class="vgt-icon" style="color:#10b981; width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="color:#10b981; width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         <?php esc_html_e('Prometheus Heuristic AI & Malware Guard', 'vgt-sentinel'); ?>
                     </li>
                     <li>
-                        <svg class="vgt-icon" style="color:#10b981; width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="color:#10b981; width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         <?php esc_html_e('Nemesis Deception Grid & Tarpit Traps', 'vgt-sentinel'); ?>
                     </li>
                     <li>
-                        <svg class="vgt-icon" style="color:#10b981; width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="color:#10b981; width:14px; height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         <?php esc_html_e('Morpheus RASP Runtime Sandboxing', 'vgt-sentinel'); ?>
                     </li>
                     <li>
-                        <svg class="vgt-icon" style="color:#3b82f6; width:14px; height:14px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                        <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="color:#3b82f6; width:14px; height:14px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
                         <?php esc_html_e('Extensible Add-On Hub (VLP, Builder, SEO)', 'vgt-sentinel'); ?>
                     </li>
                 </ul>
@@ -619,15 +644,3 @@ $wpdb->suppress_errors($suppress);
     </div>
 
 </div>
-
-<!-- =========================================================================================
-     ASSET INJECTION (JAVASCRIPT VIA INCLUDE FÜR EVENT DELEGATION)
-     ========================================================================================= -->
-<script>
-    <?php 
-    $overview_js_path = __DIR__ . '/overview/script.js';
-    if (is_readable($overview_js_path)) {
-        include $overview_js_path;
-    }
-    ?>
-</script>

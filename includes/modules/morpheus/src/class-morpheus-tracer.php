@@ -27,7 +27,7 @@ final class Morpheus_Tracer {
             $this->cached_wpmu_dir = strtolower( wp_normalize_path( realpath( $wpmu_dir ) ?: $wpmu_dir ) );
         }
 
-        $theme_dir = wp_normalize_path( get_theme_root() );
+        $theme_dir = function_exists('get_theme_root') ? wp_normalize_path(get_theme_root()) : (defined('WP_CONTENT_DIR') ? wp_normalize_path(WP_CONTENT_DIR . '/themes') : '');
         $this->cached_theme_dir = strtolower( wp_normalize_path( realpath( $theme_dir ) ?: $theme_dir ) );
 
         $plugins = (array) get_option( 'active_plugins', [] );

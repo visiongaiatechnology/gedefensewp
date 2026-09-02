@@ -85,7 +85,12 @@ final class Morpheus {
         
         $expected_hash = get_option( 'vgt_matrix_hash' );
         if (!is_string($expected_hash) || strlen($expected_hash) !== 64) {
-            throw new \SecurityException('Matrix authentication token missing.');
+            if (defined('AUTH_SALT') && strlen((string)AUTH_SALT) >= 32) {
+                $expected_hash = hash_hmac('sha256', $json, (string)AUTH_SALT);
+                update_option('vgt_matrix_hash', $expected_hash, false);
+            } else {
+                throw new \SecurityException('Matrix authentication token missing.');
+            }
         }
         if (!defined('AUTH_SALT') || strlen((string)AUTH_SALT) < 32) {
             throw new \SecurityException('Matrix authentication token unavailable.');
@@ -147,8 +152,69 @@ final class Morpheus {
     }
 
     public function get_plugin_matrix( string $plugin_slug ): array {
+        return $this->get_effective_matrix( $plugin_slug );
+    }
+
+    public function get_base_plugin_matrix( string $plugin_slug ): array {
         return $this->permission_matrix[ $plugin_slug ] ?? $this->permission_matrix['_default'];
     }
+
+    public function get_effective_matrix( string $plugin_slug ): array {
+        $base = $this->get_base_plugin_matrix( $plugin_slug );
+        $overlays = get_option( 'vis_morpheus_xdr_overlays', [] );
+        if ( ! is_array( $overlays ) || empty( $overlays ) ) {
+            return $base;
+        }
+
+        $now = time();
+        $effective = $base;
+        foreach ( $overlays as $overlay ) {
+            if ( ! is_array( $overlay ) || empty( $overlay['status'] ) || $overlay['status'] !== 'ACTIVE' ) continue;
+            if ( isset( $overlay['expires_at'] ) && strtotime( (string) $overlay['expires_at'] ) <= $now ) continue;
+            
+            $target = (string) ( $overlay['target_component'] ?? '' );
+            if ( $target !== '*' && $target !== $plugin_slug ) continue;
+
+            $restrictions = is_array( $overlay['restrictions'] ?? null ) ? $overlay['restrictions'] : [];
+            if ( ! empty( $restrictions['network_denied'] ) ) {
+                $effective['network'] = [];
+            }
+            if ( ! empty( $restrictions['db_write_denied'] ) ) {
+                $effective['db_write'] = [];
+            }
+            if ( ! empty( $restrictions['options_denied'] ) ) {
+                $effective['options'] = [];
+            }
+        }
+        return $effective;
+    }
+
+    public function add_xdr_overlay( string $incidentId, string $responseId, string $targetComponent, array $restrictions, int $ttl = 900 ): void {
+        $overlays = get_option( 'vis_morpheus_xdr_overlays', [] );
+        if ( ! is_array( $overlays ) ) $overlays = [];
+
+        $overlays[ $incidentId ] = [
+            'incident_id'      => $incidentId,
+            'response_id'      => $responseId,
+            'target_component' => $targetComponent,
+            'restrictions'     => $restrictions,
+            'created_at'       => gmdate( 'Y-m-d H:i:s' ),
+            'expires_at'       => gmdate( 'Y-m-d H:i:s', time() + $ttl ),
+            'status'           => 'ACTIVE',
+        ];
+        update_option( 'vis_morpheus_xdr_overlays', $overlays, false );
+    }
+
+    public function remove_xdr_overlay( string $incidentId, ?string $responseId = null ): void {
+        $overlays = get_option( 'vis_morpheus_xdr_overlays', [] );
+        if ( is_array( $overlays ) && isset( $overlays[ $incidentId ] ) ) {
+            if ( $responseId === null || ($overlays[$incidentId]['response_id'] ?? '') === $responseId ) {
+                unset( $overlays[ $incidentId ] );
+                update_option( 'vis_morpheus_xdr_overlays', $overlays, false );
+            }
+        }
+    }
+
 
     public function update_plugin_matrix( string $plugin_slug, array $new_matrix ): void {
         $plugin_slug = Morpheus_Path_Jail::validate_slug($plugin_slug);

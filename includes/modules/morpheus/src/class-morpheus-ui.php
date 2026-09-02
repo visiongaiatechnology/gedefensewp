@@ -25,6 +25,21 @@ final class Morpheus_UI {
     }
 
     public function execute_kill( string $caller, string $violation, string $details ): void {
+        if ( class_exists( '\VIS_Event_Bus' ) ) {
+            \VIS_Event_Bus::emit(
+                'MORPHEUS',
+                'PLUGIN_CAPABILITY_VIOLATION',
+                sprintf( 'Capability violation %s by %s: %s', $violation, $caller, $details ),
+                [
+                    'component_key' => $caller,
+                    'plugin' => $caller,
+                    'violation' => $violation,
+                    'details' => $details,
+                    'attribution_confidence' => 100,
+                ],
+                8
+            );
+        }
         $incident_hash = hash( 'sha256', random_bytes( 16 ) );
         
         if ( ! $this->core->enforcement_mode ) {

@@ -32,6 +32,18 @@ final class VIS_Trinity_Grid {
     }
 
     public static function onAegisStrike(string $ip, string $vector): void {
+        self::emitXdr([
+            'sensor' => 'AEGIS',
+            'category' => 'INGRESS',
+            'event_type' => 'WAF_DETECTION',
+            'severity' => 8,
+            'confidence' => 70,
+            'score' => 70.0,
+            'actor_ip' => $ip,
+            'vector' => $vector,
+            'action_type' => 'BLOCK',
+            'outcome' => 'INTERCEPTED',
+        ]);
         $config = self::config();
         if (!$config['enabled']) return;
 
@@ -48,6 +60,21 @@ final class VIS_Trinity_Grid {
     }
 
     public static function onPrometheusMitigation(string $ip, float $score, ?string $subnet = null): void {
+        self::emitXdr([
+            'sensor' => 'PROMETHEUS',
+            'category' => 'BEHAVIOR',
+            'event_type' => 'EVENT_HORIZON_REACHED',
+            'severity' => max(7, min(10, (int)ceil($score / 25))),
+            'confidence' => max(80, min(98, (int)round(80 + ($score / 50)))),
+            'score' => $score,
+            'actor_ip' => $ip,
+            'entity_type' => $subnet === null ? 'IP' : 'SUBNET',
+            'entity_id' => $subnet ?? $ip,
+            'vector' => 'BEHAVIORAL_THRESHOLD',
+            'action_type' => $subnet === null ? 'BAN_IP' : 'BAN_SUBNET',
+            'outcome' => 'MITIGATED',
+            'metadata' => ['subnet' => $subnet, 'threat_score' => $score],
+        ]);
         $target = $subnet ?? $ip;
         if (class_exists('VIS_Cerberus')) {
             $cerberus = VIS_Cerberus::instance();
@@ -66,8 +93,32 @@ final class VIS_Trinity_Grid {
         $risk = max(0, min(100, (int)($verdict['risk'] ?? 0)));
         $confidence = max(0, min(100, (int)($verdict['confidence'] ?? 0)));
         $safeSubject = substr(preg_replace('/[^A-Za-z0-9._\/-]/', '_', $subject) ?? 'unknown', 0, 160);
+        $findings = is_array($verdict['findings'] ?? null) ? $verdict['findings'] : [];
+        foreach ($findings as $finding) {
+            if (is_array($finding) && hash_equals('KNOWN_GHOST_TRAP', (string)($finding['code'] ?? ''))) return;
+        }
+        if ($source === 'INTEGRITY' && ($risk < 80 || $confidence < 75)) return;
 
-        if (class_exists('VIS_Event_Bus')) {
+        self::emitXdr([
+            'sensor' => $source,
+            'category' => 'MALWARE',
+            'event_type' => 'MALWARE_FINDING',
+            'role' => $source === 'INTEGRITY' ? 'CONTEXT' : 'DETECTION',
+            'severity' => max(1, min(10, (int)ceil($risk / 10))),
+            'confidence' => $confidence,
+            'score' => $risk,
+            'actor_ip' => is_string($ip) ? $ip : '',
+            'user_id' => $source === 'INTEGRITY' ? 0 : get_current_user_id(),
+            'session_id' => $source === 'INTEGRITY' ? 'integrity-scanner-system' : '',
+            'entity_type' => 'FILE',
+            'entity_id' => 'file:' . hash('sha256', $safeSubject),
+            'vector' => (string)($verdict['classification'] ?? 'MALWARE_SUSPECT'),
+            'action_type' => $source === 'INTEGRITY' ? 'OBSERVE' : 'QUARANTINE_REVIEW',
+            'outcome' => 'CORRELATED',
+            'metadata' => ['source' => $source, 'subject_hash' => hash('sha256', $safeSubject), 'risk' => $risk],
+        ]);
+
+        if ($source !== 'INTEGRITY' && class_exists('VIS_Event_Bus')) {
             VIS_Event_Bus::emit('TRINITY', 'MALWARE_CORRELATION', 'Malware finding correlated.', [
                 'source' => $source,
                 'subject' => $safeSubject,
@@ -84,7 +135,7 @@ final class VIS_Trinity_Grid {
             }
         }
 
-        if ($risk >= 90 && $confidence >= 90 && self::config()['enabled']) {
+        if ($source !== 'INTEGRITY' && $risk >= 90 && $confidence >= 90 && self::config()['enabled']) {
             self::engageDeception($source . ': High-confidence malware finding');
         }
     }
@@ -103,6 +154,14 @@ final class VIS_Trinity_Grid {
         $nemesis = '\\VisionGaia\\GeDefense\\Modules\\Nemesis\\Nemesis';
         if (class_exists($nemesis) && method_exists($nemesis, 'get_instance')) {
             $nemesis::get_instance()->trigger_tarpit($reason);
+        }
+    }
+
+    /** @param array<string, mixed> $signal */
+    private static function emitXdr(array $signal): void {
+        $fabric = '\\VisionGaia\\GeDefense\\Xdr\\EventFabric';
+        if (class_exists($fabric)) {
+            $fabric::ingest($signal);
         }
     }
 }

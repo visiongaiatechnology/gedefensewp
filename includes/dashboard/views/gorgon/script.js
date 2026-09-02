@@ -1,177 +1,229 @@
-// VGT SUPREME: Gehärteter AJAX Wrapper - Fallback Mechanismen verhindern ReferenceErrors
+// STATUS: DIAMANT VGT SUPREME
+(() => {
+    'use strict';
+
+    const getApp = () => document.getElementById('vgt-gorgon-app');
+
+    const getGorgonNonce = () => {
+        const app = getApp();
+        if (app && app.dataset.gorgonNonce) return app.dataset.gorgonNonce;
+        if (window.visConfig && window.visConfig.nonce) return window.visConfig.nonce;
+        return '';
+    };
+
+    const getAjaxUrl = () => {
+        if (window.visConfig && window.visConfig.ajaxUrl) return window.visConfig.ajaxUrl;
+        if (typeof ajaxurl !== 'undefined') return ajaxurl;
+        return '/wp-admin/admin-ajax.php';
+    };
+
     const vgtAjax = (action, data = {}) => {
-        const targetUrl = (typeof window.visConfig !== 'undefined' && window.visConfig.ajaxUrl) 
-                          ? window.visConfig.ajaxUrl 
-                          : (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
-                          
-        return jQuery.post(targetUrl, {
+        return jQuery.post(getAjaxUrl(), {
             action: 'vgt_gorgon_' + action,
-            security: '<?php echo wp_create_nonce("vgt_gorgon_nonce"); ?>',
+            security: getGorgonNonce(),
             ...data
         });
     };
 
-    function vgtEnableGorgon() {
+    const vgtEnableGorgon = () => {
         const btn = document.getElementById('btn-activate-gorgon');
-        btn.innerHTML = 'Linking...';
-        
-        vgtAjax('toggle', { enabled: true }).done(res => {
-            if(res.success) {
-                document.getElementById('vgt-overlay').style.display = 'none';
-                document.getElementById('vgt-gorgon-app').dataset.enabled = '1';
-                
-                // Synchronisiere Hidden-Input, damit Global-Save Gorgon nicht sofort wieder killt
+        if (btn) btn.textContent = 'Linking…';
+
+        vgtAjax('toggle', { enabled: true }).done((res) => {
+            if (res && res.success) {
+                const overlay = document.getElementById('vgt-overlay');
+                const app = getApp();
+                if (overlay) overlay.style.display = 'none';
+                if (app) app.dataset.enabled = '1';
+
                 const hiddenInput = document.getElementById('vgt-gorgon-enabled-input');
-                if (hiddenInput) hiddenInput.value = '1';
-                
+                if (hiddenInput instanceof HTMLInputElement) hiddenInput.value = '1';
+
                 checkNexusHealth();
             } else {
                 alert('Aktivierung fehlgeschlagen. WP AJAX Fehler.');
-                btn.innerHTML = 'Activate Gorgon';
+                if (btn) btn.textContent = 'Activate Gorgon';
             }
         }).fail(() => {
             alert('Netzwerkfehler zum lokalen WordPress-Backend.');
-            btn.innerHTML = 'Activate Gorgon';
+            if (btn) btn.textContent = 'Activate Gorgon';
         });
-    }
+    };
 
-    // --- REAL-TIME NEXUS HEALTH CHECK (SERVER-SIDE PING & LIVE DEBUGGING) ---
-    function checkNexusHealth(fromButton = false) {
-        const app = document.getElementById('vgt-gorgon-app');
+    const checkNexusHealth = (fromButton = false) => {
+        const app = getApp();
+        if (!app) return;
         const pill = document.getElementById('realtime-status-pill');
         const text = document.getElementById('realtime-status-text');
         const glow = document.getElementById('nexus-bridge-glow');
         const card = document.getElementById('nexus-bridge-card');
         const pingBtnText = document.getElementById('btn-test-link-text');
-        
+
         const isEnabled = app.dataset.enabled === '1';
-        const syncUrl = document.getElementById('vgt-nexus-endpoint').value;
-        const syncKey = document.getElementById('vgt-nexus-key').value;
+        const syncUrlEl = document.getElementById('vgt-nexus-endpoint');
+        const syncKeyEl = document.getElementById('vgt-nexus-key');
+        const syncUrl = syncUrlEl instanceof HTMLInputElement ? syncUrlEl.value.trim() : '';
+        const syncKey = syncKeyEl instanceof HTMLInputElement ? syncKeyEl.value.trim() : '';
+
+        const updatePill = (msg, state) => {
+            if (text) text.textContent = msg;
+            if (pill) pill.className = `vgt-pill ${state}`;
+        };
+
+        const setOfflineTheme = () => {
+            if (glow) glow.style.background = 'radial-gradient(circle at 100% 50%, rgba(255, 0, 60, 0.05), transparent 70%)';
+            if (card) card.style.borderColor = 'rgba(255, 0, 60, 0.3)';
+        };
 
         if (!isEnabled) {
             updatePill('GRID OFFLINE', 'offline');
             return;
         }
-        
+
         if (!syncUrl || !syncKey) {
             updatePill('AUTH REQUIRED', 'pending');
             return;
         }
 
-        // CHIRURGISCHER FIX: Live-Save erzwingen, wenn manuell getriggert wird.
+        const executePing = () => {
+            if (pingBtnText) pingBtnText.textContent = 'Pinging...';
+            updatePill('VERIFYING LINK...', 'pending');
+
+            vgtAjax('ping_nexus', { url: syncUrl }).done((res) => {
+                if (pingBtnText) pingBtnText.textContent = 'Ping Nexus';
+                if (res && res.success) {
+                    updatePill('LINK SECURED', 'online');
+                    if (glow) glow.style.background = 'radial-gradient(circle at 100% 50%, rgba(0, 255, 136, 0.05), transparent 70%)';
+                    if (card) card.style.borderColor = 'rgba(0, 255, 136, 0.3)';
+                } else {
+                    updatePill('NEXUS UNRECOGNIZED', 'offline');
+                    setOfflineTheme();
+                }
+            }).fail(() => {
+                if (pingBtnText) pingBtnText.textContent = 'Ping Nexus';
+                updatePill('NEXUS TIMEOUT', 'offline');
+                setOfflineTheme();
+            });
+        };
+
         if (fromButton) {
-            if(pingBtnText) pingBtnText.innerText = 'Syncing...';
+            if (pingBtnText) pingBtnText.textContent = 'Syncing...';
             updatePill('UPDATING BRIDGE...', 'pending');
-            
-            vgtAjax('update_config', { url: syncUrl, key: syncKey }).done(res => {
-                if(res.success) {
+
+            vgtAjax('update_config', { url: syncUrl, key: syncKey }).done((res) => {
+                if (res && res.success) {
                     executePing();
                 } else {
-                    if(pingBtnText) pingBtnText.innerText = 'Ping Nexus';
+                    if (pingBtnText) pingBtnText.textContent = 'Ping Nexus';
                     updatePill('SYNC REJECTED', 'offline');
                 }
             }).fail(() => {
-                if(pingBtnText) pingBtnText.innerText = 'Ping Nexus';
+                if (pingBtnText) pingBtnText.textContent = 'Ping Nexus';
                 updatePill('NETWORK ERROR', 'offline');
             });
             return;
         }
 
         executePing();
+    };
 
-        function executePing() {
-            if(pingBtnText) pingBtnText.innerText = 'Pinging...';
-            updatePill('VERIFYING LINK...', 'pending');
-
-            vgtAjax('ping_nexus', { url: syncUrl }).done(res => {
-                if(pingBtnText) pingBtnText.innerText = 'Ping Nexus';
-                if (res.success) {
-                    updatePill('LINK SECURED', 'online');
-                    glow.style.background = 'radial-gradient(circle at 100% 50%, rgba(0, 255, 136, 0.05), transparent 70%)';
-                    card.style.borderColor = 'rgba(0, 255, 136, 0.3)';
-                } else {
-                    updatePill('NEXUS UNRECOGNIZED', 'offline');
-                    setOfflineTheme(glow, card);
-                    
-                    if(res.data && res.data.debug_status) {
-                        console.error(`VGT NEXUS PING FEHLGESCHLAGEN!\n\nHTTP Status Code: ${res.data.debug_status}\n\nAntwort vom Server:\n${res.data.debug_body}`);
-                    }
-                }
-            }).fail(() => {
-                if(pingBtnText) pingBtnText.innerText = 'Ping Nexus';
-                updatePill('NEXUS TIMEOUT', 'offline');
-                setOfflineTheme(glow, card);
-            });
+    const vgtSaveConfig = () => {
+        const urlEl = document.getElementById('vgt-nexus-endpoint');
+        const keyEl = document.getElementById('vgt-nexus-key');
+        const url = urlEl instanceof HTMLInputElement ? urlEl.value.trim() : '';
+        const key = keyEl instanceof HTMLInputElement ? keyEl.value.trim() : '';
+        if (!url || !key) {
+            alert('URL und Key werden benötigt.');
+            return;
         }
-
-        function updatePill(msg, state) {
-            text.innerText = msg;
-            pill.className = `vgt-pill ${state}`;
-        }
-        
-        function setOfflineTheme(glow, card) {
-            glow.style.background = 'radial-gradient(circle at 100% 50%, rgba(255, 0, 60, 0.05), transparent 70%)';
-            card.style.borderColor = 'rgba(255, 0, 60, 0.3)';
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(checkNexusHealth, 500);
-    });
-
-    function vgtSaveConfig() {
-        const url = document.getElementById('vgt-nexus-endpoint').value;
-        const key = document.getElementById('vgt-nexus-key').value;
-        if(!url || !key) return alert('URL und Key werden benötigt.');
 
         const btn = document.getElementById('btn-save-config');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = 'Updating...';
+        const originalText = btn ? (btn.textContent || 'Update Config') : '';
+        if (btn) btn.textContent = 'Updating…';
 
-        vgtAjax('update_config', { url, key }).done(res => {
-            if(res.success) {
-                document.getElementById('vgt-gorgon-app').dataset.key = '1';
-                btn.innerHTML = originalText;
-                checkNexusHealth(); // Validierung nach erfolgreichem Update
+        vgtAjax('update_config', { url, key }).done((res) => {
+            if (res && res.success) {
+                const app = getApp();
+                if (app) app.dataset.key = '1';
+                if (btn) btn.textContent = originalText;
+                checkNexusHealth();
             } else {
-                alert('Speichern fehlgeschlagen: ' + (res.data ? res.data.message : 'Unknown'));
-                btn.innerHTML = originalText;
+                alert('Speichern fehlgeschlagen: ' + (res && res.data ? res.data.message : 'Unknown'));
+                if (btn) btn.textContent = originalText;
             }
         }).fail(() => {
             alert('Speichern fehlgeschlagen (AJAX Netz-Fehler)');
-            btn.innerHTML = originalText;
+            if (btn) btn.textContent = originalText;
         });
-    }
+    };
 
-    function vgtSyncNow() {
+    const vgtSyncNow = () => {
         const ico = document.getElementById('vgt-sync-ico');
-        ico.classList.add('vgt-spin');
-        vgtAjax('sync').done(res => {
-            if(res.success) {
+        if (ico) ico.classList.add('vgt-spin');
+        vgtAjax('sync').done((res) => {
+            if (res && res.success) {
                 location.reload();
             } else {
-                alert('Sync fehlgeschlagen: ' + (res.data ? res.data.message : ''));
-                ico.classList.remove('vgt-spin');
+                alert('Sync fehlgeschlagen: ' + (res && res.data ? res.data.message : ''));
+                if (ico) ico.classList.remove('vgt-spin');
             }
+        }).fail(() => {
+            alert('Netzwerkfehler beim Synchronisieren.');
+            if (ico) ico.classList.remove('vgt-spin');
         });
-    }
+    };
 
-    function vgtIntegrateNode() { document.getElementById('vgt-node-modal').style.display = 'flex'; }
-    function vgtCloseModal() { document.getElementById('vgt-node-modal').style.display = 'none'; }
+    const vgtIntegrateNode = () => {
+        const modal = document.getElementById('vgt-node-modal');
+        if (modal) modal.style.display = 'flex';
+    };
 
-    function vgtSaveNode() {
-        const data = {
-            id: document.getElementById('wiz-id').value,
-            table: document.getElementById('wiz-table').value,
-            ip_col: document.getElementById('wiz-ip').value,
-            type_col: document.getElementById('wiz-type').value,
-            time_col: document.getElementById('wiz-time').value
-        };
-        vgtAjax('add_node', data).done(() => location.reload());
-    }
+    const vgtCloseModal = () => {
+        const modal = document.getElementById('vgt-node-modal');
+        if (modal) modal.style.display = 'none';
+    };
 
-    function vgtDropNode(id) {
-        if(confirm(`Node [${id}] dauerhaft vom Grid trennen?`)) {
+    const vgtSaveNode = () => {
+        const id = (document.getElementById('wiz-id') || {}).value || '';
+        const table = (document.getElementById('wiz-table') || {}).value || '';
+        const ip_col = (document.getElementById('wiz-ip') || {}).value || '';
+        const type_col = (document.getElementById('wiz-type') || {}).value || '';
+        const time_col = (document.getElementById('wiz-time') || {}).value || '';
+
+        vgtAjax('add_node', { id, table, ip_col, type_col, time_col }).done(() => location.reload());
+    };
+
+    const vgtDropNode = (id) => {
+        if (!id) return;
+        if (confirm(`Node [${id}] dauerhaft vom Grid trennen?`)) {
             vgtAjax('remove_node', { node_id: id }).done(() => location.reload());
         }
+    };
+
+    const initGorgon = () => {
+        if (!getApp()) return;
+
+        document.getElementById('btn-sync-now')?.addEventListener('click', vgtSyncNow);
+        document.getElementById('btn-save-config')?.addEventListener('click', vgtSaveConfig);
+        document.getElementById('btn-test-link')?.addEventListener('click', () => checkNexusHealth(true));
+        document.getElementById('btn-activate-gorgon')?.addEventListener('click', vgtEnableGorgon);
+        document.getElementById('btn-integrate-node')?.addEventListener('click', vgtIntegrateNode);
+        document.getElementById('btn-close-node-modal')?.addEventListener('click', vgtCloseModal);
+        document.getElementById('btn-save-node')?.addEventListener('click', vgtSaveNode);
+
+        document.querySelectorAll('.vgt-drop-node-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const nodeId = btn.getAttribute('data-node-id') || '';
+                vgtDropNode(nodeId);
+            });
+        });
+
+        setTimeout(checkNexusHealth, 400);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initGorgon);
+    } else {
+        initGorgon();
     }
+})();

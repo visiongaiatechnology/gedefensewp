@@ -1,4 +1,4 @@
-# Code Cartography: GeDefense WP – Open Core (v8.0.0)
+# Code Cartography: GeDefense WP – Open Core (v8.1.0)
 
 This document provides a comprehensive architectural map of the **GeDefense WP - Open Core** codebase. It outlines subsystem boundaries, class responsibilities, execution phases, and data flows to accelerate developer onboarding and code auditing.
 
@@ -26,7 +26,7 @@ GeDefense WP operates as an operating-system-style security kernel with strict d
         │
   [ Phase 2: Invariant & Hardening Subsystems ]
         ├── Self-Integrity  (Merkle-Tree Verification via VIS_MANIFEST_DIGEST)
-        ├── Titan           (Hardening: User 1 Ghosting, XML-RPC Lock, Editor Disable)
+        ├── Titan           (Surface Policy Compiler, Browser Confinement, WP Hardening)
         ├── ThroneGuard     (Master/Admin Privilege Separation & Superkey Session Gate)
         ├── LoginPager      (Local Login Surface & Branding)
         ├── Hades           (Identity Stealth, Path Cloaking & 404 Mimicry)
@@ -91,8 +91,13 @@ GeDefense WP operates as an operating-system-style security kernel with strict d
 #### Layer 4-5 / Hardening & Stealth:
 *   **`throneguard/`** (`VisionGaia\GeDefense\Modules\ThroneGuard\ThroneGuard`) — Master-role privilege separation, toxic administrator capability control and fingerprint-bound Superkey sessions.
 *   **`loginpager/`** (`VisionGaia\GeDefense\Modules\LoginPager\LoginPager`) — Local login-surface styling with protocol-restricted asset URLs and no external runtime dependency.
-*   **`titan/`** (`VisionGaia\GeDefense\Modules\Titan\Titan`) — WordPress Kernel Hardening:
-    *   Masks User ID 1, blocks REST API user enumeration, enforces `DISALLOW_FILE_EDIT`, strips version headers.
+*   **`titan/`** (`VisionGaia\GeDefense\Modules\Titan\Titan`) — Application & Browser Confinement:
+    *   Resolves public, login, admin, GeDefense admin, REST, AJAX, cron, webhook and active-preview surfaces.
+    *   Compiles deterministic CSP, Fetch Metadata, Permissions Policy, COOP/CORP/COEP, OAC and HSTS policies per surface.
+    *   Separates candidate validation, report-only observation, enforcement eligibility, activation confirmation and rollback.
+    *   Converts typed local learning observations only into new report-only candidates; learned sources are never auto-enforced.
+    *   Integrates Airlock inspection receipts, signed active-content previews, private server-rule export and local WP-CLI recovery.
+    *   Retains WordPress hardening for enumeration, XML-RPC, Application Passwords, file editing and fingerprint exposure.
 *   **`hades/`** (`VisionGaia\GeDefense\Modules\Hades\Hades`) — Admin Cloaking & Route Concealment:
     *   Hides `/wp-admin` and `wp-login.php` behind cryptographic handshake parameters.
     *   Answers unauthorized access with authentic Nginx/Apache 404 error responses.
@@ -157,3 +162,16 @@ GeDefense WP operates as an operating-system-style security kernel with strict d
 3.  **Memory-First Execution:** IP bans and regular expression DFA lookups resolve from RAM (APCu / Object Cache) with minimal database I/O.
 4.  **Constant-Time Cryptography:** All secret and token comparisons use `hash_equals()` to eliminate timing side-channel attacks.
 5.  **Namespace Isolation:** GeDefense-owned runtime APIs resolve below `VisionGaia\GeDefense`; foreign legacy namespaces never escape the dedicated compatibility boundary.
+
+---
+
+## 4. TRINITY XDR & Secure Delivery Extensions
+
+*   **`includes/xdr/`** — Canonical local event fabric, cryptographic request correlation, bounded redaction, deduplication, incident/attack-story correlation, evidence roots, deterministic policy evaluation and reversible response orchestration.
+*   **XDR persistence** — `class-vis-schema.php` owns the structured `vis_xdr_events`, `vis_xdr_incidents`, `vis_xdr_incident_events`, `vis_xdr_responses` and `vis_xdr_evidence` tables.
+*   **`includes/core/class-vis-event-bus.php`** — Retains the legacy logging ABI and bridges normalized module events into TRINITY XDR without requiring sensor rewrites.
+*   **`includes/modules/downloads/`** — Secure Download Manager with private integrity-verified copies, exact per-link AEGIS trust, bounded rate limiting and no global file-type exemption.
+*   **`includes/dashboard/views/view-xdr.php`** — Data-backed Lagebild, Incidents, Attack Stories, Entities, Responses, Evidence, Events, Policy and Health interface.
+*   **`includes/dashboard/views/view-security_center.php`** — Consolidated assurance, Systemstatus and System-Protokolle cockpit.
+*   **Integrity coverage** — 27 independently hashed components, including the XDR and Secure Downloads domains.
+*   **Regression coverage** — Dedicated XDR, download-manager and dashboard-consolidation harnesses augment the existing security suite.

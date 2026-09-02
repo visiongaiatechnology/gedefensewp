@@ -49,15 +49,6 @@ if ($is_nginx && class_exists('VIS_Hades')) {
 <!-- =========================================================================================
      2. DECENTRALIZED ASSET INJECTION (CSS)
      ========================================================================================= -->
-<style>
-    <?php 
-    $hades_css_path = __DIR__ . '/hades/style.css';
-    if (is_readable($hades_css_path)) {
-        echo file_get_contents($hades_css_path);
-    }
-    ?>
-</style>
-
 <div class="vgt-apex-ui">
 
     <div class="vgt-glass-panel" style="border-top: 3px solid var(--vgt-neon-purple);">

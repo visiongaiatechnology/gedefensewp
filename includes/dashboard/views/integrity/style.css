@@ -113,3 +113,134 @@
 
     @keyframes vgt-pulse { 0% { box-shadow: 0 0 0 0 currentColor; } 70% { box-shadow: 0 0 0 6px rgba(0,0,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }
     @keyframes vgt-pulse-alert { 0% { box-shadow: 0 0 0 0 currentColor; } 70% { box-shadow: 0 0 0 10px rgba(0,0,0,0); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }
+
+    /* VGT ANOMALY DIRECT TABS ENGINE */
+    .vgt-anomaly-tabs-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--vgt-border);
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .vgt-tab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--vgt-text-dim);
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        user-select: none;
+    }
+
+    .vgt-tab-btn .vgt-icon {
+        width: 14px;
+        height: 14px;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+    }
+
+    .vgt-tab-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--vgt-text-main);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .vgt-tab-btn:hover .vgt-icon {
+        opacity: 1;
+    }
+
+    .vgt-tab-btn.vgt-tab-active {
+        background: rgba(16, 185, 129, 0.12);
+        color: #fff;
+        border-color: rgba(16, 185, 129, 0.4);
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.15), inset 0 0 10px rgba(16, 185, 129, 0.05);
+    }
+
+    .vgt-tab-btn.vgt-tab-active .vgt-icon {
+        color: var(--vgt-neon-green);
+        opacity: 1;
+    }
+
+    .vgt-tab-btn[data-filter="malware"].vgt-tab-active {
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(239, 68, 68, 0.4);
+        box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+    }
+    .vgt-tab-btn[data-filter="malware"].vgt-tab-active .vgt-icon {
+        color: var(--vgt-neon-red);
+    }
+
+    .vgt-tab-btn[data-filter="deleted"].vgt-tab-active {
+        background: rgba(245, 158, 11, 0.12);
+        border-color: rgba(245, 158, 11, 0.4);
+        box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+    }
+    .vgt-tab-btn[data-filter="deleted"].vgt-tab-active .vgt-icon {
+        color: var(--vgt-neon-orange);
+    }
+
+    .vgt-tab-btn[data-filter="new"].vgt-tab-active {
+        background: rgba(59, 130, 246, 0.12);
+        border-color: rgba(59, 130, 246, 0.4);
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
+    }
+    .vgt-tab-btn[data-filter="new"].vgt-tab-active .vgt-icon {
+        color: var(--vgt-neon-blue);
+    }
+
+    .vgt-tab-count {
+        font-size: 10px;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--vgt-text-dim);
+    }
+
+    .vgt-tab-btn.vgt-tab-active .vgt-tab-count {
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+    }
+
+    .vgt-tab-count.vgt-count-new {
+        background: rgba(59, 130, 246, 0.2);
+        color: var(--vgt-neon-blue);
+    }
+
+    .vgt-tab-count.vgt-count-mod {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--vgt-neon-orange);
+    }
+
+    .vgt-tab-count.vgt-count-del {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--vgt-neon-red);
+    }
+
+    .vgt-tab-count.vgt-count-alert {
+        background: rgba(239, 68, 68, 0.3);
+        color: #ff4d4d;
+        animation: vgt-pulse-alert 1.5s infinite;
+    }
+
+    .vgt-tab-empty-row {
+        text-align: center;
+        padding: 40px 20px !important;
+        color: var(--vgt-text-muted);
+        font-size: 13px;
+    }

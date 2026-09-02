@@ -147,6 +147,11 @@ final class VIS_Aegis {
             define('VIS_TABLE_BANS', 'vis_apex_bans');
         }
 
+        $downloads = '\\VisionGaia\\GeDefense\\Modules\\SecureDownloads\\DownloadManager';
+        if (class_exists($downloads) && $downloads::isTrustedRequest()) {
+            return;
+        }
+
         // [ VGT OMEGA FIX: SYNCHRONOUS EXECUTION ]
         $this->run_guard();
     }

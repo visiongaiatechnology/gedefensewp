@@ -1,0 +1,314 @@
+/* =========================================================================
+   GEDEFENSE SECURE DOWNLOADS - APEX CYBERPUNK STYLESHEET
+   Status: PLATIN VGT STATUS (Hardened Dark-Mode, High Contrast)
+   ========================================================================= */
+
+.vgt-downloads-panel {
+    background: rgba(10, 16, 28, 0.88);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 12px;
+    padding: 28px;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    color: #f8fafc;
+    box-sizing: border-box;
+    margin-bottom: 24px;
+}
+
+.vgt-downloads-panel-top {
+    border-top: 3px solid var(--vgt-neon-blue, #00f2ff);
+}
+
+.vgt-downloads-panel h2,
+.vgt-downloads-panel h3 {
+    color: #ffffff;
+    font-family: 'Orbitron', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-top: 0;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vgt-downloads-panel h2 {
+    font-size: 18px;
+}
+
+.vgt-downloads-panel h3 {
+    font-size: 16px;
+}
+
+.vgt-downloads-desc {
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 0;
+    margin-bottom: 24px;
+    max-width: 900px;
+}
+
+/* FORM GRID */
+.vgt-downloads-form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: end;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.vgt-downloads-label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.vgt-downloads-select {
+    background: #090d16 !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    color: #f8fafc !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    outline: none !important;
+    width: 100% !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.vgt-downloads-select:focus {
+    border-color: #00f2ff !important;
+    box-shadow: 0 0 12px rgba(0, 242, 255, 0.25) !important;
+}
+
+.vgt-downloads-btn-primary {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    border-radius: 8px !important;
+    padding: 10px 20px !important;
+    cursor: pointer !important;
+    letter-spacing: 0.5px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    height: 42px !important;
+    white-space: nowrap !important;
+}
+
+.vgt-downloads-btn-primary:hover {
+    background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%) !important;
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.45) !important;
+    border-color: #00f2ff !important;
+}
+
+/* TABLE SECTION */
+.vgt-downloads-table-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    background: rgba(8, 13, 22, 0.7);
+}
+
+.vgt-downloads-table {
+    width: 100%;
+    min-width: 900px;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+    color: #e2e8f0;
+}
+
+.vgt-downloads-table thead th {
+    background: rgba(13, 20, 34, 0.95);
+    color: #94a3b8;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.vgt-downloads-table tbody tr {
+    background: rgba(11, 18, 30, 0.6);
+    transition: background 0.15s ease;
+}
+
+.vgt-downloads-table tbody tr:hover {
+    background: rgba(22, 33, 54, 0.8);
+}
+
+.vgt-downloads-table tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    font-size: 13px;
+    color: #f8fafc;
+    vertical-align: middle;
+}
+
+.vgt-downloads-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.vgt-download-title {
+    font-weight: 700;
+    color: #ffffff;
+    display: block;
+    font-size: 13.5px;
+    margin-bottom: 3px;
+}
+
+.vgt-download-meta {
+    font-size: 11.5px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vgt-badge-active {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+}
+
+.vgt-badge-paused {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+}
+
+.vgt-hash-code {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 12px;
+    color: #5eead4;
+    background: rgba(94, 234, 212, 0.08);
+    border: 1px solid rgba(94, 234, 212, 0.2);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.vgt-count-badge {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+/* DOWNLOAD LINK INPUT */
+.vgt-url-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    max-width: 360px;
+}
+
+.vgt-url-input {
+    background: #05080f !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    color: #7dd3fc !important;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important;
+    font-size: 11.5px !important;
+    padding: 7px 12px !important;
+    border-radius: 6px !important;
+    width: 100% !important;
+    outline: none !important;
+}
+
+.vgt-url-input:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.3) !important;
+}
+
+/* ACTION BUTTONS */
+.vgt-actions-cell {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.vgt-btn-action {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.vgt-btn-action:hover {
+    background: rgba(51, 65, 85, 0.9);
+    border-color: #94a3b8;
+    color: #ffffff;
+}
+
+.vgt-btn-danger {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+}
+
+.vgt-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
+.vgt-empty-cell {
+    text-align: center;
+    padding: 36px !important;
+    color: #94a3b8;
+    font-size: 13px;
+    background: rgba(10, 16, 28, 0.4) !important;
+}
+
+/* NOTICE BOXES */
+.vgt-notice {
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vgt-notice-success {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34d399;
+}
+
+.vgt-notice-error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
+}

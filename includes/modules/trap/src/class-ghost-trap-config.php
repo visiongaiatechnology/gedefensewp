@@ -22,7 +22,10 @@ final class VIS_Ghost_Trap_Config {
 
     public function get_extensions(): array {
         $raw = $this->config['ghost_trap_exts'] ?? 'php, sql, bak, old';
-        $exts = array_filter(array_map('trim', explode(',', $raw)));
+        $exts = array_values(array_filter(array_map(
+            static fn(string $extension): string => strtolower(ltrim(trim($extension), '.')),
+            explode(',', is_string($raw) ? $raw : '')
+        ), static fn(string $extension): bool => preg_match('/^[a-z0-9]{1,8}$/D', $extension) === 1));
         return empty($exts) ? ['php'] : $exts;
     }
 

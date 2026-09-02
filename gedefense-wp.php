@@ -3,7 +3,7 @@
  * Plugin Name: GeDefense WP - Open Core
  * Plugin URI: https://github.com/visiongaiatechnology/gedefensewp
  * Description: OMEGA-CLASS Security Suite. High-Performance Integrity Monitoring, Active Defense & RASP Matrix.
- * Version: 8.0.0
+ * Version: 8.1.0
  * Author: VisionGaiaTechnology
  * Author URI: https://visiongaiatechnology.de
  * License: AGPL-3.0-or-later
@@ -25,8 +25,8 @@ if (defined('VIS_VERSION')) {
     return;
 }
 
-define('VIS_VERSION', '8.0.0 OPEN CORE');
-define('VIS_MANIFEST_DIGEST', 'b967b486b05f78f5190ec4799aa23a35d73d9ce8df2d99b61f19279482882dfc');
+define('VIS_VERSION', '8.1.0 OPEN CORE');
+define('VIS_MANIFEST_DIGEST', '64d3be758103abdd185d5453bb7f8ff8712af1f1296ec6b03c3f6a6fc6f3b0a5');
 define('VIS_PRODUCT_NAME', 'GeDefense WP - Open Core');
 define('VIS_PATH', plugin_dir_path(__FILE__));
 define('VIS_URL', plugin_dir_url(__FILE__));
@@ -63,14 +63,18 @@ register_activation_hook(__FILE__, function(): void {
 
 register_deactivation_hook(__FILE__, function(): void {
     wp_clear_scheduled_hook('vis_hourly_scan_event');
+    wp_clear_scheduled_hook('vis_xdr_retention_cleanup');
+    wp_clear_scheduled_hook('vis_xdr_response_cleanup');
     flush_rewrite_rules();
 });
 
 if (is_admin()) {
     add_action('admin_init', function(): void {
-        if (get_option('vis_db_version') !== VIS_VERSION) {
-            require_once VIS_PATH . 'class-vis-schema.php';
-            \VisionGaia\GeDefense\Core\Schema::enforce();
+        require_once VIS_PATH . 'class-vis-schema.php';
+        if (get_option('vis_db_version') !== VIS_VERSION
+            || get_option('vis_xdr_schema_version') !== VIS_Schema::XDR_SCHEMA_VERSION
+            || get_option('vis_download_schema_version') !== VIS_Schema::DOWNLOAD_SCHEMA_VERSION) {
+            VIS_Schema::enforce();
         }
         require_once VIS_PATH . 'class-vis-vault.php';
         \VisionGaia\GeDefense\Core\Vault::auto_migrate_config();

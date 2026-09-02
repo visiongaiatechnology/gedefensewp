@@ -176,6 +176,25 @@ final class VIS_Throne_Guard {
             $logs = array_slice($logs, 0, 80);
         }
         update_option('vis_throneguard_audit_logs', $logs, false);
+
+        if (in_array($severity, ['warning', 'critical'], true) && class_exists('VIS_Event_Bus')) {
+            \VIS_Event_Bus::emit(
+                'THRONEGUARD',
+                $action,
+                $message,
+                [
+                    'category' => 'IDENTITY',
+                    'role' => 'DETECTION',
+                    'entity_type' => 'USER',
+                    'entity_id' => $user->exists() ? (string)$user->ID : '0',
+                    'user_id' => $user->exists() ? (int)$user->ID : 0,
+                    'actor_ip' => $ip,
+                    'attribution_confidence' => 95,
+                    'severity' => $severity === 'critical' ? 8 : 6,
+                ],
+                $severity === 'critical' ? 8 : 6
+            );
+        }
     }
 
     public function handle_clear_logs(): void {

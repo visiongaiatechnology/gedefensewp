@@ -35,15 +35,6 @@ $pulse_color  = ($failed_checks === 0) ? 'var(--vgt-neon-green)' : 'var(--vgt-ne
 <!-- =========================================================================================
      2. DECENTRALIZED ASSET INJECTION (CSS)
      ========================================================================================= -->
-<style>
-    <?php 
-    $oracle_css_path = __DIR__ . '/oracle/style.css';
-    if (is_readable($oracle_css_path)) {
-        echo file_get_contents($oracle_css_path);
-    }
-    ?>
-</style>
-
 <div class="vgt-apex-ui">
 
     <div class="vgt-glass-panel" style="border-top: 3px solid <?php echo esc_attr($pulse_color); ?>;">
@@ -117,7 +108,7 @@ $pulse_color  = ($failed_checks === 0) ? 'var(--vgt-neon-green)' : 'var(--vgt-ne
                         <td>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <svg class="vgt-icon" style="width:16px; height:16px; color:<?php echo $is_pass ? 'var(--vgt-neon-green)' : 'var(--vgt-neon-red)'; ?>;" viewBox="0 0 24 24">
-                                    <?php echo $icon_svg; // Secure internal logic bypass ?>
+                                    <?php echo wp_kses_post($icon_svg); // Secure internal logic bypass ?>
                                 </svg>
                                 <strong style="color:#fff; font-size:13px; letter-spacing:0.5px;"><?php echo esc_html(__($r['check'], 'vgt-sentinel')); ?></strong>
                             </div>

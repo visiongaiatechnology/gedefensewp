@@ -25,7 +25,7 @@ final class Prometheus {
     private static ?self $instance = null;
 
     // --- VGT DEFAULTS (FALLBACKS) ---
-    private const DEFAULT_EVENT_HORIZON_SCORE       = 100.0;
+    private const DEFAULT_EVENT_HORIZON_SCORE       = 200.0;
     private const DEFAULT_INFRA_EVENT_HORIZON_SCORE = 150.0;
     private const DEFAULT_INFRA_COOLDOWN_WINDOW     = 3600;
     private const DEFAULT_SCORE_DECAY_RATE          = 0.2;
@@ -124,7 +124,7 @@ final class Prometheus {
             $this->trusted_proxies = VIS_TRUSTED_PROXY_IPS;
         }
 
-        $this->event_horizon_score   = self::bounded_float($prom_config, 'event_horizon_score', self::DEFAULT_EVENT_HORIZON_SCORE, 25.0, 1000.0);
+        $this->event_horizon_score   = self::bounded_float($prom_config, 'event_horizon_score', self::DEFAULT_EVENT_HORIZON_SCORE, 200.0, 1000.0);
         $this->infra_horizon_score   = self::bounded_float($prom_config, 'infra_horizon_score', self::DEFAULT_INFRA_EVENT_HORIZON_SCORE, 50.0, 2000.0);
         $this->infra_cooldown_window = self::bounded_int($prom_config, 'infra_cooldown_window', self::DEFAULT_INFRA_COOLDOWN_WINDOW, 60, 86400);
         $this->score_decay_rate      = self::bounded_float($prom_config, 'score_decay_rate', self::DEFAULT_SCORE_DECAY_RATE, 0.01, 10.0);

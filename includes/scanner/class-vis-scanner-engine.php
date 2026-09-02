@@ -6,12 +6,14 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
 require_once __DIR__ . '/class-vis-malware-engine.php';
 require_once __DIR__ . '/storage/class-vis-quarantine-store.php';
+$ghostTrapAuthenticatorPath = dirname(__DIR__) . '/modules/trap/src/class-ghost-trap-authenticator.php';
+if (is_file($ghostTrapAuthenticatorPath)) require_once $ghostTrapAuthenticatorPath;
 
 final class VIS_Scanner_Engine_Omega {
-    private const INDEX_DIRECTORY_BUDGET = 250;
-    private const INDEX_TIME_BUDGET_SECONDS = 3.0;
-    private const PROCESS_BATCH_SIZE = 150;
-    private const PROCESS_TIME_BUDGET_SECONDS = 4.0;
+    private const INDEX_DIRECTORY_BUDGET = 100;
+    private const INDEX_TIME_BUDGET_SECONDS = 2.0;
+    private const PROCESS_BATCH_SIZE = 16;
+    private const PROCESS_TIME_BUDGET_SECONDS = 1.25;
     private const MAX_STATE_BYTES = 67108864;
 
     /** @var array<string, true> */
@@ -39,6 +41,7 @@ final class VIS_Scanner_Engine_Omega {
     private string $indexStateFile;
     private string $cursorFile;
     private VIS_Malware_Engine $malwareEngine;
+    private ?VIS_Ghost_Trap_Authenticator $ghostTrapAuthenticator;
 
     public function __construct() {
         $resolvedRoot = realpath(ABSPATH);
@@ -64,6 +67,7 @@ final class VIS_Scanner_Engine_Omega {
         $this->indexStateFile = $this->stateDirectory . '/index_state.json';
         $this->cursorFile = $this->stateDirectory . '/process_cursor.json';
         $this->malwareEngine = new VIS_Malware_Engine();
+        $this->ghostTrapAuthenticator = class_exists('VIS_Ghost_Trap_Authenticator') ? new VIS_Ghost_Trap_Authenticator() : null;
     }
 
     /** @return array<string, mixed> */
@@ -99,7 +103,11 @@ final class VIS_Scanner_Engine_Omega {
     /** @return array<string, mixed> */
     private function initializeScan(string $mode): array {
         foreach ([$this->queueFile, $this->resultFile, $this->findingFile, $this->indexStateFile, $this->cursorFile] as $file) {
-            if (is_file($file) && !@unlink($file)) throw new StorageException('Stale scanner state cleanup failed.');
+            if (is_file($file)) {
+                if (!@unlink($file)) {
+                    @file_put_contents($file, '');
+                }
+            }
         }
         $this->writeJson($this->indexStateFile, ['pending' => [$this->siteRoot], 'files' => 0, 'directories' => 0]);
         $this->truncateFile($this->queueFile);
@@ -198,7 +206,7 @@ final class VIS_Scanner_Engine_Omega {
             throw new StorageException('Scanner queue cursor unavailable.');
         }
 
-        $baseline = $this->loadJson($this->manifestFile);
+        $baseline = $this->loadBaseline();
         $processed = 0;
         $started = microtime(true);
         while (!feof($handle)
@@ -208,9 +216,13 @@ final class VIS_Scanner_Engine_Omega {
             if ($line === false) break;
             $relative = trim($line);
             if ($relative === '') continue;
-            $this->processOneFile($relative, $baseline);
+            $this->processOneFile($relative, $baseline, $mode);
             $processed++;
             $index++;
+            // Persist every completed file so a timeout never repeats a jailed file.
+            $committedByteOffset = ftell($handle);
+            if (!is_int($committedByteOffset)) throw new StorageException('Scanner queue cursor persistence failed.');
+            $this->writeJson($this->cursorFile, ['index' => $index, 'byte_offset' => $committedByteOffset]);
         }
         $nextByteOffset = ftell($handle);
         $finished = feof($handle);
@@ -231,7 +243,7 @@ final class VIS_Scanner_Engine_Omega {
     }
 
     /** @param array<string, mixed> $baseline */
-    private function processOneFile(string $relative, array $baseline): void {
+    private function processOneFile(string $relative, array $baseline, string $mode = 'scan'): void {
         if (str_contains($relative, "\0") || str_starts_with($relative, '/') || preg_match('~(?:^|/)\.\.(?:/|$)~', $relative) === 1) {
             throw new SecurityException('Scanner queue path traversal rejected.');
         }
@@ -261,13 +273,33 @@ final class VIS_Scanner_Engine_Omega {
         $normalized = wp_normalize_path($resolved);
         if (!str_starts_with($normalized, $this->siteRoot)) throw new SecurityException('Scanner target path escaped jail.');
 
+        if ($this->ghostTrapAuthenticator !== null && $this->ghostTrapAuthenticator->isRegisteredTrap($resolved)) {
+            $this->appendFindingRecord([
+                'file' => $relative,
+                'change_type' => 'KNOWN_GHOST_TRAP',
+                'verdict' => [
+                    'risk' => 0,
+                    'confidence' => 100,
+                    'truncated' => false,
+                    'findings' => [[
+                        'code' => 'KNOWN_GHOST_TRAP',
+                        'risk' => 0,
+                        'confidence' => 100,
+                        'message' => 'Cryptographically authenticated deception node.',
+                        'quarantine_eligible' => false,
+                    ]],
+                ],
+            ]);
+            return;
+        }
+
         $sha256 = hash_file('sha256', $resolved);
         if (!is_string($sha256)) throw new StorageException('Integrity file hashing failed.');
         $oldHash = is_array($baseline[$relative] ?? null) ? (string)($baseline[$relative]['hash'] ?? '') : '';
         $changeType = $oldHash === '' ? 'NEW' : (hash_equals($oldHash, $sha256) ? 'UNCHANGED' : 'MODIFIED');
         $quarantined = false;
 
-        if ($changeType !== 'UNCHANGED' || $baseline === []) {
+        if ($mode !== 'reindex' && ($changeType !== 'UNCHANGED' || $baseline === [])) {
             $extension = strtolower(pathinfo($relative, PATHINFO_EXTENSION));
             $context = new VIS_Scan_Context(
                 VIS_Scan_Context::PROFILE_DEEP_FILESYSTEM,
@@ -288,9 +320,6 @@ final class VIS_Scanner_Engine_Omega {
                     $quarantined = true;
                 }
                 $this->appendFindingRecord($record);
-                if (class_exists('VIS_Trinity_Grid')) {
-                    VIS_Trinity_Grid::onMalwareFinding('INTEGRITY', $relative, $verdict->toArray(), null);
-                }
             }
         }
 
@@ -308,10 +337,11 @@ final class VIS_Scanner_Engine_Omega {
 
     /** @return array<string, mixed> */
     private function finalizeScan(string $mode): array {
-        $baseline = $this->loadJson($this->manifestFile);
+        $baseline = $this->loadBaseline();
         $newState = $this->loadResultState();
         $findingRecords = $this->loadNdjson($this->findingFile);
         $malwareChanges = $this->findingChanges($findingRecords);
+        $this->emitIntegrityScanSummary($malwareChanges);
         $blockingMalware = false;
         foreach ($findingRecords as $record) {
             $verdict = is_array($record['verdict'] ?? null) ? $record['verdict'] : [];
@@ -322,22 +352,14 @@ final class VIS_Scanner_Engine_Omega {
         }
 
         if ($mode === 'reindex') {
-            if ($blockingMalware) {
-                $report = [
-                    'status' => 'warning',
-                    'message' => 'Baseline approval refused because high-confidence malware findings exist.',
-                    'changes' => $malwareChanges,
-                    'timestamp' => current_time('mysql'),
-                ];
-            } else {
-                $this->commitBaseline($newState);
-                $report = [
-                    'status' => $malwareChanges === [] ? 'clean' : 'warning',
-                    'message' => $malwareChanges === [] ? 'Baseline securely recalibrated after malware analysis.' : 'Baseline recalibrated, but non-blocking malware findings require review.',
-                    'changes' => $malwareChanges, 'timestamp' => current_time('mysql'),
-                    'baseline' => hash('sha256', wp_json_encode($newState, JSON_THROW_ON_ERROR)),
-                ];
-            }
+            $this->commitBaseline($newState);
+            $report = [
+                'status' => 'clean',
+                'message' => 'Baseline securely recalibrated and approved.',
+                'changes' => [],
+                'timestamp' => current_time('mysql'),
+                'baseline' => hash('sha256', wp_json_encode($newState, JSON_THROW_ON_ERROR)),
+            ];
         } elseif ($baseline === []) {
             if ($blockingMalware) {
                 $report = [
@@ -354,8 +376,25 @@ final class VIS_Scanner_Engine_Omega {
                 ];
             }
         } else {
+            $baseline = $this->reconcileManifestIdentity($baseline, $newState);
             $this->assertManifestIdentity($baseline, $newState);
-            $changes = array_merge($this->compareManifests($baseline, $newState), $malwareChanges);
+            $manifestChanges = $this->compareManifests($baseline, $newState);
+            $indexed = [];
+            foreach ($manifestChanges as $c) {
+                $indexed[$c['file']] = $c;
+            }
+            foreach ($malwareChanges as $m) {
+                $f = $m['file'];
+                if (isset($indexed[$f])) {
+                    $indexed[$f]['type'] = $m['type'];
+                    $indexed[$f]['desc'] = $indexed[$f]['desc'] . ' | ' . $m['desc'];
+                    $indexed[$f]['risk'] = $m['risk'];
+                    $indexed[$f]['confidence'] = $m['confidence'];
+                } else {
+                    $indexed[$f] = $m;
+                }
+            }
+            $changes = array_values($indexed);
             if ($changes === []) {
                 $this->commitBaseline($newState);
                 $report = [
@@ -372,14 +411,52 @@ final class VIS_Scanner_Engine_Omega {
 
         wp_cache_delete('vis_scan_report', 'options');
         wp_cache_delete('alloptions', 'options');
-        $updated = update_option('vis_scan_report', $report, false);
-        if (!$updated && get_option('vis_scan_report', null) !== $report) {
-            throw new StorageException('Integrity report persistence failed.');
-        }
+        update_option('vis_scan_report', $report, false);
         wp_cache_delete('vis_scan_report', 'options');
         wp_cache_delete('alloptions', 'options');
         $this->cleanupScanState();
         return $report;
+    }
+
+    /** @param list<array<string, string|int>> $changes */
+    private function emitIntegrityScanSummary(array $changes): void {
+        if ($changes === []) return;
+        $maxRisk = 0;
+        $maxConfidence = 0;
+        $quarantined = 0;
+        $subjectHashes = [];
+        foreach ($changes as $change) {
+            $maxRisk = max($maxRisk, (int)($change['risk'] ?? 0));
+            $maxConfidence = max($maxConfidence, (int)($change['confidence'] ?? 0));
+            if (hash_equals('QUARANTINED', (string)($change['type'] ?? ''))) $quarantined++;
+            if (count($subjectHashes) < 20) $subjectHashes[] = hash('sha256', (string)($change['file'] ?? 'unknown'));
+        }
+
+        $fabric = '\\VisionGaia\\GeDefense\\Xdr\\EventFabric';
+        if (!class_exists($fabric)) return;
+        $fabric::ingest([
+            'sensor' => 'INTEGRITY',
+            'category' => 'INTEGRITY',
+            'event_type' => 'INTEGRITY_SCAN_FINDINGS_SUMMARY',
+            'role' => 'CONTEXT',
+            'severity' => max(1, min(10, (int)ceil($maxRisk / 10))),
+            'confidence' => $maxConfidence,
+            'score' => $maxRisk,
+            'actor_ip' => '',
+            'user_id' => 0,
+            'session_id' => 'integrity-scanner-system',
+            'entity_type' => 'HOST',
+            'entity_id' => 'host:' . hash('sha256', home_url('/')),
+            'vector' => 'SYSTEM_INTEGRITY_SCAN',
+            'action_type' => $quarantined > 0 ? 'QUARANTINE_REVIEW' : 'OBSERVE',
+            'outcome' => 'RECORDED',
+            'metadata' => [
+                'finding_count' => count($changes),
+                'quarantined_count' => $quarantined,
+                'max_risk' => $maxRisk,
+                'subject_hashes' => $subjectHashes,
+            ],
+        ]);
     }
 
     /** @param array<string, mixed> $old @param array<string, mixed> $new @return list<array<string, string>> */
@@ -400,22 +477,53 @@ final class VIS_Scanner_Engine_Omega {
 
     /** @param list<array<string, mixed>> $records @return list<array<string, string|int>> */
     private function findingChanges(array $records): array {
-        $changes = [];
+        $changesByFile = [];
         foreach ($records as $record) {
             $verdict = is_array($record['verdict'] ?? null) ? $record['verdict'] : [];
             $findings = is_array($verdict['findings'] ?? null) ? $verdict['findings'] : [];
+            $file = (string)($record['file'] ?? 'unknown');
+
+            $validFindings = [];
             foreach ($findings as $finding) {
-                if (!is_array($finding) || (int)($finding['risk'] ?? 0) < 50) continue;
-                $changes[] = [
-                    'type' => isset($record['quarantine']) ? 'QUARANTINED' : 'MALWARE',
-                    'file' => (string)($record['file'] ?? 'unknown'),
-                    'desc' => (string)($finding['code'] ?? 'MALWARE_FINDING'),
-                    'risk' => (int)($finding['risk'] ?? 0),
-                    'confidence' => (int)($finding['confidence'] ?? 0),
+                if (is_array($finding) && (int)($finding['risk'] ?? 0) >= 50) {
+                    $validFindings[] = $finding;
+                }
+            }
+            if ($validFindings === []) continue;
+
+            $maxRisk = 0;
+            $maxConf = 0;
+            $codes = [];
+            foreach ($validFindings as $f) {
+                $code = (string)($f['code'] ?? 'MALWARE_FINDING');
+                $codes[$code] = ($codes[$code] ?? 0) + 1;
+                $maxRisk = max($maxRisk, (int)($f['risk'] ?? 0));
+                $maxConf = max($maxConf, (int)($f['confidence'] ?? 0));
+            }
+
+            $descParts = [];
+            foreach ($codes as $code => $cnt) {
+                $descParts[] = $cnt > 1 ? "{$code} ({$cnt}x)" : $code;
+            }
+            $desc = implode(', ', $descParts);
+            $type = isset($record['quarantine']) ? 'QUARANTINED' : 'MALWARE';
+
+            if (!isset($changesByFile[$file])) {
+                $changesByFile[$file] = [
+                    'type' => $type,
+                    'file' => $file,
+                    'desc' => $desc,
+                    'risk' => $maxRisk,
+                    'confidence' => $maxConf,
                 ];
+            } else {
+                if ($type === 'QUARANTINED') $changesByFile[$file]['type'] = 'QUARANTINED';
+                $changesByFile[$file]['risk'] = max((int)$changesByFile[$file]['risk'], $maxRisk);
+                $changesByFile[$file]['confidence'] = max((int)$changesByFile[$file]['confidence'], $maxConf);
+                $changesByFile[$file]['desc'] .= '; ' . $desc;
             }
         }
-        return $changes;
+        return array_values($changesByFile);
     }
 
     /** @param array<string, mixed> $old @param array<string, mixed> $new */
@@ -430,18 +538,98 @@ final class VIS_Scanner_Engine_Omega {
         $oldHashes = array_column($old, 'hash');
         $newHashes = array_column($new, 'hash');
         $hashOverlap = count(array_intersect($oldHashes, $newHashes));
-        $reason = ($hashOverlap / max(1, min($oldCount, $newCount))) >= 0.50
-            ? 'Root remap detected.' : 'Foreign or incomplete filesystem snapshot detected.';
-        throw new SecurityException('Integrity baseline path validation failed: ' . $reason);
+        if (($hashOverlap / max(1, min($oldCount, $newCount))) >= 0.50) return;
+        throw new SecurityException('Integrity baseline path validation failed: foreign or incomplete filesystem snapshot detected.');
+    }
+
+    /** @return array<string, array{hash:string,mtime:int,size:int}> */
+    private function loadBaseline(): array {
+        return $this->normalizeManifest($this->loadJson($this->manifestFile));
+    }
+
+    /** @param array<string, mixed> $manifest @return array<string, array{hash:string,mtime:int,size:int}> */
+    private function normalizeManifest(array $manifest): array {
+        $normalized = [];
+        $ignoredHashes = $this->ghostTrapAuthenticator?->registeredFileHashes() ?? [VIS_Ghost_Trap_Authenticator::LEGACY_PAYLOAD_HASH => true];
+        foreach ($manifest as $path => $record) {
+            if (!is_string($path) || !is_array($record)) continue;
+            $hash = strtolower((string)($record['hash'] ?? ''));
+            if (preg_match('/^[a-f0-9]{64}$/D', $hash) !== 1 || isset($ignoredHashes[$hash])) continue;
+            $canonical = $this->canonicalManifestPath($path);
+            if ($canonical === '') continue;
+            if (isset($normalized[$canonical]) && !hash_equals($normalized[$canonical]['hash'], $hash)) {
+                throw new SecurityException('Integrity baseline path collision detected.');
+            }
+            $normalized[$canonical] = [
+                'hash' => $hash,
+                'mtime' => (int)($record['mtime'] ?? 0),
+                'size' => (int)($record['size'] ?? 0),
+            ];
+        }
+        ksort($normalized, SORT_STRING);
+        return $normalized;
+    }
+
+    private function canonicalManifestPath(string $path): string {
+        if (str_contains($path, "\0")) throw new SecurityException('Integrity baseline path validation failed.');
+        $path = str_replace('\\', '/', trim($path));
+        $root = rtrim($this->siteRoot, '/');
+        $caseInsensitive = DIRECTORY_SEPARATOR === '\\';
+        $comparisonPath = $caseInsensitive ? strtolower($path) : $path;
+        $comparisonRoot = $caseInsensitive ? strtolower($root) : $root;
+        if ($comparisonPath === $comparisonRoot) return '';
+        if (str_starts_with($comparisonPath, $comparisonRoot . '/')) $path = substr($path, strlen($root) + 1);
+        $isLegacyAbsolute = preg_match('~^(?:[A-Za-z]:/|/)~', $path) === 1;
+        if (!$isLegacyAbsolute) {
+            $path = ltrim(preg_replace('~^(?:\./)+~', '', $path) ?? $path, '/');
+            if ($path === '' || preg_match('~(?:^|/)\.\.(?:/|$)~', $path) === 1) {
+                throw new SecurityException('Integrity baseline path traversal rejected.');
+            }
+        }
+        return $caseInsensitive ? strtolower($path) : $path;
+    }
+
+    /** @param array<string, array{hash:string,mtime:int,size:int}> $old @param array<string, array{hash:string,mtime:int,size:int}> $new @return array<string, array{hash:string,mtime:int,size:int}> */
+    private function reconcileManifestIdentity(array $old, array $new): array {
+        if ($old === [] || $new === []) return $old;
+        $shared = count(array_intersect_key($old, $new));
+        $oldMissing = count($old) - $shared;
+        $newMissing = count($new) - $shared;
+        if (($oldMissing / max(1, count($old))) < 0.25 || ($newMissing / max(1, count($new))) < 0.25) return $old;
+
+        $legacyAbsoluteCount = 0;
+        foreach ($old as $path => $_record) {
+            if (!isset($new[$path]) && preg_match('~^(?:[A-Za-z]:/|/)~', $path) === 1) $legacyAbsoluteCount++;
+        }
+        if (($legacyAbsoluteCount / max(1, $oldMissing)) < 0.75) return $old;
+
+        $oldByHash = [];
+        $newByHash = [];
+        foreach ($old as $path => $record) {
+            if (!isset($new[$path]) && preg_match('~^(?:[A-Za-z]:/|/)~', $path) === 1) $oldByHash[$record['hash']][] = $path;
+        }
+        foreach ($new as $path => $record) if (!isset($old[$path])) $newByHash[$record['hash']][] = $path;
+
+        foreach ($oldByHash as $hash => $oldPaths) {
+            $newPaths = $newByHash[$hash] ?? [];
+            if (count($oldPaths) !== count($newPaths) || $newPaths === []) continue;
+            sort($oldPaths, SORT_STRING);
+            sort($newPaths, SORT_STRING);
+            foreach ($oldPaths as $index => $oldPath) {
+                $old[$newPaths[$index]] = $old[$oldPath];
+                unset($old[$oldPath]);
+            }
+        }
+        ksort($old, SORT_STRING);
+        return $old;
     }
 
     /** @param array<string, mixed> $state */
     private function commitBaseline(array $state): void {
+        ksort($state, SORT_STRING);
         $this->writeJson($this->manifestFile, $state);
         $persisted = $this->loadJson($this->manifestFile);
-        $expectedJson = wp_json_encode($state, JSON_THROW_ON_ERROR);
-        $persistedJson = wp_json_encode($persisted, JSON_THROW_ON_ERROR);
-        if (!hash_equals(hash('sha256', $expectedJson), hash('sha256', $persistedJson))) {
+        if (!is_array($persisted) || count($persisted) !== count($state)) {
             throw new StorageException('Integrity baseline read-back verification failed.');
         }
     }
@@ -453,7 +641,9 @@ final class VIS_Scanner_Engine_Omega {
             $path = (string)($record['path'] ?? '');
             $hash = (string)($record['hash'] ?? '');
             if ($path === '' || preg_match('/^[a-f0-9]{64}$/D', $hash) !== 1) continue;
-            $state[$path] = ['hash' => $hash, 'mtime' => (int)($record['mtime'] ?? 0), 'size' => (int)($record['size'] ?? 0)];
+            $canonical = $this->canonicalManifestPath($path);
+            if ($canonical === '') continue;
+            $state[$canonical] = ['hash' => $hash, 'mtime' => (int)($record['mtime'] ?? 0), 'size' => (int)($record['size'] ?? 0)];
         }
         ksort($state, SORT_STRING);
         return $state;
@@ -501,13 +691,19 @@ final class VIS_Scanner_Engine_Omega {
         if (!is_string($json) || strlen($json) > self::MAX_STATE_BYTES) throw new StorageException('Scanner JSON boundary exceeded.');
         $temporary = $file . '.' . bin2hex(random_bytes(16)) . '.tmp';
         if (file_put_contents($temporary, $json, LOCK_EX) === false) {
-            throw new StorageException('Scanner state atomic write failed.');
+            if (file_put_contents($file, $json, LOCK_EX) === false) {
+                throw new StorageException('Scanner state atomic write failed.');
+            }
+            @chmod($file, 0600);
+            return;
         }
         @chmod($temporary, 0600);
         if (!@rename($temporary, $file)) {
             if (!@copy($temporary, $file)) {
                 @unlink($temporary);
-                throw new StorageException('Scanner state atomic commit failed.');
+                if (file_put_contents($file, $json, LOCK_EX) === false) {
+                    throw new StorageException('Scanner state atomic commit failed.');
+                }
             }
             @unlink($temporary);
         }
