@@ -563,6 +563,11 @@ Tests:
 ### Wird verwendet von
 - `VIS_Bootstrapper::engage_phase_1()` (Priority 1)
 
+### AEGIS Oracle - KI 
+- Anbindung an Groq
+- OSS 20B Safeguard für Sicherheitschecks 
+- [Datenblatt](https://console.groq.com/docs/model/openai/gpt-oss-safeguard-20b)
+
 ---
 
 ## Modul: Prometheus (Behavioral Profiler & Heuristics)
