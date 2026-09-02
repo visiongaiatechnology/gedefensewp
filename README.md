@@ -358,6 +358,11 @@ AEGIS is the deep application-layer inspection engine, analyzing structured para
 - **File Inclusion & Traversal**: `php://filter`, `data://`, `expect://`, LFI/RFI, and phar deserialization.
 - **Recursive Inspection**: Deep analysis up to 15 levels into nested JSON, multipart boundaries, and URI parameters.
 
+### AEGIS Oracle - KI 
+- Anbindung an Groq
+- OSS 20B Safeguard für Sicherheitschecks 
+- [Datenblatt](https://console.groq.com/docs/model/openai/gpt-oss-safeguard-20b)
+
 ---
 
 # 3. PROMETHEUS — Behavioral Threat Horizon
