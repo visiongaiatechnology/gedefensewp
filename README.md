@@ -33,7 +33,8 @@
 
 ---
 
-<img width="2332" height="1183" alt="image" src="https://github.com/user-attachments/assets/b97ed4da-f7a1-4343-a46d-ab8bb1e3feb9" />
+<img width="2338" height="1184" alt="image" src="https://github.com/user-attachments/assets/9fcc11ca-1e91-47e2-a19f-d8c875dd1e15" />
+
 
 ---
 
@@ -42,6 +43,9 @@
 > **Changelog Overview**: Version 8.1.0 represents a massive architectural leap, introducing the **ZEUS Next Generation Pre-Boot Admission Kernel**, the **TRINITY Autonomous Closed-Loop XDR Fabric**, formalized **TITAN Assurance Lifecycles**, and comprehensive **Strict-Typing and Localization Refactoring** across the entire platform.
 
 ---
+
+<img width="2332" height="1182" alt="image" src="https://github.com/user-attachments/assets/48715b64-eeda-4441-ab60-520f67d2cb9e" />
+
 
 ## ⚡ 1. ZEUS Next Generation — Pre-Boot Admission Control & Edge Defense Kernel
 *Transformed ZEUS from a static filter into an ultra-fast, zero-allocation pre-boot admission control and edge defense kernel operating at Layer 0 prior to WordPress application boot.*
@@ -58,11 +62,19 @@
 
 ---
 
+<img width="2329" height="1188" alt="image" src="https://github.com/user-attachments/assets/5fba284e-d2a2-403a-b220-6b7935efc5c6" />
+
+
 ## 🛰️ 2. TRINITY XDR — Autonomous Closed-Loop Extended Detection & Response
 *Unified multi-sensor security event fabric correlating signals across AEGIS, Prometheus, Morpheus, Styx, Cerberus, and Zeus with deterministic, automated containment.*
 
 - **Two-Way Virtual Emergency Route Containment**: When an active vulnerability or exploit is identified on a specific API endpoint (e.g. `/wp-json/vulnerable-plugin/v1/`), TRINITY XDR instantly isolates that specific route prefix at Layer 0 in `zeus-waf.php` with HTTP `503`, while keeping the entire rest of the website 100% online and operational.
 - **Hard Semantic TTL Engine**: Automated responses (Single IP Bans, Subnet Containment, Zeus Route Containment, Mandatory Admission Enforcement, Morpheus Honey Overlays, Styx Egress Isolation) enforce exact semantic expiration timestamps (`expires_at`), releasing containment automatically without requiring WP-Cron execution.
+  
+
+<img width="2329" height="1182" alt="image" src="https://github.com/user-attachments/assets/ee26ac8c-74f7-4343-acde-543944d9bbbc" />
+
+
 - **Configurable TTL Policy Presets & Fine-Tuning**:
   - `CONSERVATIVE`: 5 min Actor Ban / 10 min Subnet Containment / 5 min Route Isolation.
   - `BALANCED`: 15 min Actor Ban / 30 min Subnet Containment / 15 min Route Isolation.
@@ -79,15 +91,26 @@
 
 ---
 
+<img width="2331" height="1190" alt="image" src="https://github.com/user-attachments/assets/c4bb424b-0cde-4231-9e74-15dbfc0a48bc" />
+
+
 ## 🖥️ 3. Next-Gen Cyber-Defense Dashboard & HUD Overhaul
 *Comprehensive visual, structural, and security refactoring of the entire administration interface into a responsive, high-contrast Cyber-Defense Cockpit.*
 
 - **Unified Cyber-Defense HUD & Cockpit Styling**: High-contrast, SOC/NOC-grade dark theme featuring monospace telemetric typography, pulsing activity nodes, glitch headers, synchronized HUD cards, and unified glassmorphic containers across all 34 module views.
 - **Universal Topbar & Form Security Synchronization**: Global action bar featuring unified configuration persistence (`vis-topbar-save`), automatic cryptographic CSRF tokens (`wp_nonce_field('vis_save_config')`) on every configuration view, and robust sub-tab preservation preventing unwanted redirects.
+
+<img width="2326" height="1181" alt="image" src="https://github.com/user-attachments/assets/c8340475-e311-4ed3-b6a7-cc658c8efdeb" />
+
+  
 - **Security Center (Assurance Plane Cockpit)**:
   - **21 Deep Invariant & Architecture Checks**: Evaluates strict runtime baselines, storage path jails, privilege boundaries, Merkle root consistency, memory execution boundaries, and HTTP validation contracts in real time.
   - **Interactive Live Audit Runner**: Client-side audit execution engine with dynamic millisecond duration metering, live terminal log streaming, and reactive posture pills (`HARDENED`, `GUARDED`, `ATTENTION`).
   - **Visual Trust Boundaries & Capability Surface Matrix**: Graphical representation of data flows from untrusted ingress to encrypted storage, and permission zones categorized from Trust Core down to Application extensions.
+
+ <img width="2321" height="1179" alt="image" src="https://github.com/user-attachments/assets/eb02fae0-93b3-447d-9728-a486c9d09a63" />
+
+  
 - **TRINITY XDR NOC Cockpit**:
   - Graphical real-time NOC topology schematic mapping interlocks between AEGIS, Prometheus, Nemesis, and Cerberus.
   - Threat vector distribution progress bar and live intercept audit feed.
@@ -96,6 +119,9 @@
 - **System Status & Telemetry Cockpit**: Live audit overview verifying system health, RAM-cache coverage (APCu / Redis), PHP runtime configuration, and module load integrity for all 19 core security components.
 
 ---
+
+<img width="2340" height="1184" alt="image" src="https://github.com/user-attachments/assets/1ddad410-6b5c-48bd-a5f4-a97e97bb4a7c" />
+
 
 ## 🏛️ 4. TITAN — Web Security Assurance & System Hardening
 *Formalized web assurance lifecycle, advanced browser security policies, and application surface hardening.*
@@ -106,6 +132,9 @@
 
 ---
 
+<img width="2327" height="1185" alt="image" src="https://github.com/user-attachments/assets/ce5ffb39-67cd-47f1-b384-b206c40e232d" />
+
+
 ## 🐺 5. CERBERUS & Edge Isolation
 *Dynamic edge firewall synchronization and high-performance perimeter security.*
 
@@ -113,6 +142,9 @@
 - **Zero-Allocation CIDR Filtering**: High-speed memory-cache lookups supporting IPv4 `/24` and IPv6 `/64` subnets with Cloudflare trusted proxy CIDR resolution.
 
 ---
+
+<img width="2329" height="1180" alt="image" src="https://github.com/user-attachments/assets/3af2406d-08d4-414e-bbfe-eb0aa4dc7258" />
+
 
 ## 🛡️ 6. MORPHEUS RASP & STYX Egress Shield
 *In-memory execution self-protection and outbound zero-trust communication control.*
