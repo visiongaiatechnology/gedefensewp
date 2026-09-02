@@ -8,21 +8,9 @@ declare(strict_types=1);
 if (!defined('ABSPATH')) exit; ?>
 
 <!-- =========================================================================================
-     DECENTRALIZED ASSET INJECTION (CSS)
-     ========================================================================================= -->
-<style>
-    <?php 
-    $sidebar_css_path = __DIR__ . '/sidebar/style.css';
-    if (is_readable($sidebar_css_path)) {
-        echo file_get_contents($sidebar_css_path);
-    }
-    ?>
-</style>
-
-<!-- =========================================================================================
      SIDEBAR DOM
      ========================================================================================= -->
-<aside class="vgt-sidebar">
+<aside class="vgt-sidebar" id="vis-dashboard-sidebar" aria-label="<?php echo esc_attr__('GeDefense Navigation', 'vgt-sentinel'); ?>">
     
     <!-- BRANDING -->
     <div class="vgt-sidebar-brand">
@@ -34,7 +22,7 @@ if (!defined('ABSPATH')) exit; ?>
         </div>
         <div>
             <h2 class="vgt-brand-title"><?php esc_html_e('GEDEFENSE', 'vgt-sentinel'); ?><span><?php esc_html_e('WP', 'vgt-sentinel'); ?></span></h2>
-            <span class="vgt-brand-sub"><?php esc_html_e('OPEN CORE EDITION', 'vgt-sentinel'); ?></span>
+            <a href="https://visiongaiatechnology.de" target="_blank" rel="noopener noreferrer" class="vgt-brand-sub"><?php esc_html_e('by VisionGaiaTechnology', 'vgt-sentinel'); ?></a>
         </div>
     </div>
 
@@ -49,7 +37,7 @@ if (!defined('ABSPATH')) exit; ?>
                 </div>
             <?php else: ?>
                 <!-- KLICKBARES MODUL -->
-                <a href="?page=vgt-suite&tab=<?php echo esc_attr((string)$slug); ?>" 
+                <a href="<?php echo esc_url(add_query_arg(['page' => 'vgt-suite', 'tab' => (string)$slug], admin_url('admin.php'))); ?>" 
                    class="vgt-nav-item <?php echo $active_tab === $slug ? 'active' : ''; ?>">
                     <svg class="vgt-icon" viewBox="0 0 24 24">
                         <?php 
@@ -83,7 +71,7 @@ if (!defined('ABSPATH')) exit; ?>
         </div>
         <div class="vgt-footer-row">
             <span><?php esc_html_e('EDITION', 'vgt-sentinel'); ?></span>
-            <span style="color:#10b981; font-weight:700;"><?php esc_html_e('OPEN CORE (AGPLv3)', 'vgt-sentinel'); ?></span>
+            <span style="color:#10b981; font-weight:700;"><?php echo esc_html(defined('VIS_VERSION') ? VIS_VERSION : 'OPEN CORE (AGPLv3)'); ?></span>
         </div>
         <div class="vgt-footer-row" style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.06); justify-content:space-between;">
             <span><?php esc_html_e('SPRACHE', 'vgt-sentinel'); ?></span>

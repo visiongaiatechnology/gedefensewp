@@ -68,9 +68,28 @@ final class VIS_Sentinel_Export {
             header('Content-Disposition: attachment; filename="vgt-sentinel-export-' . gmdate('Ymd-His') . '.json"');
             header('X-Content-Type-Options: nosniff');
             header('Content-Length: ' . $real_size);
-            $sent = readfile($export_file);
+
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
+            $fp = fopen($export_file, 'rb');
+            if ($fp === false) {
+                @unlink($export_file);
+                throw new StorageException('Export artifact could not be opened for streaming.');
+            }
+
+            $sent = 0;
+            while (!feof($fp)) {
+                $buffer = fread($fp, 65536);
+                if ($buffer === false) break;
+                echo $buffer;
+                $sent += strlen($buffer);
+                if (function_exists('flush')) flush();
+            }
+            fclose($fp);
             @unlink($export_file);
-            if ($sent === false || $sent !== $real_size) {
+            if ($sent !== $real_size) {
                 throw new StorageException('Export artifact transfer failed.');
             }
             exit;

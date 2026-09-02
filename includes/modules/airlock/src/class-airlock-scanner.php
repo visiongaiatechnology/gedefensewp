@@ -83,6 +83,16 @@ final class VIS_Airlock_Scanner {
                 $file['error'] = 'VGT_AIRLOCK_DENIED: Malware policy rejected the upload.';
                 return $file;
             }
+            $digest = hash_file('sha256', $path);
+            if (!is_string($digest)) throw new StorageException('Airlock inspection receipt hashing failed.');
+            set_transient('vis_airlock_receipt_' . $digest, [
+                'sha256' => $digest,
+                'mime' => $real_mime,
+                'size' => $realSize,
+                'risk' => $verdict->risk,
+                'confidence' => $verdict->confidence,
+                'classification' => 'AIRLOCK_INSPECTED_UPLOAD',
+            ], 300);
         } catch (ValidationException $e) {
             $file['error'] = $e->getMessage();
             return $file;

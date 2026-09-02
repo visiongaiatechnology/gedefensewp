@@ -24,15 +24,6 @@ $deployed_count = count($active_manifest);
 <!-- =========================================================================================
      2. DECENTRALIZED ASSET INJECTION (CSS)
      ========================================================================================= -->
-<style>
-    <?php 
-    $ghost_trap_css_path = __DIR__ . '/ghost_trap/style.css';
-    if (is_readable($ghost_trap_css_path)) {
-        echo file_get_contents($ghost_trap_css_path);
-    }
-    ?>
-</style>
-
 <!-- =========================================================================================
      3. VIEW CONTENT
      ========================================================================================= -->
@@ -51,12 +42,7 @@ $deployed_count = count($active_manifest);
         </div>
     </div>
 
-    <form method="post" action="">
-        <?php wp_nonce_field('vis_save_config'); ?>
-        <input type="hidden" name="vis_save_config" value="1">
-        <input type="hidden" name="vis_context" value="ghost_trap">
-
-        <div class="vgt-grid-2">
+    <div class="vgt-grid-2">
             <!-- LEFT COLUMN: SETTINGS -->
             <div class="vgt-panel">
                 <div class="vgt-panel-glow"></div>
@@ -159,6 +145,5 @@ $deployed_count = count($active_manifest);
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
-    </form>
+    </div>
 </div>

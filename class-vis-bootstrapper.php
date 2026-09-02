@@ -63,6 +63,16 @@ final class VIS_Bootstrapper {
 
     public static function engage_phase_1(array $config): void {
         self::ensure_sovereign_temp_dir();
+
+        $xdr = '\\VisionGaia\\GeDefense\\Xdr\\EventFabric';
+        if (class_exists($xdr)) {
+            $xdr::boot();
+        }
+
+        $downloads = '\\VisionGaia\\GeDefense\\Modules\\SecureDownloads\\DownloadManager';
+        if (class_exists($downloads)) {
+            $downloads::boot();
+        }
         
         // Initialize Multilanguage Matrix (I18n)
         if (class_exists('VIS_I18n')) {

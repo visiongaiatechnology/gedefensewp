@@ -63,8 +63,22 @@
     }
 
     .vgt-brand-title { margin: 0; font-size: 18px; color: #fff; font-weight: 800; letter-spacing: 0.7px; line-height: 1.05; white-space: nowrap; }
-    .vgt-brand-title span { color: var(--vgt-neon-blue); margin-left: 4px; }
-    .vgt-brand-sub { font-size: 9px; color: var(--vgt-text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-top: 4px; display: block; font-family: monospace; }
+    .vgt-brand-sub { 
+        font-size: 10px; 
+        color: #ffffff; 
+        letter-spacing: 0.5px; 
+        font-weight: 600; 
+        margin-top: 4px; 
+        display: inline-block; 
+        text-decoration: none; 
+        opacity: 0.9; 
+        transition: color 0.2s ease, opacity 0.2s ease;
+    }
+    .vgt-brand-sub:hover {
+        color: var(--vgt-neon-blue);
+        opacity: 1;
+        text-decoration: underline;
+    }
 
     /* NAVIGATION AREA WITH CUSTOM SCROLLBAR */
     .vgt-sidebar-nav {

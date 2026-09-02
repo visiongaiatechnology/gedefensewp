@@ -28,16 +28,7 @@ if ($api_key !== '' && class_exists('VIS_Vault')) {
 <!-- VGT SUPREME FIX: State-Retention für Global Save -->
 <input type="hidden" name="vis_config[gorgon_enabled]" id="vgt-gorgon-enabled-input" value="<?php echo $gorgon_enabled ? '1' : '0'; ?>">
 
-<style>
-    <?php 
-    $gorgon_css_path = __DIR__ . '/gorgon/style.css';
-    if (is_readable($gorgon_css_path)) {
-        echo file_get_contents($gorgon_css_path);
-    }
-    ?>
-</style>
-
-<div class="vgt-gorgon-wrapper" id="vgt-gorgon-app" data-enabled="<?php echo $gorgon_enabled ? '1' : '0'; ?>" data-key="<?php echo !empty($api_key) ? '1' : '0'; ?>">
+<div class="vgt-gorgon-wrapper" id="vgt-gorgon-app" data-enabled="<?php echo $gorgon_enabled ? '1' : '0'; ?>" data-key="<?php echo !empty($api_key) ? '1' : '0'; ?>" data-gorgon-nonce="<?php echo esc_attr(wp_create_nonce('vgt_gorgon_nonce')); ?>">
 
     <!-- DIAGNOSTIC HUD TOP BAR -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
@@ -48,7 +39,7 @@ if ($api_key !== '' && class_exists('VIS_Vault')) {
                 <span style="font-size: 0.65rem; color: #8b8b9e; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"><?php esc_html_e('Decentralized Threat Sharing Matrix', 'vgt-sentinel'); ?></span>
             </div>
         </div>
-        <button type="button" class="vgt-btn vgt-btn-cyan" style="padding: 8px 16px; font-size: 0.75rem;" onclick="vgtSyncNow()">
+        <button type="button" id="btn-sync-now" class="vgt-btn vgt-btn-cyan" style="padding: 8px 16px; font-size: 0.75rem;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" id="vgt-sync-ico" style="margin-right: 4px;"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
             <?php esc_html_e('Sync Network Now', 'vgt-sentinel'); ?>
         </button>
@@ -76,8 +67,8 @@ if ($api_key !== '' && class_exists('VIS_Vault')) {
             </div>
             
             <div style="margin-top: 30px; display: flex; gap: 15px;">
-                <button type="button" class="vgt-btn vgt-btn-cyan" onclick="vgtSaveConfig()" id="btn-save-config"><?php esc_html_e('Update Config', 'vgt-sentinel'); ?></button>
-                <button type="button" class="vgt-btn vgt-btn-ghost" onclick="checkNexusHealth(true)" id="btn-test-link" style="font-size: 0.75rem;">
+                <button type="button" class="vgt-btn vgt-btn-cyan" id="btn-save-config"><?php esc_html_e('Update Config', 'vgt-sentinel'); ?></button>
+                <button type="button" class="vgt-btn vgt-btn-ghost" id="btn-test-link" style="font-size: 0.75rem;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                     <span id="btn-test-link-text"><?php esc_html_e('Ping Nexus', 'vgt-sentinel'); ?></span>
                 </button>
@@ -159,7 +150,7 @@ if ($api_key !== '' && class_exists('VIS_Vault')) {
             <div class="vgt-node-card">
                 <div class="vgt-node-top">
                     <span style="font-weight:700; font-size:0.95rem; color:#fff;"><?php echo esc_html($id); ?></span>
-                    <button type="button" style="background:none; border:none; color:var(--vgt-red); cursor:pointer; font-size:0.65rem; font-weight:900; letter-spacing: 0.05em; text-transform: uppercase;" onclick="vgtDropNode('<?php echo esc_js($id); ?>')"><?php esc_html_e('DROP SOURCE', 'vgt-sentinel'); ?></button>
+                    <button type="button" class="vgt-drop-node-btn" data-node-id="<?php echo esc_attr($id); ?>" style="background:none; border:none; color:var(--vgt-red); cursor:pointer; font-size:0.65rem; font-weight:900; letter-spacing: 0.05em; text-transform: uppercase;"><?php esc_html_e('DROP SOURCE', 'vgt-sentinel'); ?></button>
                 </div>
                 <div class="vgt-node-content">
                     <code><?php echo esc_html($node['table']); ?></code>
@@ -173,7 +164,7 @@ if ($api_key !== '' && class_exists('VIS_Vault')) {
         <?php endforeach; ?>
 
         <!-- ADD NODE PLACEHOLDER -->
-        <div class="vgt-add-placeholder" onclick="vgtIntegrateNode()">
+        <div class="vgt-add-placeholder" id="btn-integrate-node">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 5px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
             <span style="font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;"><?php esc_html_e('Inject Telemetry Source', 'vgt-sentinel'); ?></span>
         </div>
@@ -185,7 +176,7 @@ if ($api_key !== '' && class_exists('VIS_Vault')) {
             <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin: 0 auto 15px; color: var(--vgt-red); filter: drop-shadow(0 0 5px var(--vgt-red-glow))"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             <h3 style="margin: 0 0 10px 0; font-family: 'Outfit', sans-serif; font-weight: 800; color: #fff; font-size: 1.25rem;"><?php esc_html_e('Neural Link Offline', 'vgt-sentinel'); ?></h3>
             <p style="font-size: 0.85rem; color: #8b8b9e; line-height: 1.5; margin-bottom: 25px;"><?php esc_html_e('Gorgon ist inaktiv. Das globale Immunsystem benötigt die aktive Bridge zum VGT Nexus Backend, um Erkennungen und Banns zu teilen.', 'vgt-sentinel'); ?></p>
-            <button type="button" id="btn-activate-gorgon" class="vgt-btn vgt-btn-cyan" style="width: 100%; justify-content: center;" onclick="vgtEnableGorgon()"><?php esc_html_e('Activate Gorgon Grid', 'vgt-sentinel'); ?></button>
+            <button type="button" id="btn-activate-gorgon" class="vgt-btn vgt-btn-cyan" style="width: 100%; justify-content: center;"><?php esc_html_e('Activate Gorgon Grid', 'vgt-sentinel'); ?></button>
         </div>
     </div>
 
@@ -220,19 +211,10 @@ if ($api_key !== '' && class_exists('VIS_Vault')) {
             </div>
             
             <div style="margin-top: 30px; display: flex; gap: 15px;">
-                <button type="button" class="vgt-btn vgt-btn-ghost" style="flex: 1; justify-content: center;" onclick="vgtCloseModal()"><?php esc_html_e('Cancel', 'vgt-sentinel'); ?></button>
-                <button type="button" class="vgt-btn vgt-btn-cyan" style="flex: 2; justify-content: center;" onclick="vgtSaveNode()"><?php esc_html_e('Inject Source', 'vgt-sentinel'); ?></button>
+                <button type="button" id="btn-cancel-node" class="vgt-btn vgt-btn-ghost" style="flex: 1; justify-content: center;"><?php esc_html_e('Cancel', 'vgt-sentinel'); ?></button>
+                <button type="button" id="btn-save-node" class="vgt-btn vgt-btn-cyan" style="flex: 2; justify-content: center;"><?php esc_html_e('Inject Source', 'vgt-sentinel'); ?></button>
             </div>
         </div>
     </div>
 
 </div>
-
-<script>
-    <?php 
-    $gorgon_js_path = __DIR__ . '/gorgon/script.js';
-    if (is_readable($gorgon_js_path)) {
-        include $gorgon_js_path;
-    }
-    ?>
-</script>

@@ -49,6 +49,7 @@ final class VIS_Security_Center {
             'checks' => $checks,
             'modules' => $modules,
             'boundaries' => self::boundaries(),
+            'titan' => self::titan_health(),
         ];
     }
 
@@ -63,8 +64,8 @@ final class VIS_Security_Center {
             $enabled = array_key_exists($enabledKey, $config) ? !empty($config[$enabledKey]) : true;
             $result[] = [
                 'id' => $id,
-                'label' => $module['label'],
-                'zone' => $module['zone'],
+                'label' => __($module['label'], 'vgt-sentinel'),
+                'zone' => __($module['zone'], 'vgt-sentinel'),
                 'present' => $present,
                 'enabled' => $enabled,
                 'loaded' => class_exists($module['class'], false),
@@ -80,29 +81,29 @@ final class VIS_Security_Center {
         $vault = defined('VIS_VAULT_DIR') ? VIS_VAULT_DIR : '';
         $rateTable = $wpdb->prefix . 'vis_rate_limits';
         $checks = [
-            self::check('strict_types', 'Strict runtime baseline', 'Kernel', defined('VIS_VERSION'), 8, 'Sentinel kernel initialized with a versioned runtime.'),
-            self::check('debug_display', 'Production error disclosure', 'Runtime', !filter_var(ini_get('display_errors'), FILTER_VALIDATE_BOOLEAN), 10, 'display_errors must remain disabled.'),
-            self::check('vault_jail', 'Vault path jail', 'Storage', $vault !== '' && is_dir($vault) && str_starts_with(wp_normalize_path($vault), wp_normalize_path(wp_upload_dir(null, false)['basedir']) . '/'), 9, 'Vault is constrained to the portable WordPress storage boundary.'),
-            self::check('vault_policy', 'Cross-server vault policy', 'Storage', $vault !== '' && is_file($vault . '/.htaccess') && is_file($vault . '/web.config'), 9, 'Apache and IIS access policies are present.'),
-            self::check('rate_table', 'Atomic rate-limit storage', 'Database', $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $rateTable)) === $rateTable, 9, 'Atomic request counters are available.'),
-            self::check('secure_transport', 'Pinned HTTPS transport', 'Network', function_exists('curl_init') && defined('CURLOPT_RESOLVE'), 8, 'Remote mirroring requires DNS pinning support.', 'warn'),
-            self::check('crypto', 'Authenticated cryptography', 'Crypto', function_exists('sodium_crypto_secretbox') || (function_exists('openssl_get_cipher_methods') && in_array('aes-256-gcm', openssl_get_cipher_methods(), true)), 10, 'Authenticated encryption primitive is available.'),
-            self::check('uploads', 'Upload origin primitive', 'Runtime', function_exists('is_uploaded_file') && class_exists('finfo'), 8, 'Upload provenance and content MIME verification are available.'),
-            self::check('security_gate', 'Regression gate deployed', 'Assurance', is_file(VIS_PATH . 'scripts/security-regression.php'), 8, 'Zero-dependency adversarial build gate is present.'),
-            self::check('emergency_bypass', 'Static bypass absence', 'Policy', !self::contains_in_php('VGT_' . 'EMERGENCY_' . 'OVERRIDE'), 10, 'No static firewall bypass is present.'),
-            self::check('throneguard_master', 'ThroneGuard Master Boundary', 'Privilege', class_exists('VIS_Throne_Guard') && (count(get_users(['role' => 'master', 'fields' => 'ids'])) > 0 || current_user_can('manage_options')), 10, 'Master role segregation and superkey lockdown protection are active.'),
-            self::check('throneguard_hardening', 'Admin Capability Boundary', 'Privilege', class_exists('VIS_Throne_Guard') && (!empty(get_option('vis_config', [])['throneguard_harden_admin'])), 9, 'Dangerous capabilities are stripped from standard administrator accounts.', 'warn'),
+            self::check('strict_types', __('Strict runtime baseline', 'vgt-sentinel'), __('Kernel', 'vgt-sentinel'), defined('VIS_VERSION'), 8, __('Sentinel kernel initialized with a versioned runtime.', 'vgt-sentinel')),
+            self::check('debug_display', __('Production error disclosure', 'vgt-sentinel'), __('Runtime', 'vgt-sentinel'), !filter_var(ini_get('display_errors'), FILTER_VALIDATE_BOOLEAN), 10, __('display_errors must remain disabled.', 'vgt-sentinel')),
+            self::check('vault_jail', __('Vault path jail', 'vgt-sentinel'), __('Storage', 'vgt-sentinel'), $vault !== '' && is_dir($vault) && str_starts_with(wp_normalize_path($vault), wp_normalize_path(wp_upload_dir(null, false)['basedir']) . '/'), 9, __('Vault is constrained to the portable WordPress storage boundary.', 'vgt-sentinel')),
+            self::check('vault_policy', __('Cross-server vault policy', 'vgt-sentinel'), __('Storage', 'vgt-sentinel'), $vault !== '' && is_file($vault . '/.htaccess') && is_file($vault . '/web.config'), 9, __('Apache and IIS access policies are present.', 'vgt-sentinel')),
+            self::check('rate_table', __('Atomic rate-limit storage', 'vgt-sentinel'), __('Database', 'vgt-sentinel'), $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $rateTable)) === $rateTable, 9, __('Atomic request counters are available.', 'vgt-sentinel')),
+            self::check('secure_transport', __('Pinned HTTPS transport', 'vgt-sentinel'), __('Network', 'vgt-sentinel'), function_exists('curl_init') && defined('CURLOPT_RESOLVE'), 8, __('Remote mirroring requires DNS pinning support.', 'vgt-sentinel'), 'warn'),
+            self::check('crypto', __('Authenticated cryptography', 'vgt-sentinel'), __('Crypto', 'vgt-sentinel'), function_exists('sodium_crypto_secretbox') || (function_exists('openssl_get_cipher_methods') && in_array('aes-256-gcm', openssl_get_cipher_methods(), true)), 10, __('Authenticated encryption primitive is available.', 'vgt-sentinel')),
+            self::check('uploads', __('Upload origin primitive', 'vgt-sentinel'), __('Runtime', 'vgt-sentinel'), function_exists('is_uploaded_file') && class_exists('finfo'), 8, __('Upload provenance and content MIME verification are available.', 'vgt-sentinel')),
+            self::check('security_gate', __('Regression gate deployed', 'vgt-sentinel'), __('Assurance', 'vgt-sentinel'), is_file(VIS_PATH . 'scripts/security-regression.php'), 8, __('Zero-dependency adversarial build gate is present.', 'vgt-sentinel')),
+            self::check('emergency_bypass', __('Static bypass absence', 'vgt-sentinel'), __('Policy', 'vgt-sentinel'), !self::contains_in_php('VGT_' . 'EMERGENCY_' . 'OVERRIDE'), 10, __('No static firewall bypass is present.', 'vgt-sentinel')),
+            self::check('throneguard_master', __('ThroneGuard Master Boundary', 'vgt-sentinel'), __('Privilege', 'vgt-sentinel'), class_exists('VIS_Throne_Guard') && (count(get_users(['role' => 'master', 'fields' => 'ids'])) > 0 || current_user_can('manage_options')), 10, __('Master role segregation and superkey lockdown protection are active.', 'vgt-sentinel')),
+            self::check('throneguard_hardening', __('Admin Capability Boundary', 'vgt-sentinel'), __('Privilege', 'vgt-sentinel'), class_exists('VIS_Throne_Guard') && (!empty(get_option('vis_config', [])['throneguard_harden_admin'])), 9, __('Dangerous capabilities are stripped from standard administrator accounts.', 'vgt-sentinel'), 'warn'),
         ];
         if ($deep) {
-            $checks[] = self::check('php_integrity', 'PHP source readability', 'Integrity', self::all_php_readable(), 9, 'All deployed PHP sources are readable and hashable.');
-            $checks[] = self::check('dangerous_tls', 'TLS bypass absence', 'Network', !self::contains_in_php('CURLOPT_SSL_' . 'VERIFYPEER => false') && !self::contains_in_php("'ssl" . "verify' => false"), 10, 'No disabled TLS verification pattern detected.');
-            $checks[] = self::check('preview_sandbox', 'Builder origin isolation', 'Application', self::file_contains('includes/builder/views/editor-ui.php', 'sandbox="allow-scripts"') && !self::file_contains('includes/builder/views/editor-ui.php', 'allow-same-origin'), 9, 'Builder preview executes in an opaque browser origin.');
-            $checks[] = self::check('integration_registry', 'Application module registry', 'Application', class_exists('VIS_Module_Registry') && class_exists('VIS_Integration_Bus'), 9, 'Suite modules use one lifecycle and event contract.');
-            $checks[] = self::check('ai_gateway', 'Unified AI egress', 'Network', class_exists('VIS_AI_Gateway') && !self::file_contains('includes/builder/inc/class-vgt-ajax.php', "wp_remote_post('https://api.groq.com"), 10, 'Builder, VLP and VisionGaiaSEO share one bounded egress policy.');
-            $checks[] = self::check('seo_relevance', 'VisionGaiaSEO title relevance', 'Application', self::file_contains('includes/VisionGaiaSEO/includes/class-vg-api-service.php', 'VG_SEO_Relevance::enforce'), 9, 'Generated titles are anchored to the concrete page.');
-            $checks[] = self::check('typed_errors', 'Typed disclosure policy', 'Kernel', class_exists('SecurityException') && class_exists('StorageException'), 8, 'Security and storage failures have separate disclosure policies.');
-            $checks[] = self::check('aegis_detection_only', 'Aegis parser consistency', 'Enforcement', !self::file_contains('includes/modules/aegis/class-vis-aegis.php', 'sanitize_environment()') && self::file_contains('includes/modules/aegis/class-vis-aegis.php', 'MAX_INSPECTED_BYTES'), 10, 'Aegis observes immutable request data under explicit budgets.');
-            $checks[] = self::check('oracle_schema', 'Oracle verdict authorization', 'Analysis', self::file_contains('includes/modules/aegis/class-vis-aegis-oracle.php', 'valid_schema(array $data)') && self::file_contains('includes/modules/aegis/class-vis-aegis-oracle.php', 'MAX_RESPONSE_BYTES'), 9, 'Oracle verdicts require a bounded, typed schema.');
+            $checks[] = self::check('php_integrity', __('PHP source readability', 'vgt-sentinel'), __('Integrity', 'vgt-sentinel'), self::all_php_readable(), 9, __('All deployed PHP sources are readable and hashable.', 'vgt-sentinel'));
+            $checks[] = self::check('dangerous_tls', __('TLS bypass absence', 'vgt-sentinel'), __('Network', 'vgt-sentinel'), !self::contains_in_php('CURLOPT_SSL_' . 'VERIFYPEER => false') && !self::contains_in_php("'ssl" . "verify' => false"), 10, __('No disabled TLS verification pattern detected.', 'vgt-sentinel'));
+            $checks[] = self::check('preview_sandbox', __('Builder origin isolation', 'vgt-sentinel'), __('Application', 'vgt-sentinel'), self::file_contains('includes/builder/views/editor-ui.php', 'sandbox="allow-scripts"') && !self::file_contains('includes/builder/views/editor-ui.php', 'allow-same-origin'), 9, __('Builder preview executes in an opaque browser origin.', 'vgt-sentinel'));
+            $checks[] = self::check('integration_registry', __('Application module registry', 'vgt-sentinel'), __('Application', 'vgt-sentinel'), class_exists('VIS_Module_Registry') && class_exists('VIS_Integration_Bus'), 9, __('Suite modules use one lifecycle and event contract.', 'vgt-sentinel'));
+            $checks[] = self::check('ai_gateway', __('Unified AI egress', 'vgt-sentinel'), __('Network', 'vgt-sentinel'), class_exists('VIS_AI_Gateway') && !self::file_contains('includes/builder/inc/class-vgt-ajax.php', "wp_remote_post('https://api.groq.com"), 10, __('Builder, VLP and VisionGaiaSEO share one bounded egress policy.', 'vgt-sentinel'));
+            $checks[] = self::check('seo_relevance', __('VisionGaiaSEO title relevance', 'vgt-sentinel'), __('Application', 'vgt-sentinel'), self::file_contains('includes/VisionGaiaSEO/includes/class-vg-api-service.php', 'VG_SEO_Relevance::enforce'), 9, __('Generated titles are anchored to the concrete page.', 'vgt-sentinel'));
+            $checks[] = self::check('typed_errors', __('Typed disclosure policy', 'vgt-sentinel'), __('Kernel', 'vgt-sentinel'), class_exists('SecurityException') && class_exists('StorageException'), 8, __('Security and storage failures have separate disclosure policies.', 'vgt-sentinel'));
+            $checks[] = self::check('aegis_detection_only', __('Aegis parser consistency', 'vgt-sentinel'), __('Enforcement', 'vgt-sentinel'), !self::file_contains('includes/modules/aegis/class-vis-aegis.php', 'sanitize_environment()') && self::file_contains('includes/modules/aegis/class-vis-aegis.php', 'MAX_INSPECTED_BYTES'), 10, __('Aegis observes immutable request data under explicit budgets.', 'vgt-sentinel'));
+            $checks[] = self::check('oracle_schema', __('Oracle verdict authorization', 'vgt-sentinel'), __('Analysis', 'vgt-sentinel'), self::file_contains('includes/modules/aegis/class-vis-aegis-oracle.php', 'valid_schema(array $data)') && self::file_contains('includes/modules/aegis/class-vis-aegis-oracle.php', 'MAX_RESPONSE_BYTES'), 9, __('Oracle verdicts require a bounded, typed schema.', 'vgt-sentinel'));
         }
         return $checks;
     }
@@ -113,11 +114,40 @@ final class VIS_Security_Center {
 
     private static function boundaries(): array {
         return [
-            ['from' => 'Internet', 'to' => 'Zeus / Aegis', 'policy' => 'Untrusted request inspection', 'state' => 'enforced'],
-            ['from' => 'Application modules', 'to' => 'Trust Core', 'policy' => 'Explicit capability surface', 'state' => 'mapped'],
-            ['from' => 'Remote network', 'to' => 'Shadow Net', 'policy' => 'Pinned HTTPS, no redirects', 'state' => function_exists('curl_init') ? 'enforced' : 'closed'],
-            ['from' => 'Artifact upload', 'to' => 'Runtime Vault', 'policy' => 'Stage, verify, atomic swap', 'state' => 'enforced'],
-            ['from' => 'Builder content', 'to' => 'Admin browser', 'policy' => 'Opaque-origin iframe sandbox', 'state' => 'enforced'],
+            ['from' => __('Internet', 'vgt-sentinel'), 'to' => 'Zeus / Aegis', 'policy' => __('Untrusted request inspection', 'vgt-sentinel'), 'state' => 'enforced'],
+            ['from' => __('Application modules', 'vgt-sentinel'), 'to' => __('Trust Core', 'vgt-sentinel'), 'policy' => __('Explicit capability surface', 'vgt-sentinel'), 'state' => 'mapped'],
+            ['from' => __('Remote network', 'vgt-sentinel'), 'to' => 'Shadow Net', 'policy' => __('Pinned HTTPS, no redirects', 'vgt-sentinel'), 'state' => function_exists('curl_init') ? 'enforced' : 'closed'],
+            ['from' => __('Artifact upload', 'vgt-sentinel'), 'to' => __('Runtime Vault', 'vgt-sentinel'), 'policy' => __('Stage, verify, atomic swap', 'vgt-sentinel'), 'state' => 'enforced'],
+            ['from' => __('Builder content', 'vgt-sentinel'), 'to' => __('Admin browser', 'vgt-sentinel'), 'policy' => __('Opaque-origin iframe sandbox', 'vgt-sentinel'), 'state' => 'enforced'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    private static function titan_health(): array {
+        $config = get_option('vis_config', []);
+        $enabled = is_array($config) && !empty($config['titan_enabled']);
+        if (!$enabled) return [
+            'POLICY_COMPILER' => 'DISABLED', 'HEADER_MANAGER' => 'DISABLED',
+            'FETCH_METADATA' => 'DISABLED', 'CSP_REPORTER' => 'DISABLED',
+            'SANDBOX' => 'DISABLED', 'SERVER_RULES' => 'DISABLED',
+            'POLICY_STORAGE' => 'DISABLED', 'XDR_SENSOR' => 'DISABLED',
+        ];
+        $runtime = get_option('vis_titan_runtime_health', []);
+        $runtime = is_array($runtime) ? $runtime : [];
+        $server = get_option('vis_titan_server_rule_status', []);
+        $server = is_array($server) ? $server : [];
+        $policy = get_option('vis_titan_policy_state', []);
+        $policy = is_array($policy) ? $policy : [];
+        $serverValidation = class_exists('VIS_Titan_Server_Rules') ? VIS_Titan_Server_Rules::validationSummary() : ['state' => 'INCOMPLETE'];
+        return [
+            'POLICY_COMPILER' => class_exists('VIS_Titan_Policy_Compiler') ? 'HEALTHY' : 'FAILED',
+            'HEADER_MANAGER' => ($runtime['state'] ?? '') === 'SENT' ? 'HEALTHY' : (($runtime['state'] ?? '') === 'DEGRADED' ? 'DEGRADED' : 'INCOMPLETE'),
+            'FETCH_METADATA' => class_exists('VIS_Titan_Runtime') ? 'HEALTHY' : 'FAILED',
+            'CSP_REPORTER' => class_exists('VIS_Titan_Violation_Collector') ? 'HEALTHY' : 'FAILED',
+            'SANDBOX' => class_exists('VIS_Titan_Sandbox') ? (!empty($config['titan_sandbox_origin_verified']) ? 'EXPERIMENTAL' : 'HEALTHY') : 'FAILED',
+            'SERVER_RULES' => ($serverValidation['state'] ?? '') === 'PASS' ? (string)($server['state'] ?? 'INCOMPLETE') : 'FAILED',
+            'POLICY_STORAGE' => !empty($policy['active']) ? 'HEALTHY' : (!empty($policy['candidate']) ? 'DEGRADED' : 'INCOMPLETE'),
+            'XDR_SENSOR' => class_exists('VisionGaia\\GeDefense\\Xdr\\EventFabric') ? 'HEALTHY' : 'FAILED',
         ];
     }
 

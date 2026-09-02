@@ -104,12 +104,21 @@ final class Styx {
         
         if (empty($host)) return $preempt;
 
-        $is_allowed = $this->check_host($host);
         $origin = $this->detect_origin();
+        $is_allowed = $this->check_host($host, $origin);
         
         // Logge das Intent: BLOCKED wird für korrekte UI-Metriken genutzt
         $status = $is_allowed ? 'ALLOWED' : 'BLOCKED';
         $this->queue_log($host, $url, $origin, $status);
+        if (!$is_allowed && class_exists('\VIS_Event_Bus')) {
+            \VIS_Event_Bus::emit(
+                'STYX',
+                'EGRESS_BLOCKED',
+                sprintf('Outbound egress to %s blocked by policy from %s', $host, $origin),
+                ['host' => $host, 'origin' => $origin, 'attribution_confidence' => 100],
+                7
+            );
+        }
 
         if (!$is_allowed) {
             // AUDIT-PASS-THROUGH: Loggen, aber den Request ungehindert durchschleusen
@@ -125,7 +134,30 @@ final class Styx {
         return $preempt;
     }
 
-    private function check_host(string $host): bool {
+    public function check_host(string $host, string $origin = ''): bool {
+        $this->initialize();
+        // Check Temporary XDR Overlays (Hard Semantic TTL & Component-Aware Isolation)
+        $overlays = get_option('vis_styx_xdr_overlays', []);
+        if (is_array($overlays) && !empty($overlays)) {
+            $now = time();
+            foreach ($overlays as $overlay) {
+                if (!is_array($overlay) || empty($overlay['status']) || $overlay['status'] !== 'ACTIVE') continue;
+                if (isset($overlay['expires_at']) && strtotime((string)$overlay['expires_at']) <= $now) continue;
+
+                $target = (string)($overlay['target_component'] ?? '*');
+                if ($target !== '*' && $target !== '') {
+                    $normalizedOrigin = str_ireplace(['PLUGIN: ', 'THEME: '], '', trim($origin));
+                    if (strcasecmp($target, $normalizedOrigin) !== 0) {
+                        continue; // Other plugins and WordPress core remain completely unaffected!
+                    }
+                }
+                
+                $deniedHosts = is_array($overlay['denied_hosts'] ?? null) ? $overlay['denied_hosts'] : [];
+                if (in_array('*', $deniedHosts, true) || in_array($host, $deniedHosts, true)) {
+                    return false;
+                }
+            }
+        }
         // O(1) Exact Match
         if (isset($this->exact_hosts[$host])) return true;
         
@@ -189,6 +221,31 @@ final class Styx {
             'origin'    => $origin,
             'status'    => $status
         ];
+    }
+
+    public function add_xdr_overlay(string $incidentId, string $responseId, string $targetComponent = '*', array $deniedHosts = ['*'], int $ttl = 900): void {
+        $overlays = get_option('vis_styx_xdr_overlays', []);
+        if (!is_array($overlays)) $overlays = [];
+        $overlays[$incidentId] = [
+            'incident_id'      => $incidentId,
+            'response_id'      => $responseId,
+            'target_component' => $targetComponent,
+            'denied_hosts'     => $deniedHosts,
+            'created_at'       => gmdate('Y-m-d H:i:s'),
+            'expires_at'       => gmdate('Y-m-d H:i:s', time() + $ttl),
+            'status'           => 'ACTIVE',
+        ];
+        update_option('vis_styx_xdr_overlays', $overlays, false);
+    }
+
+    public function remove_xdr_overlay(string $incidentId, ?string $responseId = null): void {
+        $overlays = get_option('vis_styx_xdr_overlays', []);
+        if (is_array($overlays) && isset($overlays[$incidentId])) {
+            if ($responseId === null || ($overlays[$incidentId]['response_id'] ?? '') === $responseId) {
+                unset($overlays[$incidentId]);
+                update_option('vis_styx_xdr_overlays', $overlays, false);
+            }
+        }
     }
 
     public function flush_logs(): void {

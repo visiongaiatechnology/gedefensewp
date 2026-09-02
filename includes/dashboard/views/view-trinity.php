@@ -3,6 +3,34 @@ declare(strict_types=1);
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+$xdr_section = isset($_GET['xdr_section']) && is_string($_GET['xdr_section']) ? sanitize_key($_GET['xdr_section']) : 'overview';
+$xdr_sections = [
+    'overview' => __('Lagebild', 'vgt-sentinel'),
+    'incidents' => __('Incidents', 'vgt-sentinel'),
+    'stories' => __('Attack Stories', 'vgt-sentinel'),
+    'entities' => __('Entities', 'vgt-sentinel'),
+    'responses' => __('Responses', 'vgt-sentinel'),
+    'evidence' => __('Evidence', 'vgt-sentinel'),
+    'policy' => __('Policy', 'vgt-sentinel'),
+    'events' => __('Events', 'vgt-sentinel'),
+    'health' => __('Health', 'vgt-sentinel'),
+    'grid' => __('Grid-Konfiguration', 'vgt-sentinel'),
+];
+if (!array_key_exists($xdr_section, $xdr_sections)) $xdr_section = 'overview';
+?>
+<nav class="vgt-xdr-nav" aria-label="<?php echo esc_attr__('TRINITY XDR Bereiche', 'vgt-sentinel'); ?>">
+    <?php foreach ($xdr_sections as $section_key => $section_label): ?>
+        <a class="vgt-xdr-nav-link<?php echo $xdr_section === $section_key ? ' is-active' : ''; ?>"
+           href="<?php echo esc_url(admin_url('admin.php?page=vgt-suite&tab=trinity&xdr_section=' . $section_key)); ?>"
+           <?php echo $xdr_section === $section_key ? 'aria-current="page"' : ''; ?>><?php echo esc_html($section_label); ?></a>
+    <?php endforeach; ?>
+</nav>
+<?php
+if ($xdr_section !== 'grid') {
+    require __DIR__ . '/view-xdr.php';
+    return;
+}
+
 global $wpdb;
 
 $trinity_config = get_option('vis_trinity_config', []);
@@ -94,15 +122,6 @@ $cerberus_pct= round(($cerberus_count / $total_vectors) * 100);
 
 $wpdb->suppress_errors($suppress);
 ?>
-
-<style>
-    <?php 
-    $css_path = __DIR__ . '/trinity/style.css';
-    if (is_readable($css_path)) {
-        echo file_get_contents($css_path);
-    }
-    ?>
-</style>
 
 <div class="vgt-module-container trinity-core">
     
@@ -377,6 +396,12 @@ $wpdb->suppress_errors($suppress);
             </div>
         </div>
 
+        <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+            <?php wp_nonce_field('vis_save_config'); ?>
+            <input type="hidden" name="vis_context" value="trinity">
+            <input type="hidden" name="xdr_section" value="grid">
+            <button type="submit" name="vis_save_config" value="1" class="vis-btn vis-btn-primary"><?php esc_html_e('Grid-Konfiguration speichern', 'vgt-sentinel'); ?></button>
+        </div>
     </div>
 
 </div>

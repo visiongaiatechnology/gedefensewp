@@ -59,3 +59,53 @@
 .vgt-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--vgt-text-muted); transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 50%; }
 .vgt-switch input:checked + .vgt-slider { background-color: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); }
 .vgt-switch input:checked + .vgt-slider:before { transform: translateX(22px); background-color: var(--vgt-neon-green); box-shadow: 0 0 10px var(--vgt-neon-green); }
+
+/* STATUS: DIAMANT VGT SUPREME */
+.vgt-addon-uploader {
+        border: 2px dashed rgba(59, 130, 246, 0.4);
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        background: rgba(15, 23, 42, 0.4);
+        transition: all 0.2s ease;
+        margin-bottom: 24px;
+        cursor: pointer;
+    }
+    .vgt-addon-uploader:hover, .vgt-addon-uploader.dragover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.08);
+    }
+    .vgt-badge-installed {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .vgt-badge-uninstalled {
+        background: rgba(148, 163, 184, 0.1);
+        color: #94a3b8;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .vgt-btn-danger-outline {
+        background: transparent;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #ef4444;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .vgt-btn-danger-outline:hover {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: #ef4444;
+    }

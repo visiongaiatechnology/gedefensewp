@@ -290,12 +290,12 @@ $connection_color = $aios_active ? '#10b981' : '#ef4444';
                 <p style="font-size:12px; color:var(--vgt-text-dim); margin:4px 0 0 30px;">Kombinierte Konfigurations-Analyse von GeDefense WP Core & AIOS Perimeter.</p>
             </div>
             <div style="text-align:right;">
-                <div style="font-size:36px; font-weight:900; color:#fff; line-height:1; font-family:monospace;"><?php echo $synergy_score; ?>%</div>
+                <div style="font-size:36px; font-weight:900; color:#fff; line-height:1; font-family:monospace;"><?php echo (int)$synergy_score; ?>%</div>
                 <div style="font-size:10px; font-weight:800; color:var(--vgt-neon-green); letter-spacing:2px; margin-top:4px;">OMEGA STATUS</div>
             </div>
         </div>
         <div style="background:rgba(255,255,255,0.05); height:6px; border-radius:3px; overflow:hidden; position:relative;">
-            <div style="background:var(--vgt-neon-blue); width:<?php echo $synergy_score; ?>%; height:100%; box-shadow: 0 0 15px var(--vgt-neon-blue); transition: width 1s ease-in-out;"></div>
+            <div style="background:var(--vgt-neon-blue); width:<?php echo (int)$synergy_score; ?>%; height:100%; box-shadow: 0 0 15px var(--vgt-neon-blue); transition: width 1s ease-in-out;"></div>
         </div>
     </div>
 
@@ -314,9 +314,9 @@ $connection_color = $aios_active ? '#10b981' : '#ef4444';
                 </h2>
                 <div style="font-size:12px; color:var(--vgt-text-dim); margin-top:4px; font-family:monospace; display:flex; align-items:center; gap:8px;">
                     Connection Status:
-                    <span class="<?php echo $connection_pulse; ?>" style="display:inline-flex; align-items:center; gap:6px;">
+                    <span class="<?php echo esc_attr((string)$connection_pulse); ?>" style="display:inline-flex; align-items:center; gap:6px;">
                         <span class="vgt-status-pulse"></span>
-                        <strong style="color:<?php echo $connection_color; ?>; letter-spacing:0.5px;">
+                        <strong style="color:<?php echo esc_attr((string)$connection_color); ?>; letter-spacing:0.5px;">
                             <?php echo $aios_active ? 'ACTIVE & LINKED' : 'DISCONNECTED'; ?>
                         </strong>
                     </span>
@@ -350,8 +350,8 @@ $connection_color = $aios_active ? '#10b981' : '#ef4444';
             <div class="vgt-glass-panel" style="margin-bottom:0;">
                 <div class="vgt-table-header">
                     <h3>
-                        <span class="dashicons <?php echo $group['icon']; ?>" style="color:var(--vgt-neon-orange); margin-right:6px;"></span> 
-                        <?php echo $group['title']; ?>
+                        <span class="dashicons <?php echo esc_attr((string)$group['icon']); ?>" style="color:var(--vgt-neon-orange); margin-right:6px;"></span> 
+                        <?php echo esc_html((string)$group['title']); ?>
                     </h3>
                 </div>
                 
@@ -361,12 +361,12 @@ $connection_color = $aios_active ? '#10b981' : '#ef4444';
                         <tr>
                             <td>
                                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
-                                    <strong style="color:#e2e8f0; font-size:13px; letter-spacing:0.5px;"><?php echo $item['label']; ?></strong>
-                                    <?php echo vis_render_status($item['key'], $db_configs, $fw_configs); ?>
+                                    <strong style="color:#e2e8f0; font-size:13px; letter-spacing:0.5px;"><?php echo esc_html((string)$item['label']); ?></strong>
+                                    <?php echo wp_kses_post(vis_render_status($item['key'], $db_configs, $fw_configs)); ?>
                                 </div>
                                 
                                 <div style="font-size:11px; color:var(--vgt-text-dim); line-height:1.5; margin-bottom:12px;">
-                                    <?php echo $item['desc']; ?>
+                                    <?php echo esc_html((string)$item['desc']); ?>
                                 </div>
                                 
                                 <?php 
@@ -375,7 +375,7 @@ $connection_color = $aios_active ? '#10b981' : '#ef4444';
                                     
                                     if(!$is_active): 
                                 ?>
-                                    <a href="<?php echo admin_url($item['link']); ?>" target="_blank" class="vgt-btn vgt-btn-danger-ghost">
+                                    <a href="<?php echo esc_url(admin_url((string)$item['link'])); ?>" target="_blank" rel="noopener noreferrer" class="vgt-btn vgt-btn-danger-ghost">
                                         <span class="dashicons dashicons-admin-tools" style="font-size:12px; margin-right:4px;"></span> FIX IT
                                     </a>
                                 <?php endif; ?>

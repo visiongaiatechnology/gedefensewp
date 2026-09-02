@@ -104,6 +104,10 @@ $required = [
         'AEGIS interlock route' => 'public static function onAegisStrike(',
         'Prometheus mitigation route' => 'public static function onPrometheusMitigation(',
         'bounded WAF penalty' => "max(0.0, min(100.0",
+        'canonical XDR signal bridge' => 'private static function emitXdr(',
+        'offline scanner system actor' => '\'session_id\' => $source === \'INTEGRITY\' ? \'integrity-scanner-system\'',
+        'offline scanner event isolation' => '$source !== \'INTEGRITY\' && class_exists(\'VIS_Event_Bus\')',
+        'offline scanner response isolation' => '$source !== \'INTEGRITY\' && $risk >= 90',
     ],
     'includes/modules/aegis/class-vis-aegis.php' => [
         'public deterministic assessment' => 'public function assess_payload(',
@@ -132,8 +136,11 @@ $required = [
         'resumable jailed indexing' => 'private function continueIndexing(',
         'append-only scan state' => 'current_scan.ndjson',
         'symlink rejection' => 'is_link($candidate)',
-        'malware correlation' => 'VIS_Trinity_Grid::onMalwareFinding(',
+        'malware correlation' => 'private function emitIntegrityScanSummary(',
         'quarantine integration' => 'new VIS_Quarantine_Store()',
+        'per-file durable scan cursor' => '$committedByteOffset = ftell($handle);',
+        'bounded XDR scan summary' => "'event_type' => 'INTEGRITY_SCAN_FINDINGS_SUMMARY'",
+        'scanner XDR context isolation' => "'role' => 'CONTEXT'",
     ],
     'includes/scanner/class-vis-malware-engine.php' => [
         'shared malware kernel' => 'final class VIS_Malware_Engine',
@@ -145,6 +152,15 @@ $required = [
         'shared client IP resolution' => "VIS_Security', 'client_ip'",
         'AEGIS whitelist coverage' => "aegis_whitelist_ips",
         'Prometheus whitelist coverage' => "prometheus_whitelist_ips",
+    ],
+    'includes/xdr/class-xdr-policy-engine.php' => [
+        'multi-sensor response authority' => '$independentCategories >= 2',
+        'confidence response threshold' => '$confidence >= 80',
+    ],
+    'includes/modules/downloads/class-secure-download-manager.php' => [
+        'exact trusted request shape' => 'count($_GET) !== 1',
+        'download integrity verification' => 'hash_equals((string)$record->file_hash, $digest)',
+        'download path jail' => 'str_starts_with($path, $directory . DIRECTORY_SEPARATOR)',
     ],
     'includes/modules/throneguard/class-vis-throne-guard.php' => [
         'master capability boundary' => 'mcp_master_access',
@@ -158,9 +174,9 @@ $required = [
         'URL protocol sanitizer' => 'esc_url_raw(trim($value)',
     ],
     'assets/js/vis-scanner-client.js' => [
-        'accepted baseline terminal state' => "STATE.mode === 'reindex' && (status === 'clean' || status === 'init')",
-        'accepted baseline remains live' => 'if (!baselineAccepted)',
-        'single completion timer' => 'window.clearTimeout(completionTimer)',
+        'accepted baseline terminal state' => "const clean = status === 'clean' || status === 'init'",
+        'accepted baseline refreshes report' => 'addCloseButton(true)',
+        'single cycle timer' => 'window.clearTimeout(cycleTimer)',
     ],
     'scripts/sentinel-threat-benchmark.php' => [
         'supported payload API' => 'assess_payload(',

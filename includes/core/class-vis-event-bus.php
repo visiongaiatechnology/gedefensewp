@@ -31,24 +31,41 @@ final class VIS_Event_Bus {
     public static function ingest(array $event): void {
         global $wpdb;
 
+        $ip = self::ip((string)($event['ip'] ?? ''));
+        $module = self::token((string)($event['module'] ?? 'SYSTEM'), 32);
+        $type = self::token((string)($event['type'] ?? 'EVENT'), 32);
+        $severity = max(1, min(10, (int)($event['severity'] ?? 1)));
+        $message = self::message((string)($event['message'] ?? ''));
+        $context = is_array($event['context'] ?? null) ? $event['context'] : [];
+
+        // 1. DIRECT XDR EVENT FABRIC DELIVERY (Zero Loss / Own Dedupe Engine)
+        $fabric = '\VisionGaia\GeDefense\Xdr\EventFabric';
+        if (class_exists($fabric)) {
+            $xdrPayload = $event;
+            $xdrPayload['module'] = $module;
+            $xdrPayload['type'] = $type;
+            $xdrPayload['severity'] = $severity;
+            $xdrPayload['ip'] = $ip;
+            $xdrPayload['context'] = $context;
+            $fabric::ingestLegacy($xdrPayload);
+        }
+
         if (!isset($wpdb) || !($wpdb instanceof \wpdb)) {
             return;
         }
 
-        $ip = self::ip((string)($event['ip'] ?? ''));
-
-        // VGT-OMNI-GUARD: Log Flooding Protection (Database Denial of Service prevention)
+        // 2. LEGACY HUMAN LOG FLOOD PROTECTION (Database Denial of Service prevention)
         $limit_key = 'vgt_log_flood_' . md5($ip);
         $attempts = (int) get_transient($limit_key);
         if ($attempts >= 10) {
             if ($attempts === 10) {
-                // Log warning once that this IP is throttled
+                // Log warning once that this IP is throttled for human logs
                 $wpdb->insert(
                     $wpdb->prefix . (defined('VIS_TABLE_LOGS') ? VIS_TABLE_LOGS : 'vis_omega_logs'),
                     [
                         'module'    => 'SYSTEM',
                         'type'      => 'THROTTLE',
-                        'message'   => 'Log flood limit reached for IP. Subsequent events suppressed for 60 seconds.',
+                        'message'   => 'Log flood limit reached for IP. Subsequent legacy events suppressed for 60 seconds.',
                         'ip'        => $ip,
                         'severity'  => 5,
                         'timestamp' => current_time('mysql'),
@@ -60,12 +77,6 @@ final class VIS_Event_Bus {
             return;
         }
         set_transient($limit_key, $attempts + 1, 60);
-
-        $module = self::token((string)($event['module'] ?? 'SYSTEM'), 32);
-        $type = self::token((string)($event['type'] ?? 'EVENT'), 32);
-        $severity = max(1, min(10, (int)($event['severity'] ?? 1)));
-        $message = self::message((string)($event['message'] ?? ''));
-        $context = is_array($event['context'] ?? null) ? $event['context'] : [];
 
         if ($context !== []) {
             try {

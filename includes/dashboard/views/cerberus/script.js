@@ -1,52 +1,63 @@
-let currentUnbanIp = null;
+// STATUS: DIAMANT VGT SUPREME
+(() => {
+    'use strict';
 
-function vgt_trigger_unban_modal(ip) {
-    currentUnbanIp = ip;
-    document.getElementById('vgt-modal-ip-display').innerText = ip;
-    
+    let currentUnbanIp = null;
+
     const modal = document.getElementById('vgt-unban-modal');
-    modal.style.display = 'flex';
-    // Kleine Verzögerung für CSS Transition
-    setTimeout(() => { modal.classList.add('active'); }, 10);
-}
+    const ipDisplay = document.getElementById('vgt-modal-ip-display');
+    const executeBtn = document.getElementById('vgt-execute-unban-btn');
 
-function vgt_close_unban_modal() {
-    const modal = document.getElementById('vgt-unban-modal');
-    modal.classList.remove('active');
-    setTimeout(() => { 
-        modal.style.display = 'none'; 
-        currentUnbanIp = null;
-        // Reset Button falls er auf "Processing" stand
-        const btn = document.getElementById('vgt-execute-unban-btn');
-        btn.innerHTML = 'EXECUTE UNBAN';
-        btn.classList.remove('processing');
-    }, 300);
-}
+    window.vgt_trigger_unban_modal = (ip) => {
+        if (!modal || !ipDisplay) return;
+        currentUnbanIp = ip;
+        ipDisplay.textContent = ip;
+        modal.style.display = 'flex';
+        setTimeout(() => { modal.classList.add('active'); }, 10);
+    };
 
-document.getElementById('vgt-execute-unban-btn').addEventListener('click', function(e) {
-    e.preventDefault();
-    if (!currentUnbanIp) return;
-    
-    const btn = this;
-    btn.innerHTML = '<span class="pulse-dot"></span> PROCESSING...';
-    btn.classList.add('processing');
-    
-    jQuery.post(ajaxurl, {
-        action: 'vis_dashboard_unban_ip',
-        ip: currentUnbanIp,
-        nonce: '<?php echo wp_create_nonce("vis_dashboard_nonce"); ?>' 
-    }, function(response) {
-        if (response.success) {
-            btn.innerHTML = 'SUCCESS';
-            btn.style.background = '#10b981'; // Grün bei Erfolg
-            btn.style.borderColor = '#10b981';
-            setTimeout(() => { location.reload(); }, 600);
-        } else {
-            alert('VGT DB ERROR: ' + (response.data || 'Unban failed.'));
-            vgt_close_unban_modal();
-        }
-    }).fail(function() {
-        alert('VGT NETWORK ERROR: Server Uplink failed.');
-        vgt_close_unban_modal();
-    });
-});
+    window.vgt_close_unban_modal = () => {
+        if (!modal) return;
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            currentUnbanIp = null;
+            if (executeBtn) {
+                executeBtn.textContent = 'EXECUTE UNBAN';
+                executeBtn.classList.remove('processing');
+            }
+        }, 300);
+    };
+
+    if (executeBtn instanceof HTMLButtonElement) {
+        executeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!currentUnbanIp) return;
+
+            executeBtn.textContent = 'PROCESSING…';
+            executeBtn.classList.add('processing');
+
+            const nonce = (window.visConfig && window.visConfig.nonce) ? window.visConfig.nonce : '';
+            const ajaxUrl = (window.visConfig && window.visConfig.ajaxUrl) ? window.visConfig.ajaxUrl : (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+
+            jQuery.post(ajaxUrl, {
+                action: 'vis_dashboard_unban_ip',
+                ip: currentUnbanIp,
+                nonce: nonce
+            }, (response) => {
+                if (response && response.success) {
+                    executeBtn.textContent = 'SUCCESS';
+                    executeBtn.style.background = '#10b981';
+                    executeBtn.style.borderColor = '#10b981';
+                    setTimeout(() => { location.reload(); }, 600);
+                } else {
+                    alert('VGT DB ERROR: ' + ((response && response.data) ? response.data : 'Unban failed.'));
+                    window.vgt_close_unban_modal();
+                }
+            }).fail(() => {
+                alert('VGT NETWORK ERROR: Server Uplink failed.');
+                window.vgt_close_unban_modal();
+            });
+        });
+    }
+})();

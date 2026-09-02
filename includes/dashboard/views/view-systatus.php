@@ -159,15 +159,6 @@ $security_failures = array_values(array_filter($security_checks, static fn(array
 <!-- =========================================================================================
      2. DECENTRALIZED ASSET INJECTION (CSS)
      ========================================================================================= -->
-<style>
-    <?php 
-    $systatus_css_path = __DIR__ . '/systatus/style.css';
-    if (is_readable($systatus_css_path)) {
-        echo file_get_contents($systatus_css_path);
-    }
-    ?>
-</style>
-
 <div class="vgt-noc-ui">
 
     <!-- HERO HEADER -->
@@ -321,7 +312,7 @@ $security_failures = array_values(array_filter($security_checks, static fn(array
                 <?php foreach ($score_details as $detail): ?>
                     <div class="vgt-score-item <?php echo $detail['active'] ? 'active' : 'inactive'; ?>">
                         <span class="vgt-status-dot" style="background: <?php echo $detail['active'] ? '#10b981' : '#ef4444'; ?>; box-shadow: 0 0 8px <?php echo $detail['active'] ? '#10b981' : '#ef4444'; ?>;"></span>
-                        <span><?php echo esc_html($detail['name']); ?></span>
+                        <span><?php echo esc_html(__($detail['name'], 'vgt-sentinel')); ?></span>
                         <span style="margin-left: auto; opacity: 0.6; font-size: 10px;"><?php echo esc_html((string)$detail['weight']); ?>%</span>
                     </div>
                 <?php endforeach; ?>

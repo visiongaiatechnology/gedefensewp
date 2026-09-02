@@ -30,6 +30,27 @@ final class VIS_Chronos_Alerter {
 
     public function log_internal_event(array $result): void {
         try {
+            if (class_exists('VIS_Event_Bus')) {
+                $changes = is_array($result['changes'] ?? null) ? $result['changes'] : [];
+                foreach ($changes as $change) {
+                    $file = (string)($change['file'] ?? 'unknown');
+                    $type = (string)($change['type'] ?? 'HASH_MISMATCH');
+                    \VIS_Event_Bus::emit(
+                        'CHRONOS',
+                        $type,
+                        sprintf('Chronos asynchronous verification confirmed: %s for %s', $type, $file),
+                        [
+                            'file' => $file,
+                            'entity_type' => 'FILE',
+                            'entity_id' => $file,
+                            'role' => 'CONFIRMATION',
+                            'causal_edge' => 'CONFIRMS',
+                            'attribution_confidence' => 95,
+                        ],
+                        6
+                    );
+                }
+            }
             if (class_exists('VIS_Kernel_Sentinel') && method_exists('VIS_Kernel_Sentinel', 'log_event')) {
                 \VIS_Kernel_Sentinel::log_event('CHRONOS_AUTO', 'Status: ' . ($result['status'] ?? 'UNKNOWN'));
             } else {

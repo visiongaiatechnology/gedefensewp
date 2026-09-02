@@ -1,5 +1,8 @@
 <?php
+// STATUS: DIAMANT VGT SUPREME
 declare(strict_types=1);
+
+namespace VisionGaia\GeDefense\Modules\Zeus;
 
 if ( ! defined( 'ABSPATH' ) ) exit('VGT_ACCESS_DENIED');
 
@@ -97,9 +100,20 @@ class VIS_Zeus_Env {
             $content = (string) file_get_contents( $ini_file );
         }
 
+        // Strip any existing VGT markers and prepends to prevent repeated accumulation
+        $content = preg_replace( '/;\s*VGT ZEUS WAF[\r\n]*/s', '', $content );
         $content = preg_replace( '/^auto_prepend_file\s*=\s*".*zeus-waf\.php".*$/m', '', $content );
         $content = preg_replace( '/^auto_prepend_file\s*=\s*".*wp-security-firewall\.php".*$/m', '', $content );
-        $content = trim( $content ) . "\n\n; VGT ZEUS WAF\n" . $directive . "\n";
+        $content = trim( $content );
+
+        if (!empty($this->config['zeus_enabled'])) {
+            $content = ($content !== '' ? $content . "\n\n" : '') . "; VGT ZEUS WAF\n" . $directive . "\n";
+        }
+
+        if ($content === '' && is_file($ini_file)) {
+            @unlink($ini_file);
+            return true;
+        }
 
         $temp_file = $ini_file . '.tmp.' . bin2hex(random_bytes(16));
         $mode = is_file($ini_file) ? fileperms($ini_file) : false;
@@ -164,7 +178,7 @@ class VIS_Zeus_Env {
         $lock_fh = @fopen( $lock_file, 'w' );
         if ( $lock_fh ) {
             if ( flock( $lock_fh, LOCK_EX ) ) {
-                $updated = insert_with_markers( $htaccess_file, 'VGT_ZEUS', $rules );
+                $updated = function_exists('insert_with_markers') ? insert_with_markers($htaccess_file, 'VGT_ZEUS', $rules) : true;
                 flock( $lock_fh, LOCK_UN );
             } else {
                 $updated = false;
@@ -271,4 +285,8 @@ class VIS_Zeus_Env {
         }
         return !function_exists('fsync') || fsync($handle);
     }
+}
+
+if (!class_exists('\VIS_Zeus_Env')) {
+    class_alias(VIS_Zeus_Env::class, 'VIS_Zeus_Env');
 }

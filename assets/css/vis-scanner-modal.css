@@ -1,0 +1,22 @@
+/* STATUS: DIAMANT VGT SUPREME */
+.vis-scan-overlay{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:24px;background:rgba(1,4,11,.82);backdrop-filter:blur(18px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease}
+.vis-scan-overlay.is-active{opacity:1;visibility:visible;pointer-events:auto}
+.vis-scan-dialog{position:relative;width:min(560px,100%);overflow:hidden;border:1px solid rgba(95,227,255,.22);border-radius:18px;background:linear-gradient(145deg,rgba(16,25,41,.98),rgba(4,8,17,.99));box-shadow:0 32px 100px rgba(0,0,0,.72),inset 0 1px rgba(255,255,255,.05);color:#edfaff;transform:translateY(12px) scale(.98);transition:transform .22s ease;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.vis-scan-overlay.is-active .vis-scan-dialog{transform:none}
+.vis-scan-dialog::before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,#44e6ff,#d4af37,transparent)}
+.vis-scan-grid{position:absolute;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(rgba(68,230,255,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(68,230,255,.11) 1px,transparent 1px);background-size:28px 28px;mask-image:linear-gradient(to bottom,#000,transparent 72%)}
+.vis-scan-content{position:relative;padding:34px}
+.vis-scan-head{display:flex;align-items:center;gap:18px}
+.vis-scan-orbit{position:relative;display:grid;flex:0 0 64px;width:64px;height:64px;place-items:center;border:1px solid rgba(68,230,255,.22);border-radius:50%;background:rgba(68,230,255,.055);color:#44e6ff}
+.vis-scan-orbit::before{content:"";position:absolute;inset:6px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:vis-scan-spin 1.3s linear infinite}
+.vis-scan-orbit.is-static::before{animation:none;border-color:currentColor;opacity:.3}
+.vis-scan-core{width:12px;height:12px;border-radius:50%;background:currentColor;box-shadow:0 0 22px currentColor}
+.vis-scan-copy{min-width:0}.vis-scan-kicker{margin:0 0 6px;color:#6f8398;font:700 10px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase}
+.vis-scan-title{margin:0;color:#f4fbff;font-size:19px;line-height:1.25;letter-spacing:.07em;text-transform:uppercase}.vis-scan-description{min-height:42px;margin:22px 0 0;color:#a8b9c9;font:500 13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace}
+.vis-scan-progress-meta{display:flex;justify-content:space-between;margin-top:24px;color:#70859a;font:700 10px/1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.12em}.vis-scan-percent{color:#44e6ff}
+.vis-scan-track{height:7px;margin-top:9px;overflow:hidden;border:1px solid rgba(255,255,255,.06);border-radius:999px;background:#02050b}.vis-scan-bar{width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#0aa7c2,#44e6ff);box-shadow:0 0 18px rgba(68,230,255,.5);transition:width .25s ease}
+.vis-scan-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:28px}.vis-scan-button{min-height:38px;padding:0 17px;border:1px solid rgba(255,255,255,.13);border-radius:8px;background:rgba(255,255,255,.045);color:#dce9f2;cursor:pointer;font:750 11px/1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.08em;transition:border-color .18s,background .18s,color .18s,transform .18s}.vis-scan-button:hover,.vis-scan-button:focus-visible{border-color:#44e6ff;color:#fff;background:rgba(68,230,255,.1);outline:none;transform:translateY(-1px)}.vis-scan-button--primary{border-color:rgba(212,175,55,.55);color:#f2ce67;background:rgba(212,175,55,.1)}
+.vis-scan-dialog.is-success .vis-scan-orbit{color:#24e6a1}.vis-scan-dialog.is-success .vis-scan-bar{background:#24e6a1}.vis-scan-dialog.is-error .vis-scan-orbit{color:#ff6470}.vis-scan-dialog.is-error .vis-scan-bar{background:#ff6470}.vis-scan-dialog.is-error .vis-scan-description{color:#ff9ca4}
+@keyframes vis-scan-spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.vis-scan-content{padding:26px 22px}.vis-scan-head{align-items:flex-start}.vis-scan-orbit{flex-basis:52px;width:52px;height:52px}.vis-scan-title{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.vis-scan-overlay,.vis-scan-dialog,.vis-scan-bar,.vis-scan-orbit::before{transition:none;animation:none}}

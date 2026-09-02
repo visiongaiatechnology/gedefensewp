@@ -12,9 +12,26 @@ if (!defined('ABSPATH')) {
     exit('ACCESS DENIED: VGT PROTOCOL');
 }
 
+foreach ([
+    'class-titan-surface-resolver.php',
+    'class-titan-policy-compiler.php',
+    'class-titan-server-rules.php',
+    'class-titan-assurance.php',
+    'class-titan-policy-store.php',
+    'class-titan-learning.php',
+    'class-titan-violation-collector.php',
+    'class-titan-runtime.php',
+    'class-titan-login-gate.php',
+    'class-titan-sandbox.php',
+    'class-titan-recovery.php',
+] as $titanDependency) {
+    require_once __DIR__ . '/src/' . $titanDependency;
+}
+
 final class VIS_Titan {
 
     private array $options;
+    private ?VIS_Titan_Runtime $runtime = null;
     
     // SYSTEM MARKERS (TRINITY + 1)
     private const HTACCESS_MARKER  = 'VisionGaia Titan Firewall';
@@ -22,17 +39,9 @@ final class VIS_Titan {
     private const CONTENT_MARKER   = 'VisionGaia Content Sentinel';
     private const INCLUDES_MARKER  = 'VisionGaia Includes Sentinel';
 
-    // IMMUTABLE BLOCK LISTS
-    private const BLOCKED_EXTENSIONS = [
-        'log', 'bak', 'old', 'sql', 'ini', 'env', 'git', 'svn', 
-        'yml', 'yaml', 'config', 'dist', 'inc', 'swp', 'sh', 'rar', 
-        'zip', 'pot', 'md', 'bat', 'exe', 'msi', 'bin'
-    ];
-    
     private const BLOCKED_FILENAMES = [
-        'phpinfo.php', 'info.php', 'readme.html', 'license.txt', 'todo.txt', 
-        'composer.lock', 'composer.json', 'package.json', 'package-lock.json', 
-        'yarn.lock', 'wp-config-sample.php', 'debug.log', 'error_log'
+        'phpinfo.php', 'info.php', 'composer.lock', 'composer.json',
+        'wp-config-sample.php', 'debug.log', 'error_log', '.env'
     ];
 
     // VGT SUPREME: Type-Safe Accessors
@@ -47,6 +56,11 @@ final class VIS_Titan {
     public function __construct(array $options) {
         $this->options = $options;
 
+        add_action('admin_post_vis_titan_policy_action', [self::class, 'handle_policy_action']);
+        add_action('admin_post_vis_titan_download_nginx', [VIS_Titan_Server_Rules::class, 'handleDownload']);
+        add_action('admin_post_vis_titan_generate_gate_link', [VIS_Titan_Login_Gate::class, 'handleGenerateLink']);
+        VIS_Titan_Recovery::register();
+
         if (!$this->opt_enabled('titan_enabled')) {
             return;
         }
@@ -55,13 +69,16 @@ final class VIS_Titan {
         // Läuft sofort, ohne auf WordPress Hooks zu warten.
         $this->block_sensitive_files();
 
-        // 1. Header Manipulation (Spoofing)
-        add_action('send_headers', [$this, 'manage_headers'], 1);
-        add_filter('wp_headers', [$this, 'filter_wp_headers'], 99);
+        // 1. Surface-aware compiled HTTP/browser policy hot path.
+        $this->runtime = new VIS_Titan_Runtime($this->options);
+        $this->runtime->boot();
 
         // 2. Disable File Editor
         if (!defined('DISALLOW_FILE_EDIT')) {
             define('DISALLOW_FILE_EDIT', true);
+        }
+        if ($this->opt_enabled('titan_application_lockdown') && !defined('DISALLOW_FILE_MODS')) {
+            define('DISALLOW_FILE_MODS', true);
         }
         
         // 3. Init Hooks & Active Defense
@@ -76,7 +93,7 @@ final class VIS_Titan {
         // 5. Advanced Camouflage & Heartbeat
         add_action('wp_head', [$this, 'inject_cms_meta'], 1);
         
-        if ($this->opt_enabled('titan_hide_version')) {
+        if ($this->opt_enabled('titan_remove_asset_versions')) {
             add_filter('style_loader_src', [$this, 'remove_ver_string'], 9999);
             add_filter('script_loader_src', [$this, 'remove_ver_string'], 9999);
         }
@@ -87,13 +104,17 @@ final class VIS_Titan {
 
         // 6. Login Gatekeeper
         if ($this->opt_enabled('titan_login_gatekeeper')) {
-            add_action('login_init', [$this, 'enforce_login_gatekeeper']);
+            add_action('login_init', [new VIS_Titan_Login_Gate(), 'enforce'], 0);
         }
 
         // 7. Active Defense: XML-RPC Honeypot
         if ($this->opt_enabled('titan_xmlrpc_honeypot')) {
             $this->arm_xmlrpc_honeypot();
         }
+
+        add_filter('wp_handle_upload', [VIS_Titan_Sandbox::class, 'registerUpload'], 100);
+        add_action('template_redirect', [VIS_Titan_Sandbox::class, 'servePreview'], 0);
+        add_action('admin_post_vis_titan_preview_link', [VIS_Titan_Sandbox::class, 'handlePreviewLink']);
 
         // 8. IO Operations (Admin Context Only)
         if (is_admin()) {
@@ -131,6 +152,40 @@ final class VIS_Titan {
         return $remote_addr;
     }
 
+    public static function handle_policy_action(): void {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !is_user_logged_in() || !current_user_can('manage_options')) {
+            wp_die('Request rejected for security reasons.', '', ['response' => 403]);
+        }
+        check_admin_referer('vis_titan_policy_action');
+        $operation = isset($_POST['operation']) && is_string($_POST['operation']) ? sanitize_key(wp_unslash($_POST['operation'])) : '';
+        try {
+            if ($operation === 'activate_report_only') VIS_Titan_Policy_Store::activate('report_only');
+            elseif ($operation === 'activate_enforce') VIS_Titan_Policy_Store::activate('enforce');
+            elseif ($operation === 'rollback') VIS_Titan_Policy_Store::rollback('ADMIN_ROLLBACK');
+            elseif ($operation === 'generate_candidate') {
+                $config = get_option('vis_config', []);
+                VIS_Titan_Learning::stageCandidate(is_array($config) ? $config : []);
+            }
+            elseif ($operation === 'validate') {
+                $config = get_option('vis_config', []);
+                VIS_Titan_Policy_Store::stage(is_array($config) ? $config : []);
+            } else throw new ValidationException('Invalid TITAN policy operation.');
+            wp_safe_redirect(add_query_arg(['page' => 'vgt-suite', 'tab' => 'titan', 'titan-action' => 'complete'], admin_url('admin.php')));
+            exit;
+        } catch (ValidationException $e) {
+            wp_die(esc_html($e->getMessage()), '', ['response' => 422]);
+        } catch (SecurityException $e) {
+            error_log('[TITAN SECURITY] ' . $e->getMessage());
+            wp_die('Request rejected for security reasons.', '', ['response' => 403]);
+        } catch (StorageException $e) {
+            error_log('[TITAN STORAGE] ' . $e->getMessage());
+            wp_die('A server error occurred.', '', ['response' => 500]);
+        } catch (Throwable $e) {
+            error_log('[TITAN FATAL] ' . $e->getMessage());
+            wp_die('Critical system fault.', '', ['response' => 500]);
+        }
+    }
+
     /**
      * VGT_OS SERVER SPOOFING & HEADER SECURITY
      */
@@ -153,8 +208,11 @@ final class VIS_Titan {
             header(sprintf('%s: %s', $key, $val));
         }
 
-        if (is_ssl()) {
-            header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
+        if (is_ssl() && $this->opt_enabled('titan_hsts_enabled')) {
+            $hsts = 'max-age=' . max(300, min(63072000, (int)($this->options['titan_hsts_max_age'] ?? 31536000)));
+            if ($this->opt_enabled('titan_hsts_include_subdomains')) $hsts .= '; includeSubDomains';
+            if ($this->opt_enabled('titan_hsts_preload') && $this->opt_enabled('titan_hsts_include_subdomains')) $hsts .= '; preload';
+            header('Strict-Transport-Security: ' . $hsts, true);
         }
         
         if (function_exists('header_remove')) {
@@ -187,6 +245,7 @@ final class VIS_Titan {
         $fake_tech = $this->get_opt_string('titan_camouflage_mode', 'none');
         
         $meta = match ($fake_tech) {
+            'laravel' => '<meta name="generator" content="Laravel" />',
             'drupal' => '<meta name="generator" content="Drupal 9 (https://www.drupal.org)" />' . "\n" .
                         '<meta name="MobileOptimized" content="width" />' . "\n" .
                         '<meta name="HandheldFriendly" content="true" />',
@@ -203,9 +262,14 @@ final class VIS_Titan {
      * ANTI-RECONNAISSANCE: VERSION STRIPPING & CLEANUP
      */
     public function source_cleanup(): void {
-        $actions = ['wp_generator', 'wlwmanifest_link', 'rsd_link', 'wp_shortlink_wp_head', 'rest_output_link_wp_head'];
-        foreach ($actions as $action) remove_action('wp_head', $action);
-        remove_action('template_redirect', 'rest_output_link_header', 11);
+        if ($this->opt_enabled('titan_hide_version')) {
+            remove_action('wp_head', 'wp_generator');
+            add_filter('the_generator', '__return_empty_string');
+        }
+        if ($this->opt_enabled('titan_remove_discovery_links')) {
+            foreach (['wlwmanifest_link', 'rsd_link', 'wp_shortlink_wp_head', 'rest_output_link_wp_head'] as $action) remove_action('wp_head', $action);
+            remove_action('template_redirect', 'rest_output_link_header', 11);
+        }
 
         if ($this->opt_enabled('titan_cleanup_emojis')) {
             remove_action('wp_head', 'print_emoji_detection_script', 7);
@@ -255,11 +319,20 @@ final class VIS_Titan {
             });
         }
 
-        // XML-RPC Hard Kill (Only if Honeypot is NOT active, otherwise Honeypot takes over)
-        if ($this->opt_enabled('titan_block_xmlrpc') && !$this->opt_enabled('titan_xmlrpc_honeypot')) {
+        $xmlrpcMode = $this->xmlrpc_mode();
+        if ($xmlrpcMode === 'disabled') {
             add_filter('xmlrpc_enabled', '__return_false');
             add_filter('xmlrpc_methods', '__return_empty_array');
+        } elseif ($xmlrpcMode === 'pingback_disabled') {
+            add_filter('xmlrpc_methods', static function(array $methods): array {
+                unset($methods['pingback.ping'], $methods['pingback.extensions.getPingbacks']);
+                return $methods;
+            });
         }
+
+        $applicationPasswords = $this->get_opt_string('titan_application_passwords_mode', 'allow');
+        if ($applicationPasswords === 'disable') add_filter('wp_is_application_passwords_available', '__return_false');
+        elseif ($applicationPasswords === 'audit') add_action('application_password_did_authenticate', [$this, 'audit_application_password'], 10, 2);
 
         // REST API Restriction (VGT SUPREME: Traversal Defense & O(1) Scalability)
         if ($this->opt_enabled('titan_block_rest')) {
@@ -292,68 +365,43 @@ final class VIS_Titan {
         }
     }
 
-    /**
-     * VGT THE LOGIN GATEKEEPER
-     */
-    public function enforce_login_gatekeeper(): void {
-        $secret_slug = sanitize_key($this->get_opt_string('titan_login_slug', 'matrix'));
-        $client_ip = $this->get_client_ip();
-        $salt = defined('AUTH_KEY') ? AUTH_KEY : 'vgt_omega_fallback_salt';
-        
-        if (isset($_COOKIE['vgt_gate_pass']) && is_string($_COOKIE['vgt_gate_pass'])) {
-            $parts = explode('|', $_COOKIE['vgt_gate_pass']);
-            if (count($parts) === 2) {
-                $expiration = (int) $parts[0];
-                $hash = $parts[1];
-                
-                // VGT SUPREME: Server-Side Expiration Check & Timing-Safe Validation
-                if ($expiration > time()) {
-                    $expected_hash = hash_hmac('sha256', $client_ip . $secret_slug . $expiration, $salt);
-                    if (hash_equals($expected_hash, $hash)) {
-                        return; // Valid and unexpired session
-                    }
-                }
-            }
-        }
-
-        // Verify secret parameter
-        if (!isset($_GET['vgt_door']) || $_GET['vgt_door'] !== $secret_slug) {
-            http_response_code(403);
-            exit('VGT_OS: Area 51 Restricted Access.');
-        }
-
-        // Grant cryptographic ticket (12 Hours)
-        $expiration_time = time() + 43200;
-        $auth_token = hash_hmac('sha256', $client_ip . $secret_slug . $expiration_time, $salt);
-        $cookie_value = $expiration_time . '|' . $auth_token;
-
-        setcookie('vgt_gate_pass', $cookie_value, [
-            'expires'  => $expiration_time,
-            'path'     => defined('COOKIEPATH') && COOKIEPATH ? COOKIEPATH : '/',
-            'domain'   => defined('COOKIE_DOMAIN') && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
-            'secure'   => true,
-            'httponly' => true,
-            'samesite' => 'Strict'
+    public function audit_application_password(mixed $user, mixed $item): void {
+        $fabric = '\\VisionGaia\\GeDefense\\Xdr\\EventFabric';
+        if (!class_exists($fabric)) return;
+        $userId = is_object($user) && isset($user->ID) ? max(0, (int)$user->ID) : 0;
+        $uuid = is_array($item) && isset($item['uuid']) && is_string($item['uuid']) ? $item['uuid'] : '';
+        $fabric::ingest([
+            'sensor' => 'TITAN', 'category' => 'AUTHENTICATION', 'event_type' => 'TITAN_APPLICATION_PASSWORD_AUTH',
+            'role' => 'CONTEXT', 'severity' => 2, 'confidence' => 100, 'score' => 0,
+            'actor_ip' => $this->get_client_ip(), 'user_id' => $userId, 'entity_type' => 'USER',
+            'entity_id' => 'user:' . $userId, 'vector' => 'APPLICATION_PASSWORD', 'action_type' => 'AUDIT',
+            'outcome' => 'AUTHENTICATED', 'metadata' => ['credential_id_hash' => $uuid !== '' ? hash('sha256', $uuid) : 'UNAVAILABLE'],
         ]);
     }
 
+    /**
+     * VGT THE LOGIN GATEKEEPER
+     */
     /**
      * ACTIVE DEFENSE: XML-RPC HONEYPOT
      * STATUS: DIAMANT VGT SUPREME
      */
     private function arm_xmlrpc_honeypot(): void {
-        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        if ($this->xmlrpc_mode() !== 'honeypot') return;
+        $uri = is_string($_SERVER['REQUEST_URI'] ?? null) ? $_SERVER['REQUEST_URI'] : '';
         
         if (strpos($uri, 'xmlrpc.php') !== false) {
-            // VGT KERNEL: Globale Namespace-Referenzierung (gemäß System-Registratur)
-            if (class_exists('\VIS_Cerberus')) {
-                $cerberus = \VIS_Cerberus::instance();
-                
-                // Nutze die Cloudflare-gehärtete IP-Erkennung von Cerberus
-                $ip = $cerberus->get_validated_ip(); 
-                
-                // Exekution des Ban-Protokolls
-                $cerberus->ban_ip($ip, 'XML-RPC HONEYPOT TRAP (Threat Score: 100)');
+            $fabric = '\\VisionGaia\\GeDefense\\Xdr\\EventFabric';
+            if (class_exists($fabric)) {
+                $fabric::ingest([
+                    'sensor' => 'TITAN', 'category' => 'DECEPTION',
+                    'event_type' => 'TITAN_XMLRPC_HONEYPOT_TOUCH', 'role' => 'CONFIRMATION',
+                    'severity' => 9, 'confidence' => 97, 'score' => 95,
+                    'actor_ip' => $this->get_client_ip(), 'entity_type' => 'ROUTE',
+                    'entity_id' => 'route:' . hash('sha256', '/xmlrpc.php'),
+                    'vector' => 'XMLRPC_HONEYPOT', 'action_type' => 'BLOCK',
+                    'outcome' => 'INTERCEPTED', 'metadata' => ['surface' => 'API'],
+                ]);
             }
             
             // Sofortige Terminierung der TCP/HTTP Verbindung (Ressourcen-Erhalt)
@@ -362,8 +410,15 @@ final class VIS_Titan {
                 header('Content-Type: text/plain; charset=utf-8');
             }
             
-            exit("VGT_OS: HONEYPOT TRIGGERED. YOUR IP HAS BEEN TERMINATED.");
+            exit('Request rejected for security reasons.');
         }
+    }
+
+    private function xmlrpc_mode(): string {
+        $mode = strtolower($this->get_opt_string('titan_xmlrpc_mode', ''));
+        if (in_array($mode, ['disabled', 'pingback_disabled', 'auth_only', 'honeypot', 'custom'], true)) return $mode;
+        if ($this->opt_enabled('titan_xmlrpc_honeypot')) return 'honeypot';
+        return $this->opt_enabled('titan_block_xmlrpc') ? 'disabled' : 'auth_only';
     }
     /**
      * PHP LAYER PROTECTION (WAF)
@@ -387,18 +442,12 @@ final class VIS_Titan {
         }
         
         $uri_path = parse_url(strtolower($decoded_uri), PHP_URL_PATH) ?: strtolower($decoded_uri);
-        $path_info = pathinfo($uri_path);
-        
-        $extension = $path_info['extension'] ?? '';
-        $basename  = $path_info['basename'] ?? '';
-
-        if ($extension && in_array($extension, self::BLOCKED_EXTENSIONS, true)) {
-            $this->terminate_request('Extension Blocked');
-        }
+        $basename = (string)(pathinfo($uri_path, PATHINFO_BASENAME) ?: '');
         if (in_array($basename, self::BLOCKED_FILENAMES, true)) {
              $this->terminate_request('File Blocked');
         }
-        if (preg_match('/(\/\.git|\/\.env|\/vis-vault-omega|\/actuator\/)/', $uri_path)) {
+        if (preg_match('~(?:^|/)(?:\.git|\.svn|vis-vault-omega)(?:/|$)|/actuator(?:/|$)~', $uri_path) === 1
+            || preg_match('~/(?:wp-config\.php|database|db)[^/]*\.(?:bak|old|save|sql)(?:$|[/?])~', $uri_path) === 1) {
              $this->terminate_request('Protected Path');
         }
     }
@@ -483,7 +532,7 @@ final class VIS_Titan {
             "<FilesMatch \"^(debug\.log|error_log|wp-config\.php|php\.ini|composer\.(json|lock)|\.env)$\">",
             "    <IfModule mod_authz_core.c>\n        Require all denied\n    </IfModule>",
             "</FilesMatch>",
-            "<FilesMatch \"\.(sql|zip|tar|gz|rar|git|env|bak|old|7z)$\">",
+            "<FilesMatch \"^(?:wp-config\\.php|debug\\.log|error_log|composer\\.(?:json|lock)|\\.env)(?:\\.(?:bak|old|save))?$\">",
             "    <IfModule mod_authz_core.c>\n        Require all denied\n    </IfModule>",
             "</FilesMatch>"
         ];
@@ -521,43 +570,10 @@ final class VIS_Titan {
 
     // LEVEL 5: NGINX SERVER CONFIGURATION (VGT SUPREME: Atomares I/O)
     public function update_nginx_protection(): void {
-        $upload_dir = wp_upload_dir();
-        $conf_path = wp_normalize_path($upload_dir['basedir'] . '/vgt-titan-shield.conf');
-        
-        $rules = [
-            "# --- VISIONGAIATECHNOLOGY OMEGA SHIELD: NGINX VAULT [VER. 6.0] ---",
-            "# Add this to your server {} block: include {$conf_path};",
-            "",
-            "autoindex off;",
-            "location ~* \.(log|bak|old|sql|ini|env|git|svn|yml|yaml|config|dist|inc|swp|sh|rar|zip|pot|md|bat|exe|msi|bin)$ { deny all; access_log off; log_not_found off; }",
-            "location ~* /(phpinfo\.php|info\.php|readme\.html|license\.txt|todo\.txt|composer\.json|wp-config-sample\.php|debug\.log)$ { deny all; access_log off; log_not_found off; }",
-            "location ~ /\.(?!well-known).* { deny all; access_log off; log_not_found off; }",
-            "location ~* ^/wp-content/uploads/.*\.(php|php5|phtml|pl|py|jsp|asp|sh|cgi|exe|bat|msi)$ { deny all; access_log off; log_not_found off; }"
-        ];
-
-        // XML-RPC Block via NGINX (Only if Honeypot is NOT active)
-        if ($this->opt_enabled('titan_block_xmlrpc') && !$this->opt_enabled('titan_xmlrpc_honeypot')) {
-            $rules[] = "location = /xmlrpc.php { deny all; access_log off; log_not_found off; }";
-        }
-
-        // Includes Guard via NGINX
-        if ($this->opt_enabled('titan_includes_guard')) {
-            $rules[] = "location ~* ^/wp-includes/.*\.(php|phps|php5|phtml)$ {";
-            $rules[] = "    deny all; access_log off; log_not_found off;";
-            $rules[] = "}";
-        }
-
-        $dir = dirname($conf_path);
-        if (is_dir($dir) && is_writable($dir)) {
-            $written = file_put_contents($conf_path, implode("\n", $rules), LOCK_EX);
-            if ($written !== false && file_exists($conf_path)) {
-                chmod($conf_path, 0640);
-            }
-        }
+        VIS_Titan_Server_Rules::deploy($this->options);
     }
 
     private function generate_root_htaccess_rules(): string {
-        $ext_regex  = implode('|', self::BLOCKED_EXTENSIONS);
         $file_regex = str_replace('.', '\.', implode('|', self::BLOCKED_FILENAMES));
 
         $rules = [
@@ -567,16 +583,22 @@ final class VIS_Titan {
             "Header set X-Content-Type-Options \"nosniff\"",
             "Header always set Referrer-Policy \"strict-origin-when-cross-origin\"",
             "Header always set Permissions-Policy \"geolocation=(), camera=(), microphone=(), payment=(), usb=(), fullscreen=(self)\"",
-            "Header always set Strict-Transport-Security \"max-age=31536000; includeSubDomains; preload\" \"expr=%{HTTPS} == 'on'\"",
             "</IfModule>",
             "Options -Indexes",
             "RedirectMatch 403 /\.(?!well-known).*$", 
-            "<FilesMatch \"^.*(\.({$ext_regex})|{$file_regex})$\">",
+            "<FilesMatch \"^(?:{$file_regex})(?:\\.(?:bak|old|save))?$\">",
             "    <IfModule mod_authz_core.c>\n        Require all denied\n    </IfModule>",
             "</FilesMatch>"
         ];
 
-        if ($this->opt_enabled('titan_block_xmlrpc') && !$this->opt_enabled('titan_xmlrpc_honeypot')) {
+        if ($this->opt_enabled('titan_hsts_enabled')) {
+            $hsts = 'max-age=' . max(300, min(63072000, (int)($this->options['titan_hsts_max_age'] ?? 31536000)));
+            if ($this->opt_enabled('titan_hsts_include_subdomains')) $hsts .= '; includeSubDomains';
+            if ($this->opt_enabled('titan_hsts_preload') && $this->opt_enabled('titan_hsts_include_subdomains')) $hsts .= '; preload';
+            array_splice($rules, 6, 0, ['Header always set Strict-Transport-Security "' . $hsts . '" "expr=%{HTTPS} == \'on\'"']);
+        }
+
+        if ($this->xmlrpc_mode() === 'disabled') {
             $rules[] = "<Files xmlrpc.php>\n    <IfModule mod_authz_core.c>\n        Require all denied\n    </IfModule>\n</Files>";
         }
         

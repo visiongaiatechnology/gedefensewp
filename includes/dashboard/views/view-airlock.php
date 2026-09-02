@@ -20,15 +20,6 @@ $is_obfuscate = !isset($opt['airlock_obfuscate']) || !empty($opt['airlock_obfusc
 <!-- =========================================================================================
      2. DECENTRALIZED ASSET LOADING
      ========================================================================================= -->
-<style>
-    <?php 
-    $airlock_css_path = __DIR__ . '/airlock/style.css';
-    if (is_readable($airlock_css_path)) {
-        echo file_get_contents($airlock_css_path);
-    }
-    ?>
-</style>
-
 <!-- =========================================================================================
      3. VIEW CONTENT
      ========================================================================================= -->
@@ -47,12 +38,7 @@ $is_obfuscate = !isset($opt['airlock_obfuscate']) || !empty($opt['airlock_obfusc
         </div>
     </div>
 
-    <form method="post" action="">
-        <?php wp_nonce_field('vis_save_config'); ?>
-        <input type="hidden" name="vis_save_config" value="1">
-        <input type="hidden" name="vis_context" value="airlock">
-
-        <div class="vgt-grid-2">
+    <div class="vgt-grid-2">
             <!-- LEFT COLUMN: SETTINGS -->
             <div class="vgt-panel">
                 <div class="vgt-panel-glow"></div>
@@ -175,6 +161,5 @@ $is_obfuscate = !isset($opt['airlock_obfuscate']) || !empty($opt['airlock_obfusc
                     </div>
                 </div>
             </div>
-        </div>
-    </form>
+    </div>
 </div>

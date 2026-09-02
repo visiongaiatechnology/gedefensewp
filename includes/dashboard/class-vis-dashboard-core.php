@@ -64,7 +64,6 @@ final class VIS_Dashboard_Core {
         $prometheusCovered = $this->whitelist_contains((string)($config['prometheus_whitelist_ips'] ?? ''), $ip);
         if ($aegisCovered && $prometheusCovered) return;
 
-        $wizardUrl = admin_url('admin.php?page=vgt-suite&tab=setup_wizard');
         $aegisUrl = admin_url('admin.php?page=vgt-suite&tab=aegis');
         $prometheusUrl = admin_url('admin.php?page=vgt-suite&tab=prometheus');
         $missing = [];
@@ -74,7 +73,11 @@ final class VIS_Dashboard_Core {
         echo '<div class="notice notice-error" style="border-left-color:#dc2626;padding:14px 20px;">';
         echo '<p style="font-size:14px;margin:0 0 8px;color:#7f1d1d;"><strong>' . esc_html__('ADMIN-IP SCHUTZGATE AKTIV', 'vgt-sentinel') . '</strong> — ' . esc_html__('Bevor Sie Seiten veröffentlichen, WordPress aktualisieren oder Schutzmodule aktivieren: Tragen Sie die IP dieser Admin-Sitzung in die Whitelists von AEGIS und Prometheus ein.', 'vgt-sentinel') . '</p>';
         echo '<p style="margin:0 0 10px;color:#7f1d1d;">' . esc_html(sprintf(__('Erkannte Admin-IP: %s. Fehlende Freigabe: %s. Ohne beide Freigaben können REST-, Nonce- und Update-Anfragen blockiert werden.', 'vgt-sentinel'), $ip, implode(', ', $missing))) . '</p>';
-        echo '<p style="margin:0;display:flex;gap:8px;flex-wrap:wrap;"><a class="button button-primary" href="' . esc_url($wizardUrl) . '">' . esc_html__('Setup-Wizard öffnen', 'vgt-sentinel') . '</a><a class="button" href="' . esc_url($aegisUrl) . '">' . esc_html__('AEGIS-Whitelist', 'vgt-sentinel') . '</a><a class="button" href="' . esc_url($prometheusUrl) . '">' . esc_html__('Prometheus-Whitelist', 'vgt-sentinel') . '</a></p>';
+        echo '<p style="margin:0;display:flex;gap:8px;flex-wrap:wrap;">';
+        if (!get_option('vgt_setup_wizard_completed')) {
+            echo '<a class="button button-primary" href="' . esc_url(admin_url('admin.php?page=vgt-suite&tab=setup_wizard')) . '">' . esc_html__('Setup-Wizard öffnen', 'vgt-sentinel') . '</a>';
+        }
+        echo '<a class="button" href="' . esc_url($aegisUrl) . '">' . esc_html__('AEGIS-Whitelist', 'vgt-sentinel') . '</a><a class="button" href="' . esc_url($prometheusUrl) . '">' . esc_html__('Prometheus-Whitelist', 'vgt-sentinel') . '</a></p>';
         echo '</div>';
     }
 
@@ -155,7 +158,7 @@ final class VIS_Dashboard_Core {
 
     public function inject_assets(string $current_hook): void {
         $allowed_pages = ['vgt-suite', 'vgt-throneguard', 'vgt-loginpager'];
-        $page = isset($_GET['page']) && is_string($_GET['page']) ? sanitize_key($_GET['page']) : '';
+        $page = isset($_GET['page']) && is_string($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
         if (!in_array($page, $allowed_pages, true) && $current_hook !== $this->page_hook) return;
         VIS_Dashboard_Assets::enqueue();
     }

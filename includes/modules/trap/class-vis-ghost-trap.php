@@ -14,14 +14,37 @@ final class VIS_Ghost_Trap {
         $this->config = new VIS_Ghost_Trap_Config();
         $this->engine = new VIS_Ghost_Trap_Engine($this->config);
 
-        // System Hooks (Sicherheitshalber Cleanup bei Deaktivierung)
-        register_deactivation_hook(VIS_PATH . 'vision-integrity-sentinel.php', [$this->engine, 'destroy_all_traps']);
+        $pluginFile = is_file(VIS_PATH . 'gedefense-wp.php')
+            ? VIS_PATH . 'gedefense-wp.php'
+            : VIS_PATH . 'vision-integrity-sentinel.php';
+        register_deactivation_hook($pluginFile, [$this->engine, 'destroy_all_traps']);
+        $this->migrate_legacy_traps();
     }
 
     private function load_dependencies(): void {
         $dir = dirname(__FILE__) . '/src/';
         require_once $dir . 'class-ghost-trap-config.php';
+        require_once $dir . 'class-ghost-trap-authenticator.php';
         require_once $dir . 'class-ghost-trap-engine.php';
+    }
+
+    private function migrate_legacy_traps(): void {
+        if (!$this->config->is_active()) return;
+        if (!$this->engine->requiresMigration()) return;
+        if (get_transient('vis_ghost_trap_v2_migration_lock') !== false) return;
+        set_transient('vis_ghost_trap_v2_migration_lock', '1', 300);
+        try {
+            $this->engine->redeploy_matrix();
+            delete_transient('vis_ghost_trap_v2_migration_lock');
+        } catch (ValidationException $e) {
+            error_log('[GHOST TRAP VALIDATION] ' . $e->getMessage());
+        } catch (SecurityException $e) {
+            error_log('[GHOST TRAP SECURITY] ' . $e->getMessage());
+        } catch (StorageException $e) {
+            error_log('[GHOST TRAP STORAGE] ' . $e->getMessage());
+        } catch (Throwable $e) {
+            error_log('[GHOST TRAP FATAL] ' . $e->getMessage());
+        }
     }
 
     /**
@@ -31,6 +54,7 @@ final class VIS_Ghost_Trap {
         if (!class_exists('VIS_Ghost_Trap_Config') || !class_exists('VIS_Ghost_Trap_Engine')) {
             $dir = dirname(__FILE__) . '/src/';
             require_once $dir . 'class-ghost-trap-config.php';
+            require_once $dir . 'class-ghost-trap-authenticator.php';
             require_once $dir . 'class-ghost-trap-engine.php';
         }
         

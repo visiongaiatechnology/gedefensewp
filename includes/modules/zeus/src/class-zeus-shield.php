@@ -1,5 +1,8 @@
 <?php
+// STATUS: DIAMANT VGT SUPREME
 declare(strict_types=1);
+
+namespace VisionGaia\GeDefense\Modules\Zeus;
 
 if ( ! defined( 'ABSPATH' ) ) exit('VGT_ACCESS_DENIED');
 
@@ -10,11 +13,15 @@ class VIS_Zeus_Shield {
     private string $swarm_ip;
     private string $vault_dir;
 
-    public function __construct( array $config, string $client_ip, string $swarm_ip, string $vault_dir ) {
+    public function __construct( array $config, string $client_ip, string $swarm_ip = '', string $vault_dir = '' ) {
         $this->config    = $config;
         $this->client_ip = $client_ip;
         $this->swarm_ip  = $swarm_ip;
         $this->vault_dir = $vault_dir;
+    }
+
+    public function execute_invariants(): void {
+        $this->init_hooks();
     }
 
     public function init_hooks(): void {
@@ -252,4 +259,8 @@ class VIS_Zeus_Shield {
         http_response_code( 403 );
         die( '403' );
     }
+}
+
+if (!class_exists('\VIS_Zeus_Shield')) {
+    class_alias(VIS_Zeus_Shield::class, 'VIS_Zeus_Shield');
 }

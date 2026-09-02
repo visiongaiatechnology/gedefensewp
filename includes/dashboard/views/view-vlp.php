@@ -52,15 +52,6 @@ $shadow_net_active = isset($vlp_config['shadow_net_enabled']) && $vlp_config['sh
 <!-- =========================================================================================
      DECENTRALIZED ASSET INJECTION (CSS)
      ========================================================================================= -->
-<style>
-    <?php 
-    $vlp_css_path = __DIR__ . '/vlp/style.css';
-    if (is_readable($vlp_css_path)) {
-        echo file_get_contents($vlp_css_path);
-    }
-    ?>
-</style>
-
 <!-- =========================================================================================
      VIEW CONTENT
      ========================================================================================= -->
@@ -240,14 +231,3 @@ $shadow_net_active = isset($vlp_config['shadow_net_enabled']) && $vlp_config['sh
 
 </div>
 
-<!-- =========================================================================================
-     ASSET INJECTION (JAVASCRIPT VIA INCLUDE)
-     ========================================================================================= -->
-<script>
-    <?php 
-    $vlp_js_path = __DIR__ . '/vlp/script.js';
-    if (is_readable($vlp_js_path)) {
-        echo file_get_contents($vlp_js_path);
-    }
-    ?>
-</script>

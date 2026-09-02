@@ -103,12 +103,23 @@ try {
         throw new RuntimeException('Persisted anomaly report remained stale.');
     }
 
+    $manifestPath = ABSPATH . 'uploads/vis-vault-omega/integrity_matrix.json';
+    $stableManifest = json_decode((string)file_get_contents($manifestPath), true, 64, JSON_THROW_ON_ERROR);
+    $legacyManifest = [];
+    foreach ($stableManifest as $path => $record) $legacyManifest['/legacy/wordpress-root/' . $path] = $record;
+    file_put_contents($manifestPath, json_encode($legacyManifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), LOCK_EX);
+
+    $migrated = run_cycle($engine, 'scan');
+    if (($migrated['status'] ?? '') !== 'clean' || ($migrated['changes'] ?? null) !== []) {
+        throw new RuntimeException('Legacy absolute baseline paths produced synthetic deleted/new findings.');
+    }
+
     $verified = run_cycle($engine, 'scan');
     if (($verified['status'] ?? '') !== 'clean' || ($verified['changes'] ?? null) !== []) {
         throw new RuntimeException('Approved baseline did not remain clean.');
     }
 
-    echo "PASS: baseline approval commits fresh hashes and clears stale findings\n";
+    echo "PASS: baseline hashes remain stable across approval and legacy root migration\n";
     remove_test_root($root);
     exit(0);
 } catch (Throwable $e) {

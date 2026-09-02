@@ -41,7 +41,7 @@ require $root . '/includes/core/class-vis-module-integrity.php';
 
 $failures = [];
 $results = VIS_Module_Integrity::verify_all();
-if (count($results) !== 25) {
+if (count($results) !== 27) {
     $failures[] = 'Security component coverage is incomplete.';
 }
 foreach ($results as $id => $result) {

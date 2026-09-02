@@ -102,6 +102,21 @@ final class VIS_Hades {
             }
 
             if (!$has_cookie) {
+                if (class_exists('VIS_Event_Bus')) {
+                    \VIS_Event_Bus::emit(
+                        'HADES',
+                        'ADMIN_SURFACE_PROBE',
+                        'Stealth admin surface probe intercepted: Cloaked 404 response served.',
+                        [
+                            'category' => 'AUTHENTICATION',
+                            'role' => 'DETECTION',
+                            'route' => (string)($_SERVER['REQUEST_URI'] ?? '/wp-login.php'),
+                            'attribution_confidence' => 100,
+                            'severity' => 7,
+                        ],
+                        7
+                    );
+                }
                 global $wp_query;
                 $wp_query->set_404();
                 status_header(404);
