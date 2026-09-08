@@ -167,11 +167,30 @@ final class VIS_Vault {
     }
 
     public static function generate_admin_token(): string {
-        $user_id = get_current_user_id();
+        $user_id = function_exists('get_current_user_id') ? (int) get_current_user_id() : 0;
         if (!$user_id) return '';
         
-        $session_token = wp_get_session_token();
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $session_token = '';
+        if (function_exists('wp_parse_auth_cookie') && function_exists('wp_get_session_token')) {
+            try {
+                $session_token = (string) wp_get_session_token();
+            } catch (\Throwable $e) {
+                $session_token = '';
+            }
+        }
+        if (empty($session_token)) {
+            foreach ($_COOKIE as $c_name => $c_val) {
+                if (str_starts_with($c_name, 'wordpress_logged_in_') && is_string($c_val)) {
+                    $parts = explode('|', $c_val);
+                    if (count($parts) >= 4) {
+                        $session_token = $parts[2];
+                        break;
+                    }
+                }
+            }
+        }
+        
+        $ip = class_exists('VIS_Security') ? VIS_Security::client_ip() : ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
         
         $key = self::get_primary_key();
@@ -189,27 +208,79 @@ final class VIS_Vault {
 
     public static function verify_admin_token(string $token): bool {
         if (empty($token) || strlen($token) !== 64) return false;
-        
-        if (!is_user_logged_in() || !current_user_can('manage_options')) return false;
 
+        $current_ip = class_exists('VIS_Security') ? VIS_Security::client_ip() : ($_SERVER['REMOTE_ADDR'] ?? '');
+        $current_ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+        // 1. If Pluggable is already fully loaded (e.g. AJAX / admin-post / late lifecycle)
+        if (function_exists('wp_parse_auth_cookie') && function_exists('is_user_logged_in') && function_exists('current_user_can')) {
+            try {
+                if (!is_user_logged_in() || (!current_user_can('manage_options') && !current_user_can('edit_posts'))) {
+                    return false;
+                }
+            } catch (\Throwable $e) {
+                // Pluggable lifecycle mismatch - fallback to cryptographic token
+            }
+        }
+
+        // 2. Fetch signed transient payload
         $data = get_transient('vgt_admin_token_' . hash('sha256', $token));
         if (!is_array($data)) return false;
-        
-        $current_ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        $current_ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        
-        $current_user = get_current_user_id();
-        $current_session = hash('sha256', wp_get_session_token());
-        if ((int)($data['user_id'] ?? 0) !== $current_user
-            || !hash_equals((string)($data['session'] ?? ''), $current_session)
-            || !hash_equals((string)($data['ip'] ?? ''), $current_ip)
+
+        if (!hash_equals((string)($data['ip'] ?? ''), $current_ip)
             || !hash_equals((string)($data['ua'] ?? ''), $current_ua)) {
             return false;
         }
 
+        // 3. Resolve user ID & session token (Early-Bootstrap Safe: NEVER call wp_get_session_token without wp_parse_auth_cookie)
+        $session_token = '';
+        if (function_exists('wp_parse_auth_cookie') && function_exists('wp_get_session_token')) {
+            try {
+                $session_token = (string) wp_get_session_token();
+            } catch (\Throwable $e) {
+                $session_token = '';
+            }
+        }
+
+        if (empty($session_token)) {
+            // Early Bootstrap fallback: Parse session token directly from WordPress auth cookie
+            foreach ($_COOKIE as $c_name => $c_val) {
+                if (str_starts_with($c_name, 'wordpress_logged_in_') && is_string($c_val)) {
+                    $parts = explode('|', $c_val);
+                    if (count($parts) >= 4) {
+                        $session_token = $parts[2];
+                        break;
+                    }
+                }
+            }
+        }
+
+        $user_id = 0;
+        if (function_exists('wp_parse_auth_cookie') && function_exists('wp_get_current_user') && function_exists('get_current_user_id')) {
+            try {
+                $user_id = (int) get_current_user_id();
+            } catch (\Throwable $e) {
+                $user_id = 0;
+            }
+        }
+        if ($user_id <= 0) {
+            $user_id = (int)($data['user_id'] ?? 0);
+        }
+
+        if ($user_id <= 0 || empty($session_token)) {
+            return false;
+        }
+
+        // Verify session integrity against stored transient hash
+        if ((int)($data['user_id'] ?? 0) !== $user_id
+            || !hash_equals((string)($data['session'] ?? ''), hash('sha256', $session_token))) {
+            return false;
+        }
+
+        // Verify cryptographic HMAC
         $expected = hash_hmac(
             'sha256',
-            $current_user . '|' . wp_get_session_token() . '|' . $current_ip . '|' . $current_ua,
+            $user_id . '|' . $session_token . '|' . $current_ip . '|' . $current_ua,
             self::get_primary_key()
         );
         return hash_equals($expected, $token);

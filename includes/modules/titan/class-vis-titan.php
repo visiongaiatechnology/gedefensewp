@@ -300,7 +300,9 @@ final class VIS_Titan {
     }
 
     public function disable_heartbeat() {
-        wp_deregister_script('heartbeat');
+        if (!is_admin()) {
+            wp_deregister_script('heartbeat');
+        }
     }
 
     /**

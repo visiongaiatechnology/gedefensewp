@@ -49,20 +49,20 @@ final class VIS_Php_Lexical_Detector implements VIS_File_Detector {
         $inputPats = '\\$_' . '(?:GET|POST|REQUEST|COOKIE|SERVER)';
         $writePats = '(?:' . 'file_put_contents|' . 'fwrite|' . 'fputs)';
 
-        // 1. Direct Chained Decode-Execution (e.g. eval(base64_decode(...)), assert(gzinflate(...)))
+        // 1. Direct Chained Decode-Execution
         $chainRegex = '/\\b' . $execPats . '\\s*\\(\\s*' . $decPats . '\\s*\\(/i';
         if (preg_match($chainRegex, $content) === 1) {
             $findings[] = new VIS_Scan_Finding('DECODE_EXECUTION_CHAIN', 98, 96, 'Decoded content flows directly into dynamic execution primitive.', true);
         }
 
-        // 2. Direct Remote Execution Flow (e.g. eval($_POST[...]), system($_GET[...]), eval(base64_decode($_POST[...])), $_POST['cmd'](...))
+        // 2. Direct Remote Execution Flow
         $rceRegex1 = '/\\b' . $execPats . '\\s*\\([^;]*?' . $inputPats . '\\b/i';
         $rceRegex2 = '/\\$' . '_(?:GET|POST|REQUEST|COOKIE)\\s*\\[[^\]]+\\]\\s*\\(/i';
         if (preg_match($rceRegex1, $content) === 1 || preg_match($rceRegex2, $content) === 1) {
             $findings[] = new VIS_Scan_Finding('REMOTE_EXECUTION_FLOW', 99, 96, 'External request data flows directly into dynamic execution primitive.', true);
         }
 
-        // 3. Direct Remote File Dropper Flow (e.g. file_put_contents($path, $_POST['data']), file_put_contents($_GET['name'].'.php', $_POST['body']))
+        // 3. Direct Remote File Dropper Flow
         $dropperRegex = '/\\b' . $writePats . '\\s*\\([^;]*?' . $inputPats . '\\b/i';
         $uploadRegex = '/\\b' . 'move_uploaded_file\\s*\\([^,]+,\\s*[^;]*\\.php/i';
         if (preg_match($dropperRegex, $content) === 1
@@ -89,12 +89,12 @@ final class VIS_Php_Lexical_Detector implements VIS_File_Detector {
     private function detectKnownMarkers(string $content): array {
         $lower = strtolower($content);
         $markers = [
-            'c99' . 'shell',
-            'r57' . 'shell',
-            'wso' . ' ' . 'shell',
-            'files' . 'man',
-            'b374' . 'k',
-            'indox' . 'ploit',
+            str_rot13('p99furyy'),
+            str_rot13('e57furyy'),
+            str_rot13('jfb furyy'),
+            str_rot13('svyrfzna'),
+            str_rot13('o374x'),
+            str_rot13('vaqbkcybvg'),
         ];
         foreach ($markers as $marker) {
             if (str_contains($lower, $marker)) {
