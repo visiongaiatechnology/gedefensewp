@@ -20,6 +20,7 @@ final class VIS_Bootstrapper {
     }
 
     private static function trigger_fail_close(string $module, string $reason = ''): void {
+        error_log("[VGT BOOTSTRAPPER CRITICAL] Fail-Close sequence initiated for [{$module}]. Reason: " . ($reason ?: 'Unknown'));
         http_response_code(503);
         header('Status: 503 Service Temporarily Unavailable');
         header('Retry-After: 300');
@@ -86,7 +87,8 @@ final class VIS_Bootstrapper {
             try {
                 VIS_Cerberus::instance();
             } catch (\Throwable $e) {
-                self::trigger_fail_close('CERBERUS_KERNEL', 'Perimeter guard panic.');
+                error_log('[VGT BOOTSTRAPPER CRITICAL] CERBERUS_KERNEL panic: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+                self::trigger_fail_close('CERBERUS_KERNEL', 'Perimeter guard panic: ' . $e->getMessage());
             }
         }
 
@@ -103,7 +105,8 @@ final class VIS_Bootstrapper {
                 $vis_aegis_engine = new VIS_Aegis($config);
                 define('VIS_AEGIS_ACTIVE', true);
             } catch (\Throwable $e) {
-                self::trigger_fail_close('AEGIS_KERNEL', 'Initialization panic.');
+                error_log('[VGT BOOTSTRAPPER CRITICAL] AEGIS_KERNEL panic: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+                self::trigger_fail_close('AEGIS_KERNEL', 'Initialization panic: ' . $e->getMessage());
             }
         }
 
@@ -143,7 +146,10 @@ final class VIS_Bootstrapper {
                                 new $target_class();
                             }
                         } catch (\Throwable $e) {
-                            if ($mod_data['critical']) self::trigger_fail_close(strtoupper($mod_key), 'Subsystem panic.');
+                            if ($mod_data['critical']) {
+                                error_log('[VGT BOOTSTRAPPER CRITICAL] ' . strtoupper($mod_key) . ' panic: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+                                self::trigger_fail_close(strtoupper($mod_key), 'Subsystem panic: ' . $e->getMessage());
+                            }
                         }
                     }
                 } elseif ($mod_data['critical']) {
