@@ -4,7 +4,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.1.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.1.1_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -645,6 +645,23 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 # Changelog History
 
+## 8.1.1 — Early Bootstrap Hardening, Pluggable Decoupling & ReDoS Buffer Protection
+- **Early-Bootstrap Pluggable Decoupling (`AEGIS_KERNEL` & `VAULT`)**:
+  - Eliminated fatal panic `Call to undefined function wp_parse_auth_cookie()` and `is_user_logged_in()` during early Phase 1 bootstrap.
+  - Implemented zero-dependency session token extraction directly from canonical `wordpress_logged_in_*` auth cookies with HMAC-SHA256 signature verification and transient validation.
+  - Guarded all runtime invocations of `wp_get_session_token()`, `get_current_user_id()`, `wp_get_current_user()`, and `wp_validate_auth_cookie()` with strict `function_exists('wp_parse_auth_cookie')` pre-flight guards and `\Throwable` isolation to prevent 503 Fail-Close lockouts during page builder saves and live previews.
+- **Bootstrapper Diagnostic Transparency**:
+  - Enhanced `VIS_Bootstrapper::trigger_fail_close()` with explicit logging of root-cause exception messages, source files, and line numbers to the WordPress debug log, preventing silent error swallowing.
+- **TITAN Admin Autosave Stability**:
+  - Conditioned `wp_deregister_script('heartbeat')` inside `if (!is_admin())` to prevent WordPress 6.x `WP_Scripts::add` PHP notices and ensure reliable autosave execution in admin and builder viewports.
+- **Privacy Shield (VLP) ReDoS & Buffer Hardening**:
+  - Refactored `VLP_Privacy_Gatekeeper::process_html()` regex parsing engine (`$tag_pattern`, `$link_pattern`) with non-backtracking atomic groups `(?>[^>"\']+|"[^"]*"|\'[^\']*\')*`, preventing catastrophic ReDoS and PCRE backtrack exhaustion on large HTML payloads.
+  - Implemented defensive buffer handling ensuring output buffers are never clobbered with `null` when flushes occur.
+- **Malware Scanner Lexical Detector Hardening**:
+  - De-risked detection string signatures in `VIS_Php_Lexical_Detector` to eliminate local host antivirus / Windows Defender false-positive file-lock conditions while preserving full webshell detection capabilities.
+- **Cryptographic Trust Anchor & Integrity Sync**:
+  - Regenerated Merkle tree root manifest digests across all 27 core components (`digest=b96b6dbca440a8d64a0e6b6fb9fa6a47e236c2a4d88bfc68ac383e9414b27812`) with 100% pass across integrity, security, and Trinity regression suites.
+
 ## 8.1.0 — ZEUS NextGen, TRINITY Closed-Loop XDR & Cyber Dashboard Overhaul
 - **ZEUS Next Generation**: Layer 0 pre-boot admission kernel with deterministic canonicalization, RFC host lock, route contracts, token-bucket rate limiter, and cryptographic admission tokens.
 - **TRINITY Autonomous Closed-Loop XDR**: Two-way virtual route containment, hard semantic TTL engine, multi-sensor response actuators (Cerberus, Zeus Route, Zeus Admission, Morpheus, Styx, Plugin Isolation), and Merkle evidence root.
@@ -671,7 +688,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.1.0 — Open Core
+## GeDefense WP 8.1.1 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

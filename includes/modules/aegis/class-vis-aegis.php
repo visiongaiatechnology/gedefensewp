@@ -707,22 +707,30 @@ final class VIS_Aegis {
         }
 
         // Authenticated WordPress Administrator / Editor Whitelisting
-        if (function_exists('wp_get_current_user')) {
-            $current_user = wp_get_current_user();
-            if ($current_user && $current_user->exists() && ($current_user->has_cap('edit_posts') || $current_user->has_cap('manage_options'))) {
-                return true;
+        if (function_exists('wp_parse_auth_cookie') && function_exists('wp_get_current_user')) {
+            try {
+                $current_user = wp_get_current_user();
+                if ($current_user && $current_user->exists() && ($current_user->has_cap('edit_posts') || $current_user->has_cap('manage_options'))) {
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                // Pluggable not fully loaded yet
             }
         }
 
         // Early bootstrap fallback: validate logged-in auth cookie if available
-        if (function_exists('wp_validate_auth_cookie')) {
-            foreach ($_COOKIE as $cookie_name => $cookie_val) {
-                if (str_starts_with($cookie_name, 'wordpress_logged_in_') && is_string($cookie_val)) {
-                    $user_id = wp_validate_auth_cookie($cookie_val, 'logged_in');
-                    if ($user_id && function_exists('user_can') && (user_can($user_id, 'edit_posts') || user_can($user_id, 'manage_options'))) {
-                        return true;
+        if (function_exists('wp_validate_auth_cookie') && function_exists('wp_parse_auth_cookie')) {
+            try {
+                foreach ($_COOKIE as $cookie_name => $cookie_val) {
+                    if (str_starts_with($cookie_name, 'wordpress_logged_in_') && is_string($cookie_val)) {
+                        $user_id = wp_validate_auth_cookie($cookie_val, 'logged_in');
+                        if ($user_id && function_exists('user_can') && (user_can($user_id, 'edit_posts') || user_can($user_id, 'manage_options'))) {
+                            return true;
+                        }
                     }
                 }
+            } catch (\Throwable $e) {
+                // Auth cookie verification not ready in early phase
             }
         }
 

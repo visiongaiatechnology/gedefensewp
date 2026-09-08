@@ -1,4 +1,4 @@
-# Code Cartography: GeDefense WP – Open Core (v8.1.0)
+# Code Cartography: GeDefense WP – Open Core (v8.1.1)
 
 This document provides a comprehensive architectural map of the **GeDefense WP - Open Core** codebase. It outlines subsystem boundaries, class responsibilities, execution phases, and data flows to accelerate developer onboarding and code auditing.
 

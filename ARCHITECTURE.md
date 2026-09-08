@@ -2609,4 +2609,4 @@ Im Rahmen der Code-Analyse wurden folgende architektonische Besonderheiten ident
    - *Sicherheitsbegründung*: Diese Kopplungen sind beabsichtigt, da im L0-L1 Abwehrfall eine direkte atomare Weiterleitung von WAF-Entscheidungen an den Sperrfilter erforderlich ist, um Latenzen zu minimieren.
 
 ---
-*Dokument generiert und verifiziert für GeDefense WP - Open Core (Standard WordPress Plugin v8.1.0).*
+*Dokument generiert und verifiziert für GeDefense WP - Open Core (Standard WordPress Plugin v8.1.1).*
