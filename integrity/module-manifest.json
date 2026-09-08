@@ -5,11 +5,11 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "80cef4ded40ae16809d9e039af511f15772b0232f7611e80da61d32da8c588b0"
+            "root_hash": "bab8d7122f68c95b681aceefa949c2366a667ef7be15cfb59a027e49ea4177f7"
         },
         "assets": {
-            "files": 11,
-            "root_hash": "b5f88d4fcc3cdd24ffff2f8a02754aa4798f80c053597d301845302282f831e4"
+            "files": 12,
+            "root_hash": "1a7de6eb2291703b3bb79a25689ea852dfcc2d1307fea43387c659f6072135d4"
         },
         "compatibility": {
             "files": 4,
@@ -17,23 +17,23 @@
         },
         "core": {
             "files": 14,
-            "root_hash": "b1410a9962a17b82560619fa2e7e63ea1f9e5c52eb5ce2a18628f10df477f173"
+            "root_hash": "5d3ce6c58850abce07ace47da0e797235d9e3e9266266de4e247d9044eff54e6"
         },
         "dashboard": {
-            "files": 79,
-            "root_hash": "b1265d33f9a5364bf87134ae75fafdb7b14ab62efa9c9aceabebf774e3c915c8"
+            "files": 85,
+            "root_hash": "1162a7c2c9d4205a63bc609dacb359a11af7ec403cd656c0ba1c5a6f8e0ef58c"
         },
         "xdr": {
             "files": 9,
-            "root_hash": "1b1eb72e14f483c7bd6e6a74b97ed62c17b9cbe823b12e6d288c16e6fd4061bc"
+            "root_hash": "588d5f442b9d5addc95cc126168c6d51fe5796d04a7ce7dafd3698de5310805e"
         },
         "scanner": {
             "files": 13,
-            "root_hash": "b3fbabe8c7133c9fc8ef6be5f1f970904959c84e92118f7da4856036df9a8cba"
+            "root_hash": "4fef2d85466a978021e1aa012f136465be597bd9b5cad89a1546606fae98d275"
         },
         "aegis": {
             "files": 2,
-            "root_hash": "1440377dd5479a1379098b5b087042c40c949c450900cf281217db174cc1a56c"
+            "root_hash": "b32b077f02d41bdb04fbacc575a442cbc55f7399efdd735eaefa3ac6b608aa34"
         },
         "airlock": {
             "files": 4,
@@ -41,7 +41,7 @@
         },
         "cerberus": {
             "files": 1,
-            "root_hash": "1127cb47d3695cab802963cc381c89b4f6855a7f4609b7faefa06f28ad40fb11"
+            "root_hash": "7e03267752ae17232ae1774c2def526f3d8db58cc5e838a08852bef78ddd26f1"
         },
         "chronos": {
             "files": 5,
@@ -89,7 +89,7 @@
         },
         "titan": {
             "files": 13,
-            "root_hash": "78a69a6dc294bcc7da20fa3a8af8e9508fc6fb01a97d6a52fa2ed862577a5292"
+            "root_hash": "91fcac0d30150bd3e7d7d6e7904ca7aeac4a5a45d8286ede2856f8e0278d2b40"
         },
         "throneguard": {
             "files": 1,
@@ -109,7 +109,7 @@
         },
         "zeus": {
             "files": 16,
-            "root_hash": "26fe45e4ccbd2d754610830a6dec8e13bab2701dc1172c3a9c3800c67cacbe9f"
+            "root_hash": "1f6511c94aca8a94888ea94161e76000bbf53b40a064807a48254d8f0edc71ff"
         }
     }
 }
