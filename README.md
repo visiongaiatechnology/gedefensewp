@@ -2,6 +2,9 @@
 
 # 🛡️ GeDefense WP — Open Core
 
+<img width="128" height="128" alt="GeDefenseLogo" src="https://github.com/user-attachments/assets/72b577f6-14b0-481b-8096-6148a4d23116" />
+
+
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
 [![Version](https://img.shields.io/badge/version-8.1.2_Open_Core-D4AF37?style=for-the-badge)](#)
