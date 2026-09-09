@@ -534,16 +534,189 @@ final class VIS_Cerberus {
     }
 
     private function terminate_request(string $msg): void {
-        $ip = htmlspecialchars($this->get_validated_ip());
-        $msg = htmlspecialchars($msg);
+        $ip = $this->get_validated_ip();
         
         if (!headers_sent()) {
-            header('HTTP/1.1 403 Forbidden');
+            $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1';
+            header("$protocol 403 Forbidden", true, 403);
             header('Content-Type: text/html; charset=utf-8');
             header('X-Robots-Tag: noindex, nofollow, nosnippet');
+            header('X-Content-Type-Options: nosniff');
+            header('X-Frame-Options: DENY');
+            header('Cache-Control: private, max-age=300');
+            header('X-Defense-Engine: VisionGaia-Cerberus');
         }
         
-        die("<h1>403 Forbidden</h1><hr>VISIONGAIA CERBERUS: $msg <br><small>IP: $ip</small>");
+        die($this->render_block_page($msg, $ip));
+    }
+
+    /**
+     * Cyberpunk High-Tech 403 Block Page
+     * 100% autark, 0 externe Ressourcen, 0 DB-Abfragen, maximale Performance.
+     */
+    private function render_block_page(string $msg, string $ip): string {
+        $safe_ip  = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
+        $safe_msg = htmlspecialchars($msg, ENT_QUOTES, 'UTF-8');
+        $ref_code = 'CERB-' . strtoupper(substr(md5($ip . date('Y-m-d')), 0, 4) . '-' . substr(md5($msg . $ip . 'vgt'), 0, 4));
+        $utc_time = gmdate('Y-m-d H:i:s') . ' UTC';
+
+        return '<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 Forbidden — VisionGaia Cerberus</title>
+    <style>
+        :root {
+            --bg: #06070a;
+            --surface: rgba(13, 16, 23, 0.88);
+            --surface-card: rgba(18, 22, 34, 0.75);
+            --border: rgba(255, 42, 95, 0.28);
+            --crimson: #ff2a5f;
+            --crimson-glow: rgba(255, 42, 95, 0.35);
+            --cyan: #00e5ff;
+            --text-main: #f0f3f8;
+            --text-muted: #8c9ba5;
+            --text-dim: #505c6e;
+            --mono-font: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(ellipse at 50% 0%, rgba(255, 42, 95, 0.18) 0%, rgba(6, 7, 10, 0) 70%),
+                radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 100% 100%, 28px 28px;
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+        .container { width: 100%; max-width: 680px; position: relative; }
+        .glow-orb {
+            position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+            width: 320px; height: 180px;
+            background: radial-gradient(circle, var(--crimson-glow) 0%, transparent 70%);
+            filter: blur(40px); pointer-events: none; z-index: 0;
+        }
+        .shield-card {
+            position: relative; z-index: 1;
+            background: var(--surface);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border); border-radius: 16px;
+            padding: 40px 36px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(255, 42, 95, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            text-align: center;
+        }
+        .badge-bar {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(255, 42, 95, 0.1); border: 1px solid rgba(255, 42, 95, 0.3);
+            border-radius: 30px; padding: 6px 14px; font-size: 11px; font-weight: 700;
+            letter-spacing: 1.5px; text-transform: uppercase; color: var(--crimson);
+            margin-bottom: 24px; box-shadow: 0 0 15px rgba(255, 42, 95, 0.15);
+        }
+        .pulse-dot {
+            width: 7px; height: 7px; background: var(--crimson); border-radius: 50%;
+            box-shadow: 0 0 8px var(--crimson); animation: pulse 1.8s infinite ease-in-out;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.4; } }
+        .icon-wrap {
+            width: 72px; height: 72px; margin: 0 auto 20px auto;
+            background: rgba(255, 42, 95, 0.08); border: 1px solid rgba(255, 42, 95, 0.3);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 30px rgba(255, 42, 95, 0.2);
+        }
+        .icon-wrap svg {
+            width: 36px; height: 36px; fill: none; stroke: var(--crimson);
+            stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+        }
+        .status-code {
+            font-family: var(--mono-font); font-size: 13px; font-weight: 700;
+            color: var(--cyan); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px;
+        }
+        h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; margin-bottom: 12px; }
+        .summary-text { color: var(--text-muted); font-size: 14px; line-height: 1.6; max-width: 520px; margin: 0 auto 28px auto; }
+        .telemetry-box {
+            background: var(--surface-card); border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: left;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+        @media (max-width: 520px) {
+            .telemetry-box { grid-template-columns: 1fr; gap: 12px; padding: 16px; }
+            .shield-card { padding: 30px 20px; }
+            h1 { font-size: 24px; }
+        }
+        .telemetry-item { display: flex; flex-direction: column; gap: 4px; }
+        .telemetry-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-dim); font-weight: 600; }
+        .telemetry-value { font-family: var(--mono-font); font-size: 12px; font-weight: 600; color: #ffffff; word-break: break-all; }
+        .telemetry-value.highlight { color: var(--cyan); }
+        .telemetry-value.danger { color: var(--crimson); }
+        .telemetry-full { grid-column: 1 / -1; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px; margin-top: 4px; }
+        .advisory { font-size: 12px; line-height: 1.6; color: var(--text-dim); margin-bottom: 20px; }
+        .advisory strong { color: var(--text-muted); }
+        .footer-brand {
+            border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 18px;
+            display: flex; align-items: center; justify-content: space-between;
+            font-family: var(--mono-font); font-size: 10px; color: var(--text-dim);
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+        .footer-brand span.shield-name { color: var(--text-muted); font-weight: 700; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="glow-orb"></div>
+    <div class="shield-card">
+        <div class="badge-bar">
+            <span class="pulse-dot"></span>
+            CERBERUS // ACTIVE MITIGATION
+        </div>
+        <div class="icon-wrap">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="M9 12l2 2 4-4"/>
+            </svg>
+        </div>
+        <div class="status-code">HTTP 403 // FORBIDDEN</div>
+        <h1>ACCESS RESTRICTED</h1>
+        <p class="summary-text">' . $safe_msg . '</p>
+        <div class="telemetry-box">
+            <div class="telemetry-item">
+                <span class="telemetry-label">Client IP Address</span>
+                <span class="telemetry-value highlight">' . $safe_ip . '</span>
+            </div>
+            <div class="telemetry-item">
+                <span class="telemetry-label">Defense Layer</span>
+                <span class="telemetry-value">CERBERUS XDR KERNEL</span>
+            </div>
+            <div class="telemetry-item">
+                <span class="telemetry-label">Incident Reference</span>
+                <span class="telemetry-value danger">' . $ref_code . '</span>
+            </div>
+            <div class="telemetry-item">
+                <span class="telemetry-label">Timestamp</span>
+                <span class="telemetry-value">' . $utc_time . '</span>
+            </div>
+            <div class="telemetry-item telemetry-full">
+                <span class="telemetry-label">Security Reason</span>
+                <span class="telemetry-value">' . $safe_msg . '</span>
+            </div>
+        </div>
+        <p class="advisory">
+            Your connection has been flagged by the automated perimeter security system. 
+            If you believe this is a false positive, please contact the site administrator and provide your <strong>Incident Reference</strong> and <strong>IP Address</strong>.
+        </p>
+        <div class="footer-brand">
+            <span class="shield-name">VISIONGAIA TECHNOLOGY</span>
+            <span>CERBERUS PROTOCOL V8.1</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>';
     }
 
     /**
