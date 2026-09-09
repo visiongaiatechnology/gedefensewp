@@ -12,6 +12,7 @@ final class VIS_Dashboard_Core {
         add_action('admin_menu', [$this, 'register_menu_matrix'], 9);
         add_action('admin_init', ['VIS_Dashboard_Settings', 'process_mutations']);
         add_action('admin_enqueue_scripts', [$this, 'inject_assets']);
+        add_action('admin_head', [$this, 'inject_menu_icon_styles']);
         add_action('admin_notices', [$this, 'display_setup_wizard_notice']);
         add_action('admin_notices', [$this, 'display_admin_whitelist_notice']);
 
@@ -161,5 +162,31 @@ final class VIS_Dashboard_Core {
         $page = isset($_GET['page']) && is_string($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
         if (!in_array($page, $allowed_pages, true) && $current_hook !== $this->page_hook) return;
         VIS_Dashboard_Assets::enqueue();
+    }
+
+    public function inject_menu_icon_styles(): void {
+        echo '<style id="vgt-menu-icon-style">
+            #adminmenu #toplevel_page_vgt-suite .wp-menu-image img,
+            #adminmenu .toplevel_page_vgt-suite .wp-menu-image img,
+            #adminmenu a[href*="page=vgt-suite"] .wp-menu-image img {
+                width: 20px !important;
+                height: 20px !important;
+                max-width: 20px !important;
+                max-height: 20px !important;
+                padding: 7px 0 0 0 !important;
+                object-fit: contain !important;
+                box-sizing: content-box !important;
+                display: inline-block !important;
+                opacity: 0.85;
+                transition: opacity 0.2s ease, transform 0.2s ease;
+            }
+            #adminmenu #toplevel_page_vgt-suite:hover .wp-menu-image img,
+            #adminmenu .toplevel_page_vgt-suite:hover .wp-menu-image img,
+            #adminmenu #toplevel_page_vgt-suite.wp-has-current-submenu .wp-menu-image img,
+            #adminmenu .toplevel_page_vgt-suite.wp-has-current-submenu .wp-menu-image img {
+                opacity: 1 !important;
+                transform: scale(1.08);
+            }
+        </style>';
     }
 }

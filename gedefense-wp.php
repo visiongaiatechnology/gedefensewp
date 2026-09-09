@@ -26,7 +26,7 @@ if (defined('VIS_VERSION')) {
 }
 
 define('VIS_VERSION', '8.1.2 OPEN CORE');
-define('VIS_MANIFEST_DIGEST', '88a6614a31d1faeb6220cdecc867410727713e8399f42fcf795dcaedbcaa85a9');
+define('VIS_MANIFEST_DIGEST', 'debc5d3afe2f7851aa58a46f80ced4f9dc9389b83000605d083e625f53cbbe72');
 define('VIS_PRODUCT_NAME', 'GeDefense WP - Open Core');
 define('VIS_PATH', plugin_dir_path(__FILE__));
 define('VIS_URL', plugin_dir_url(__FILE__));
