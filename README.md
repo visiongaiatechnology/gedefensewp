@@ -4,7 +4,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.1.1_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.1.2_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -645,6 +645,15 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 # Changelog History
 
+## 8.1.2 — Cerberus Cyberpunk Block Screen & Perimeter Response Hardening
+- **Cerberus Perimeter Defense NextGen 403 Forbidden Screen**:
+  - Transformed the plain HTML 403 blocking page into a zero-dependency Cyberpunk / High-Tech Active Mitigation cockpit.
+  - Implemented real-time telemetry display: Client IP Address, Defense Layer (`CERBERUS XDR KERNEL`), UTC mitigation timestamp, security violation reason, and deterministic Incident Reference code (`CERB-XXXX-XXXX`) for streamlined false-positive verification and support triage.
+  - Hardened perimeter defense response headers: protocol reflection (`403 Forbidden`), `X-Robots-Tag: noindex, nofollow, nosnippet` to eliminate search engine caching, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (anti-clickjacking), `Cache-Control: private, max-age=300`, and `X-Defense-Engine: VisionGaia-Cerberus`.
+  - Maintained strict Zero-Dependency & Zero-Overhead standard: 100% self-contained HTML5 template with inline SVG vectors, CSS pulse animations, and native monospace font stack fallbacks (`JetBrains Mono`, `Fira Code`, `SF Mono`, `Consolas`, `monospace`). No external CDN assets, no external scripts, and 0 database queries on fail-early rejection paths.
+- **Cryptographic Trust Anchor & Integrity Sync**:
+  - Regenerated Merkle tree root manifest digests across all 27 core components (`digest=88a6614a31d1faeb6220cdecc867410727713e8399f42fcf795dcaedbcaa85a9`) with 100% pass across integrity and security regression suites.
+
 ## 8.1.1 — Early Bootstrap Hardening, Pluggable Decoupling & ReDoS Buffer Protection
 - **Early-Bootstrap Pluggable Decoupling (`AEGIS_KERNEL` & `VAULT`)**:
   - Eliminated fatal panic `Call to undefined function wp_parse_auth_cookie()` and `is_user_logged_in()` during early Phase 1 bootstrap.
@@ -688,7 +697,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.1.1 — Open Core
+## GeDefense WP 8.1.2 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 
