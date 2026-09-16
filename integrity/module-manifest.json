@@ -21,7 +21,7 @@
         },
         "dashboard": {
             "files": 85,
-            "root_hash": "78fd9e4b3a2bbfa502d32ce43b693c234f613138b1b197f6a7bd9979dcfc24b3"
+            "root_hash": "4f9e59f521eef6aa92081f15c58df20e7ff9625a34d50adbc8519efd08eecabb"
         },
         "xdr": {
             "files": 9,
@@ -41,7 +41,7 @@
         },
         "cerberus": {
             "files": 1,
-            "root_hash": "75c20c2de880f0b7347886d4329c829a623fdebbbe11aa3c3390295aad968f4f"
+            "root_hash": "e039109bcdef14f359a3d385ae418bac655b354f215989f3c0cf38bb84cfca1c"
         },
         "chronos": {
             "files": 5,

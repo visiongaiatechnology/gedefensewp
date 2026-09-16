@@ -59,16 +59,29 @@ if (current_user_can('manage_options') && isset($_POST['vis_unban_ip_submit']) &
 // ACTION 3: SAVE BRANDING / CUSTOMIZER
 $branding_saved = false;
 if (current_user_can('manage_options') && isset($_POST['vis_cerberus_branding_submit']) && check_admin_referer('vis_cerberus_branding_action')) {
-    $raw_branding = isset($_POST['vis_branding']) && is_array($_POST['vis_branding']) ? wp_unslash($_POST['vis_branding']) : [];
+    $raw_branding   = isset($_POST['vis_branding']) && is_array($_POST['vis_branding']) ? wp_unslash($_POST['vis_branding']) : [];
+    $raw_overlay    = isset($raw_branding['bg_overlay_opacity']) ? (int)$raw_branding['bg_overlay_opacity'] : 85;
+    $clean_overlay  = max(30, min(98, $raw_overlay));
+    $clean_accent   = !empty($raw_branding['accent_color']) && is_string($raw_branding['accent_color']) ? sanitize_hex_color($raw_branding['accent_color']) : '#00e5ff';
+
     $clean_branding = [
-        'enabled'        => !empty($raw_branding['enabled']),
-        'company_name'   => sanitize_text_field($raw_branding['company_name'] ?? ''),
-        'support_phone'  => sanitize_text_field($raw_branding['support_phone'] ?? ''),
-        'support_email'  => sanitize_email($raw_branding['support_email'] ?? ''),
-        'business_hours' => sanitize_text_field($raw_branding['business_hours'] ?? ''),
-        'custom_notice'  => sanitize_textarea_field($raw_branding['custom_notice'] ?? ''),
-        'layout_mode'    => in_array($raw_branding['layout_mode'] ?? '', ['banner_top', 'banner_bottom', 'classic'], true) ? $raw_branding['layout_mode'] : 'banner_top',
-        'logo_url'       => esc_url_raw($raw_branding['logo_url'] ?? ''),
+        'enabled'              => !empty($raw_branding['enabled']),
+        'page_title'           => sanitize_text_field($raw_branding['page_title'] ?? ''),
+        'company_name'         => sanitize_text_field($raw_branding['company_name'] ?? ''),
+        'company_tagline'      => sanitize_text_field($raw_branding['company_tagline'] ?? ''),
+        'company_description'  => sanitize_textarea_field($raw_branding['company_description'] ?? ''),
+        'company_features'     => sanitize_textarea_field($raw_branding['company_features'] ?? ''),
+        'support_phone'        => sanitize_text_field($raw_branding['support_phone'] ?? ''),
+        'support_email'        => sanitize_email($raw_branding['support_email'] ?? ''),
+        'company_address'      => sanitize_textarea_field($raw_branding['company_address'] ?? ''),
+        'business_hours'       => sanitize_text_field($raw_branding['business_hours'] ?? ''),
+        'logo_url'             => esc_url_raw($raw_branding['logo_url'] ?? ''),
+        'bg_image_url'         => esc_url_raw($raw_branding['bg_image_url'] ?? ''),
+        'bg_overlay_opacity'   => $clean_overlay,
+        'accent_color'         => $clean_accent ?: '#00e5ff',
+        'custom_security_note' => sanitize_textarea_field($raw_branding['custom_security_note'] ?? ''),
+        'custom_notice'        => sanitize_textarea_field($raw_branding['custom_security_note'] ?? ($raw_branding['custom_notice'] ?? '')),
+        'layout_mode'          => in_array($raw_branding['layout_mode'] ?? '', ['banner_top', 'banner_bottom', 'classic'], true) ? $raw_branding['layout_mode'] : 'banner_top',
     ];
     update_option('vis_cerberus_branding', $clean_branding);
     $branding_saved = true;
@@ -170,78 +183,144 @@ $preview_prom_url = admin_url('admin.php?page=vgt-suite&tab=cerberus&preview_blo
             </div>
 
             <p style="color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 24px;">
-                <?php esc_html_e('Personalisieren Sie die Sperrseite für Kunden und Besucher: Hinterlegen Sie Firmennamen, Hotline, Support-E-Mail und Erreichbarkeitszeiten. Wählen Sie ein Banner-Layout, damit die Sperrmeldung als diskreter Balken oben oder unten erscheint, während die Support-Kontaktdaten im Zentrum stehen.', 'vgt-sentinel'); ?>
+                <?php esc_html_e('Gestalten Sie eine professionelle Unternehmens-Landing-Page als Sperranzeige: Hinterlegen Sie Ihr Firmen-Logo, ein individuelles Hintergrundbild, Unternehmens-Vorstellung ("Wer wir sind & was wir machen"), Kernleistungen/USPs sowie Direkt-Kontaktdaten. Darunter erscheint transparent die Sicherheitsbox mit Vorgangsdaten und 1-Click-Kopierfunktion zur schnellen Deeskalation und Entsperrung.', 'vgt-sentinel'); ?>
             </p>
 
             <form method="post" action="">
                 <?php wp_nonce_field('vis_cerberus_branding_action'); ?>
                 
-                <div style="margin-bottom: 24px; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                <!-- TOGGLE CARD -->
+                <div style="margin-bottom: 24px; padding: 18px; background: rgba(0, 229, 255, 0.04); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 8px;">
                     <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
                         <input type="checkbox" name="vis_branding[enabled]" value="1" <?php checked(!empty($branding['enabled'])); ?>>
-                        <strong style="color: #f0f3f8; font-size: 14px;"><?php esc_html_e('Unternehmens-Support-Branding auf Sperrseiten aktivieren', 'vgt-sentinel'); ?></strong>
+                        <strong style="color: #f0f3f8; font-size: 14px;"><?php esc_html_e('Corporate Landing-Page als Sperranzeige aktivieren', 'vgt-sentinel'); ?></strong>
                     </label>
                     <small style="display:block; color:#94a3b8; margin-top:4px; margin-left: 28px;">
-                        <?php esc_html_e('Wenn aktiviert, wird sowohl bei Cerberus-Sperren als auch bei Prometheus-Strikes das personalisierte Unternehmensportal gerendert.', 'vgt-sentinel'); ?>
+                        <?php esc_html_e('Wenn aktiviert, wird sowohl bei Cerberus-Sperren als auch bei Prometheus-Strikes Ihre vollständige Unternehmens-Landing-Page mit Kontaktdaten und darunterliegender Sicherheits-Box angezeigt.', 'vgt-sentinel'); ?>
                     </small>
                 </div>
 
-                <div class="vgt-titan-fields">
-                    <label>
-                        <span><?php esc_html_e('Unternehmensname / Firmenname', 'vgt-sentinel'); ?></span>
-                        <input type="text" name="vis_branding[company_name]" value="<?php echo esc_attr((string)($branding['company_name'] ?? get_bloginfo('name'))); ?>" placeholder="z. B. BaufiFair GmbH">
-                    </label>
+                <!-- CARD 1: VISUELLE IDENTITÄT -->
+                <div style="margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                    <h4 style="margin: 0 0 16px 0; color: #00e5ff; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
+                        <span>🎨</span> <?php esc_html_e('1. Design & Visuelle Identität', 'vgt-sentinel'); ?>
+                    </h4>
+                    <div class="vgt-titan-fields">
+                        <label>
+                            <span><?php esc_html_e('Firmen-Logo URL (Optional)', 'vgt-sentinel'); ?></span>
+                            <input type="url" name="vis_branding[logo_url]" value="<?php echo esc_attr((string)($branding['logo_url'] ?? '')); ?>" placeholder="https://example.com/wp-content/uploads/logo.svg">
+                            <small style="color:#64748b; font-size:11px;"><?php esc_html_e('SVG oder transparentes PNG empfohlen.', 'vgt-sentinel'); ?></small>
+                        </label>
 
-                    <label>
-                        <span><?php esc_html_e('Support-Hotline / Telefonnummer', 'vgt-sentinel'); ?></span>
-                        <input type="text" name="vis_branding[support_phone]" value="<?php echo esc_attr((string)($branding['support_phone'] ?? '')); ?>" placeholder="z. B. +49 (0) 30 12345678">
-                        <small style="color:#64748b; font-size:11px;"><?php esc_html_e('Wird auf Smartphones als direkter One-Tap-Anrufbutton gerendert.', 'vgt-sentinel'); ?></small>
-                    </label>
+                        <label>
+                            <span><?php esc_html_e('Hintergrundbild URL (Optional)', 'vgt-sentinel'); ?></span>
+                            <input type="url" name="vis_branding[bg_image_url]" value="<?php echo esc_attr((string)($branding['bg_image_url'] ?? '')); ?>" placeholder="https://example.com/wp-content/uploads/bg-office.jpg">
+                            <small style="color:#64748b; font-size:11px;"><?php esc_html_e('Büro-, Gebäude- oder Marken-Headerbild (wird mit Overlay abgedunkelt).', 'vgt-sentinel'); ?></small>
+                        </label>
 
-                    <label>
-                        <span><?php esc_html_e('Support-E-Mail-Adresse', 'vgt-sentinel'); ?></span>
-                        <input type="email" name="vis_branding[support_email]" value="<?php echo esc_attr((string)($branding['support_email'] ?? get_option('admin_email'))); ?>" placeholder="z. B. kontakt@baufifair.de">
-                        <small style="color:#64748b; font-size:11px;"><?php esc_html_e('Klick öffnet Mail-Client mit bereits vorausgefüllter Incident-Referenz.', 'vgt-sentinel'); ?></small>
-                    </label>
+                        <label>
+                            <span><?php esc_html_e('Hintergrund-Abdunkelung (%)', 'vgt-sentinel'); ?></span>
+                            <input type="number" name="vis_branding[bg_overlay_opacity]" min="30" max="98" step="1" value="<?php echo esc_attr((string)($branding['bg_overlay_opacity'] ?? 85)); ?>">
+                            <small style="color:#64748b; font-size:11px;"><?php esc_html_e('30% bis 98% (Standard: 85% für optimale Lesbarkeit).', 'vgt-sentinel'); ?></small>
+                        </label>
 
-                    <label>
-                        <span><?php esc_html_e('Erreichbarkeit / Bürozeiten', 'vgt-sentinel'); ?></span>
-                        <input type="text" name="vis_branding[business_hours]" value="<?php echo esc_attr((string)($branding['business_hours'] ?? '')); ?>" placeholder="z. B. Mo. - Fr.: 08:30 - 18:00 Uhr">
-                    </label>
-
-                    <label>
-                        <span><?php esc_html_e('Layout-Modus der Sperranzeige', 'vgt-sentinel'); ?></span>
-                        <select name="vis_branding[layout_mode]" class="vgt-titan-select">
-                            <option value="banner_top" <?php selected(($branding['layout_mode'] ?? 'banner_top'), 'banner_top'); ?>>
-                                <?php esc_html_e('Sicherheits-Balken OBEN fixiert, Support-Portal zentriert (Empfohlen)', 'vgt-sentinel'); ?>
-                            </option>
-                            <option value="banner_bottom" <?php selected(($branding['layout_mode'] ?? ''), 'banner_bottom'); ?>>
-                                <?php esc_html_e('Support-Portal zentriert, Sicherheits-Balken UNTEN fixiert', 'vgt-sentinel'); ?>
-                            </option>
-                            <option value="classic" <?php selected(($branding['layout_mode'] ?? ''), 'classic'); ?>>
-                                <?php esc_html_e('Klassische Cyberpunk-Card mit integrierter Support-Sektion', 'vgt-sentinel'); ?>
-                            </option>
-                        </select>
-                    </label>
-
-                    <label>
-                        <span><?php esc_html_e('Firmen-Logo URL (Optional)', 'vgt-sentinel'); ?></span>
-                        <input type="url" name="vis_branding[logo_url]" value="<?php echo esc_attr((string)($branding['logo_url'] ?? '')); ?>" placeholder="https://domain.tld/logo.png">
-                    </label>
+                        <label>
+                            <span><?php esc_html_e('Akzent- & Markenfarbe (Hex)', 'vgt-sentinel'); ?></span>
+                            <input type="text" name="vis_branding[accent_color]" value="<?php echo esc_attr((string)($branding['accent_color'] ?? '#00e5ff')); ?>" placeholder="#00e5ff">
+                            <small style="color:#64748b; font-size:11px;"><?php esc_html_e('Farbe für Buttons, Icons und Highlights.', 'vgt-sentinel'); ?></small>
+                        </label>
+                    </div>
                 </div>
 
-                <div style="margin-top: 16px;">
+                <!-- CARD 2: UNTERNEHMENSPRÄSENTATION -->
+                <div style="margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                    <h4 style="margin: 0 0 16px 0; color: #5eead4; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
+                        <span>🏢</span> <?php esc_html_e('2. Unternehmens-Präsentation ("Wer wir sind & Was wir machen")', 'vgt-sentinel'); ?>
+                    </h4>
+                    <div class="vgt-titan-fields">
+                        <label>
+                            <span><?php esc_html_e('Browser Seitentitel (HTML Title)', 'vgt-sentinel'); ?></span>
+                            <input type="text" name="vis_branding[page_title]" value="<?php echo esc_attr((string)($branding['page_title'] ?? '')); ?>" placeholder="z. B. BaufiFair Kundenzugang & Support">
+                        </label>
+
+                        <label>
+                            <span><?php esc_html_e('Unternehmensname / Firmenname', 'vgt-sentinel'); ?></span>
+                            <input type="text" name="vis_branding[company_name]" value="<?php echo esc_attr((string)($branding['company_name'] ?? get_bloginfo('name'))); ?>" placeholder="z. B. BaufiFair GmbH">
+                        </label>
+
+                        <label style="grid-column: 1 / -1;">
+                            <span><?php esc_html_e('Slogan / Claim / Untertitel', 'vgt-sentinel'); ?></span>
+                            <input type="text" name="vis_branding[company_tagline]" value="<?php echo esc_attr((string)($branding['company_tagline'] ?? '')); ?>" placeholder="z. B. Ihr vertrauensvoller Partner für maßgeschneiderte Immobilienfinanzierung">
+                        </label>
+                    </div>
+
+                    <div style="margin-top: 16px;">
+                        <label>
+                            <span style="display:block; margin-bottom: 6px; font-weight: 600; color: #f0f3f8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                                <?php esc_html_e('Wer wir sind & Was wir machen (Unternehmensbeschreibung)', 'vgt-sentinel'); ?>
+                            </span>
+                            <textarea name="vis_branding[company_description]" rows="3" class="vgt-titan-textarea" style="width: 100%; background: #06070a; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #f0f3f8; padding: 10px; font-size: 13px;" placeholder="z. B. Wir begleiten Privatkunden und Investoren unabhängig und transparent bei der Verwirklichung ihrer Bau- und Kaufvorhaben. Als führender Spezialist vergleichen wir über 500 Bankpartner bundesweit für Ihre optimale Kondition."><?php echo esc_textarea((string)($branding['company_description'] ?? '')); ?></textarea>
+                        </label>
+                    </div>
+
+                    <div style="margin-top: 16px;">
+                        <label>
+                            <span style="display:block; margin-bottom: 6px; font-weight: 600; color: #f0f3f8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                                <?php esc_html_e('Kernkompetenzen / USPs (Eine Zeile pro Punkt)', 'vgt-sentinel'); ?>
+                            </span>
+                            <textarea name="vis_branding[company_features]" rows="3" class="vgt-titan-textarea" style="width: 100%; background: #06070a; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #f0f3f8; padding: 10px; font-size: 13px;" placeholder="Über 500 renommierte Bank- und Finanzpartner im Direktvergleich&#10;100% kostenlose und unabhängige Konditionsprüfung&#10;Persönlicher Ansprechpartner mit schneller Reaktionszeit"><?php echo esc_textarea((string)($branding['company_features'] ?? '')); ?></textarea>
+                            <small style="color:#64748b; font-size:11px;"><?php esc_html_e('Wird auf der Sperrseite als elegante Feature-Karten gerendert.', 'vgt-sentinel'); ?></small>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- CARD 3: DIREKTKONTAKT & SERVICE-HUB -->
+                <div style="margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                    <h4 style="margin: 0 0 16px 0; color: #38bdf8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
+                        <span>📞</span> <?php esc_html_e('3. Direktkontakt & Service-Hotline', 'vgt-sentinel'); ?>
+                    </h4>
+                    <div class="vgt-titan-fields">
+                        <label>
+                            <span><?php esc_html_e('Support-Hotline / Telefonnummer', 'vgt-sentinel'); ?></span>
+                            <input type="text" name="vis_branding[support_phone]" value="<?php echo esc_attr((string)($branding['support_phone'] ?? '')); ?>" placeholder="z. B. +49 (0) 30 12345678">
+                            <small style="color:#64748b; font-size:11px;"><?php esc_html_e('Wird auf Smartphones und Tablets als direkter One-Tap-Anrufbutton gerendert.', 'vgt-sentinel'); ?></small>
+                        </label>
+
+                        <label>
+                            <span><?php esc_html_e('Support-E-Mail-Adresse', 'vgt-sentinel'); ?></span>
+                            <input type="email" name="vis_branding[support_email]" value="<?php echo esc_attr((string)($branding['support_email'] ?? get_option('admin_email'))); ?>" placeholder="z. B. kontakt@baufifair.de">
+                            <small style="color:#64748b; font-size:11px;"><?php esc_html_e('Klick öffnet Mail-Client mit bereits vorausgefüllter Incident-Referenz.', 'vgt-sentinel'); ?></small>
+                        </label>
+
+                        <label>
+                            <span><?php esc_html_e('Standort / Postanschrift', 'vgt-sentinel'); ?></span>
+                            <input type="text" name="vis_branding[company_address]" value="<?php echo esc_attr((string)($branding['company_address'] ?? '')); ?>" placeholder="z. B. Musterstraße 12, 10115 Berlin">
+                        </label>
+
+                        <label>
+                            <span><?php esc_html_e('Erreichbarkeit / Bürozeiten', 'vgt-sentinel'); ?></span>
+                            <input type="text" name="vis_branding[business_hours]" value="<?php echo esc_attr((string)($branding['business_hours'] ?? '')); ?>" placeholder="z. B. Mo. - Fr.: 08:30 - 18:00 Uhr">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- CARD 4: SICHERHEITS- & DEESKALATIONSHINWEIS -->
+                <div style="margin-bottom: 24px; padding: 20px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                    <h4 style="margin: 0 0 16px 0; color: #fb7185; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
+                        <span>🛡</span> <?php esc_html_e('4. Deeskalations-Hinweis unterhalb der Unternehmensdaten', 'vgt-sentinel'); ?>
+                    </h4>
                     <label>
                         <span style="display:block; margin-bottom: 6px; font-weight: 600; color: #f0f3f8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
-                            <?php esc_html_e('Individueller Hinweistext / Kunden-Nachricht', 'vgt-sentinel'); ?>
+                            <?php esc_html_e('Beruhigende Kunden-Mitteilung in der Sicherheits-Box', 'vgt-sentinel'); ?>
                         </span>
-                        <textarea name="vis_branding[custom_notice]" rows="3" class="vgt-titan-textarea" style="width: 100%; background: #06070a; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #f0f3f8; padding: 10px; font-size: 13px;" placeholder="z. B. Sie wurden durch unsere Firewall vorübergehend blockiert. Rufen Sie uns bitte an oder schreiben Sie uns – wir schalten Sie sofort frei!"><?php echo esc_textarea((string)($branding['custom_notice'] ?? '')); ?></textarea>
+                        <textarea name="vis_branding[custom_security_note]" rows="3" class="vgt-titan-textarea" style="width: 100%; background: #06070a; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #f0f3f8; padding: 10px; font-size: 13px;" placeholder="z. B. Unser automatisiertes Sicherheitssystem schützt unsere Infrastruktur vor bösartigen Angriffen. Sollten Sie diese Meldung fälschlicherweise erhalten haben, rufen Sie uns gerne an oder kopieren Sie die Vorgangs-ID unten in eine E-Mail – wir schalten Sie sofort frei."><?php echo esc_textarea((string)($branding['custom_security_note'] ?? ($branding['custom_notice'] ?? ''))); ?></textarea>
+                        <small style="color:#64748b; font-size:11px;"><?php esc_html_e('Dieser Text wird innerhalb der transparenten Sicherheits-Box direkt über den technischen Details angezeigt.', 'vgt-sentinel'); ?></small>
                     </label>
                 </div>
 
                 <div class="vgt-titan-actions" style="margin-top: 24px;">
-                    <button type="submit" name="vis_cerberus_branding_submit" value="1" style="background: linear-gradient(135deg, #00e5ff 0%, #0077b6 100%); color: #06070a; font-weight: 800; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; letter-spacing: 1px;">
-                        <?php esc_html_e('PERSONALISIERUNG SPEICHERN', 'vgt-sentinel'); ?>
+                    <button type="submit" name="vis_cerberus_branding_submit" value="1" style="background: linear-gradient(135deg, #00e5ff 0%, #0077b6 100%); color: #06070a; font-weight: 800; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; letter-spacing: 1px; font-size: 13px;">
+                        <?php esc_html_e('LANDING-PAGE PERSONALISIERUNG SPEICHERN', 'vgt-sentinel'); ?>
                     </button>
                 </div>
             </form>
