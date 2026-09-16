@@ -304,7 +304,11 @@ final class VIS_Cerberus {
         return hash('sha256', bin2hex($subnet) . '|' . $ua);
     }
 
-    public function ban_ip(string $ip, string $reason): void {
+    public static function ban_ip(string $ip, string $reason): void {
+        self::instance()->execute_ban($ip, $reason);
+    }
+
+    public function execute_ban(string $ip, string $reason): void {
         if (!self::valid_address_or_network($ip)) {
             error_log('[VIS CERBERUS] Invalid ban target rejected.');
             return;
@@ -337,7 +341,7 @@ final class VIS_Cerberus {
 
     public function ban_subnet(string $subnet, string $reason = 'PROMETHEUS_BOTANICAL_SWARM_BAN'): void {
         if (!str_contains($subnet, '/')) return;
-        $this->ban_ip($subnet, $reason);
+        self::ban_ip($subnet, $reason);
         wp_cache_delete('vis_cidr_bans', 'visiongaia_cerberus');
     }
 
@@ -357,8 +361,8 @@ final class VIS_Cerberus {
         return true;
     }
 
-    public function unban_ip(string $ip): bool {
-        return $this->unban_target($ip);
+    public static function unban_ip(string $ip): bool {
+        return self::instance()->unban_target($ip);
     }
 
     private function schedule_os_firewall_sync(): void {
@@ -533,8 +537,16 @@ final class VIS_Cerberus {
         return true;
     }
 
-    private function terminate_request(string $msg): void {
-        $ip = $this->get_validated_ip();
+    public static function terminate(string $msg, array $context = []): void {
+        self::instance()->terminate_request($msg, $context);
+    }
+
+    public function terminate_request(string $msg, array $context = []): void {
+        $ip = !empty($context['ip']) && is_string($context['ip']) ? $context['ip'] : $this->get_validated_ip();
+        
+        while (ob_get_level()) {
+            @ob_end_clean();
+        }
         
         if (!headers_sent()) {
             $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1';
@@ -544,56 +556,218 @@ final class VIS_Cerberus {
             header('X-Content-Type-Options: nosniff');
             header('X-Frame-Options: DENY');
             header('Cache-Control: private, max-age=300');
-            header('X-Defense-Engine: VisionGaia-Cerberus');
+            $engine_header = !empty($context['defense_engine']) && is_string($context['defense_engine'])
+                ? $context['defense_engine']
+                : 'VisionGaia-Cerberus';
+            header('X-Defense-Engine: ' . $engine_header);
         }
         
-        die($this->render_block_page($msg, $ip));
+        die($this->render_block_page($msg, $ip, $context));
     }
 
     /**
      * Cyberpunk High-Tech 403 Block Page
      * 100% autark, 0 externe Ressourcen, 0 DB-Abfragen, maximale Performance.
+     * Unterstützt Unternehmens-Branding, Direkt-Hotline, E-Mail und modulare Banner-Layouts.
      */
-    private function render_block_page(string $msg, string $ip): string {
-        $safe_ip  = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
-        $safe_msg = htmlspecialchars($msg, ENT_QUOTES, 'UTF-8');
-        $ref_code = 'CERB-' . strtoupper(substr(md5($ip . date('Y-m-d')), 0, 4) . '-' . substr(md5($msg . $ip . 'vgt'), 0, 4));
-        $utc_time = gmdate('Y-m-d H:i:s') . ' UTC';
+    public function render_block_page(string $msg, string $ip, array $context = []): string {
+        $safe_ip    = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
+        $safe_msg   = htmlspecialchars($msg, ENT_QUOTES, 'UTF-8');
+        $ref_prefix = !empty($context['ref_prefix']) && is_string($context['ref_prefix']) ? $context['ref_prefix'] : 'CERB';
+        $ref_code   = $ref_prefix . '-' . strtoupper(substr(md5($ip . date('Y-m-d')), 0, 4) . '-' . substr(md5($msg . $ip . 'vgt'), 0, 4));
+        $utc_time   = gmdate('Y-m-d H:i:s') . ' UTC';
+        
+        $engine_label = !empty($context['engine']) && is_string($context['engine']) ? $context['engine'] : 'CERBERUS XDR KERNEL';
+        $safe_engine  = htmlspecialchars($engine_label, ENT_QUOTES, 'UTF-8');
+        $badge_label  = !empty($context['badge']) && is_string($context['badge']) ? $context['badge'] : 'CERBERUS // ACTIVE MITIGATION';
+        $safe_badge   = htmlspecialchars($badge_label, ENT_QUOTES, 'UTF-8');
+
+        $branding = get_option('vis_cerberus_branding', []);
+        if (!is_array($branding)) {
+            $branding = [];
+        }
+
+        $branding_enabled = !empty($branding['enabled']);
+        $company_name = !empty($branding['company_name']) && is_string($branding['company_name'])
+            ? trim($branding['company_name'])
+            : (function_exists('get_bloginfo') ? (string)get_bloginfo('name') : '');
+        $support_phone  = !empty($branding['support_phone']) && is_string($branding['support_phone']) ? trim($branding['support_phone']) : '';
+        $support_email  = !empty($branding['support_email']) && is_string($branding['support_email']) ? trim($branding['support_email']) : '';
+        $business_hours = !empty($branding['business_hours']) && is_string($branding['business_hours']) ? trim($branding['business_hours']) : '';
+        $custom_notice  = !empty($branding['custom_notice']) && is_string($branding['custom_notice']) ? trim($branding['custom_notice']) : '';
+        $layout_mode    = !empty($branding['layout_mode']) && in_array($branding['layout_mode'], ['banner_top', 'banner_bottom', 'classic'], true)
+            ? $branding['layout_mode']
+            : 'banner_top';
+        $logo_url       = !empty($branding['logo_url']) && is_string($branding['logo_url']) ? trim($branding['logo_url']) : '';
+
+        $safe_company = htmlspecialchars($company_name !== '' ? $company_name : 'VISIONGAIA TECHNOLOGY', ENT_QUOTES, 'UTF-8');
+        $safe_phone   = htmlspecialchars($support_phone, ENT_QUOTES, 'UTF-8');
+        $clean_phone  = preg_replace('/[^0-9+]/', '', $support_phone);
+        $safe_email   = htmlspecialchars($support_email, ENT_QUOTES, 'UTF-8');
+        $safe_hours   = htmlspecialchars($business_hours, ENT_QUOTES, 'UTF-8');
+        $safe_notice  = $custom_notice !== '' ? nl2br(htmlspecialchars($custom_notice, ENT_QUOTES, 'UTF-8')) : '';
+        $safe_logo    = $logo_url !== '' ? esc_url($logo_url) : '';
+        $clean_email_href = $safe_email !== '' ? 'mailto:' . rawurlencode($support_email) . '?subject=' . rawurlencode('Freischaltung anfordern - Vorgang: ' . $ref_code) : '#';
+
+        $is_branded = $branding_enabled && ($company_name !== '' || $support_phone !== '' || $support_email !== '');
+
+        // Security Banner HTML
+        $banner_html = '';
+        if ($is_branded && ($layout_mode === 'banner_top' || $layout_mode === 'banner_bottom')) {
+            $banner_html = '<aside class="vgt-defense-banner vgt-banner-' . ($layout_mode === 'banner_bottom' ? 'bottom' : 'top') . '" aria-label="Security Barrier">
+                <div class="vgt-banner-brand">
+                    <span class="pulse-dot"></span>
+                    <span class="vgt-banner-tag">' . $safe_badge . '</span>
+                    <span class="vgt-banner-code">HTTP 403 // ACCESS RESTRICTED</span>
+                </div>
+                <div class="vgt-banner-pills">
+                    <span class="vgt-pill">IP: <strong class="highlight">' . $safe_ip . '</strong></span>
+                    <span class="vgt-pill">REF: <strong class="danger">' . $ref_code . '</strong></span>
+                    <span class="vgt-pill vgt-hide-mobile">ENGINE: <strong>' . $safe_engine . '</strong></span>
+                </div>
+            </aside>';
+        }
+
+        // Direct Action Buttons
+        $actions_html = '';
+        if ($is_branded && ($safe_phone !== '' || $safe_email !== '')) {
+            $actions_html .= '<div class="vgt-action-grid">';
+            if ($safe_phone !== '') {
+                $actions_html .= '<a href="tel:' . $clean_phone . '" class="vgt-contact-btn phone-btn" title="Hotline direkt anrufen">
+                    <span class="vgt-btn-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </span>
+                    <span class="vgt-btn-text">
+                        <strong>Hotline direkt anrufen</strong>
+                        <span>' . $safe_phone . '</span>
+                    </span>
+                </a>';
+            }
+            if ($safe_email !== '') {
+                $actions_html .= '<a href="' . $clean_email_href . '" class="vgt-contact-btn email-btn" title="Support per E-Mail kontaktieren">
+                    <span class="vgt-btn-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </span>
+                    <span class="vgt-btn-text">
+                        <strong>Support-E-Mail senden</strong>
+                        <span>' . $safe_email . '</span>
+                    </span>
+                </a>';
+            }
+            $actions_html .= '</div>';
+        }
+
+        $hours_html = ($is_branded && $safe_hours !== '')
+            ? '<div class="vgt-hours-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Servicezeiten: ' . $safe_hours . '</div>'
+            : '';
+
+        $company_notice_html = '';
+        if ($is_branded) {
+            $default_note = 'Unsere automatisierte Sicherheits-Firewall hat Ihre Verbindung vorsorglich blockiert. Sie können uns weiterhin direkt telefonisch oder per E-Mail erreichen – unser Team schaltet Sie umgehend frei.';
+            $display_note = $safe_notice !== '' ? $safe_notice : $default_note;
+            $company_notice_html = '<div class="company-notice">' . $display_note . '</div>';
+        }
+
+        $logo_or_icon = '';
+        if ($safe_logo !== '') {
+            $logo_or_icon = '<div class="vgt-company-logo-wrap"><img src="' . $safe_logo . '" alt="' . $safe_company . '" class="vgt-company-logo"></div>';
+        } else {
+            $logo_or_icon = '<div class="icon-wrap">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+            </div>';
+        }
+
+        $top_banner_output    = ($is_branded && $layout_mode === 'banner_top') ? $banner_html : '';
+        $bottom_banner_output = ($is_branded && $layout_mode === 'banner_bottom') ? $banner_html : '';
 
         return '<!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>403 Forbidden — VisionGaia Cerberus</title>
+    <title>403 Forbidden — ' . $safe_company . '</title>
     <style>
         :root {
             --bg: #06070a;
-            --surface: rgba(13, 16, 23, 0.88);
-            --surface-card: rgba(18, 22, 34, 0.75);
+            --surface: rgba(13, 16, 23, 0.90);
+            --surface-card: rgba(18, 22, 34, 0.85);
             --border: rgba(255, 42, 95, 0.28);
+            --border-subtle: rgba(255, 255, 255, 0.08);
             --crimson: #ff2a5f;
             --crimson-glow: rgba(255, 42, 95, 0.35);
             --cyan: #00e5ff;
+            --cyan-glow: rgba(0, 229, 255, 0.25);
             --text-main: #f0f3f8;
-            --text-muted: #8c9ba5;
-            --text-dim: #505c6e;
-            --mono-font: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --mono-font: "JetBrains Mono", "SF Mono", "Fira Code", Consolas, monospace;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background-color: var(--bg);
             background-image: 
-                radial-gradient(ellipse at 50% 0%, rgba(255, 42, 95, 0.18) 0%, rgba(6, 7, 10, 0) 70%),
-                radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+                radial-gradient(ellipse at 50% 0%, rgba(255, 42, 95, 0.16) 0%, rgba(6, 7, 10, 0) 70%),
+                radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 100% 100%, 28px 28px;
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
+        }
+        .vgt-defense-banner {
+            width: 100%;
+            background: rgba(10, 12, 18, 0.94);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 42, 95, 0.32);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
+            z-index: 100;
+        }
+        .vgt-defense-banner.vgt-banner-bottom {
+            border-bottom: none;
+            border-top: 1px solid rgba(255, 42, 95, 0.32);
+            box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.6);
+            margin-top: auto;
+        }
+        .vgt-banner-brand { display: flex; align-items: center; gap: 10px; }
+        .pulse-dot {
+            width: 8px; height: 8px; background: var(--crimson); border-radius: 50%;
+            box-shadow: 0 0 10px var(--crimson); animation: pulse 1.8s infinite ease-in-out;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.4; } }
+        .vgt-banner-tag {
+            font-family: var(--mono-font); font-size: 11px; font-weight: 700;
+            letter-spacing: 1.5px; text-transform: uppercase; color: var(--crimson);
+        }
+        .vgt-banner-code {
+            font-family: var(--mono-font); font-size: 11px; color: var(--cyan);
+            letter-spacing: 1px; padding-left: 8px; border-left: 1px solid rgba(255,255,255,0.15);
+        }
+        .vgt-banner-pills {
+            display: flex; align-items: center; gap: 12px; font-family: var(--mono-font); font-size: 11px;
+        }
+        .vgt-pill {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 4px 10px; border-radius: 6px; color: var(--text-muted);
+        }
+        .vgt-pill strong { color: #ffffff; }
+        .vgt-pill strong.danger { color: var(--crimson); }
+        .vgt-pill strong.highlight { color: var(--cyan); }
+        .vgt-main-wrapper {
+            flex: 1;
+            display: flex;
             align-items: center;
             justify-content: center;
-            padding: 24px 16px;
+            padding: 36px 16px;
+            position: relative;
         }
         .container { width: 100%; max-width: 680px; position: relative; }
         .glow-orb {
@@ -606,9 +780,9 @@ final class VIS_Cerberus {
             position: relative; z-index: 1;
             background: var(--surface);
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border); border-radius: 16px;
-            padding: 40px 36px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(255, 42, 95, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border); border-radius: 18px;
+            padding: 38px 34px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 40px rgba(255, 42, 95, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
             text-align: center;
         }
         .badge-bar {
@@ -616,105 +790,203 @@ final class VIS_Cerberus {
             background: rgba(255, 42, 95, 0.1); border: 1px solid rgba(255, 42, 95, 0.3);
             border-radius: 30px; padding: 6px 14px; font-size: 11px; font-weight: 700;
             letter-spacing: 1.5px; text-transform: uppercase; color: var(--crimson);
-            margin-bottom: 24px; box-shadow: 0 0 15px rgba(255, 42, 95, 0.15);
+            margin-bottom: 20px; box-shadow: 0 0 15px rgba(255, 42, 95, 0.15);
         }
-        .pulse-dot {
-            width: 7px; height: 7px; background: var(--crimson); border-radius: 50%;
-            box-shadow: 0 0 8px var(--crimson); animation: pulse 1.8s infinite ease-in-out;
+        .vgt-company-logo-wrap {
+            margin: 0 auto 16px auto; max-width: 220px; max-height: 70px; display: flex; align-items: center; justify-content: center;
         }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.4; } }
+        .vgt-company-logo {
+            max-width: 100%; max-height: 60px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+        }
         .icon-wrap {
-            width: 72px; height: 72px; margin: 0 auto 20px auto;
+            width: 64px; height: 64px; margin: 0 auto 18px auto;
             background: rgba(255, 42, 95, 0.08); border: 1px solid rgba(255, 42, 95, 0.3);
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 0 30px rgba(255, 42, 95, 0.2);
         }
         .icon-wrap svg {
-            width: 36px; height: 36px; fill: none; stroke: var(--crimson);
+            width: 32px; height: 32px; fill: none; stroke: var(--crimson);
             stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
         }
         .status-code {
-            font-family: var(--mono-font); font-size: 13px; font-weight: 700;
-            color: var(--cyan); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px;
+            font-family: var(--mono-font); font-size: 12px; font-weight: 700;
+            color: var(--cyan); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px;
         }
-        h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; margin-bottom: 12px; }
-        .summary-text { color: var(--text-muted); font-size: 14px; line-height: 1.6; max-width: 520px; margin: 0 auto 28px auto; }
+        h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; margin-bottom: 6px; }
+        .company-subtitle {
+            font-size: 13px; font-weight: 600; color: var(--cyan); letter-spacing: 0.5px; margin-bottom: 16px;
+        }
+        .summary-text { color: var(--text-muted); font-size: 14px; line-height: 1.6; max-width: 520px; margin: 0 auto 20px auto; }
+        .company-notice {
+            background: rgba(0, 229, 255, 0.04); border: 1px solid rgba(0, 229, 255, 0.15);
+            border-radius: 10px; padding: 14px 18px; color: #e2e8f0; font-size: 13.5px; line-height: 1.6;
+            margin: 0 auto 20px auto; text-align: left;
+        }
+        .vgt-action-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0;
+        }
+        .vgt-contact-btn {
+            display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px;
+            text-decoration: none; color: #ffffff; background: rgba(18, 22, 34, 0.9);
+            border: 1px solid var(--border-subtle); transition: all 0.2s ease; text-align: left;
+        }
+        .vgt-contact-btn:hover {
+            transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+        .vgt-contact-btn.phone-btn {
+            border-color: rgba(0, 229, 255, 0.35);
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.08) 0%, rgba(18, 22, 34, 0.95) 100%);
+        }
+        .vgt-contact-btn.phone-btn:hover { border-color: #00e5ff; box-shadow: 0 0 20px rgba(0, 229, 255, 0.25); }
+        .vgt-contact-btn.email-btn {
+            border-color: rgba(94, 234, 212, 0.35);
+            background: linear-gradient(135deg, rgba(94, 234, 212, 0.08) 0%, rgba(18, 22, 34, 0.95) 100%);
+        }
+        .vgt-contact-btn.email-btn:hover { border-color: #5eead4; box-shadow: 0 0 20px rgba(94, 234, 212, 0.25); }
+        .vgt-btn-icon {
+            width: 38px; height: 38px; border-radius: 8px; background: rgba(255, 255, 255, 0.06);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .vgt-btn-icon svg { width: 18px; height: 18px; stroke: currentColor; }
+        .vgt-btn-text strong { display: block; font-size: 12.5px; font-weight: 700; color: #ffffff; }
+        .vgt-btn-text span { display: block; font-family: var(--mono-font); font-size: 11.5px; color: var(--text-muted); }
+        .vgt-hours-badge {
+            display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle);
+            border-radius: 20px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 20px;
+        }
+        .vgt-hours-badge svg { width: 14px; height: 14px; stroke: var(--cyan); }
         .telemetry-box {
-            background: var(--surface-card); border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 12px; padding: 20px; margin-bottom: 24px; text-align: left;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
-        }
-        @media (max-width: 520px) {
-            .telemetry-box { grid-template-columns: 1fr; gap: 12px; padding: 16px; }
-            .shield-card { padding: 30px 20px; }
-            h1 { font-size: 24px; }
+            background: var(--surface-card); border: 1px solid var(--border-subtle);
+            border-radius: 12px; padding: 18px; margin-bottom: 12px; text-align: left;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
         }
         .telemetry-item { display: flex; flex-direction: column; gap: 4px; }
         .telemetry-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-dim); font-weight: 600; }
         .telemetry-value { font-family: var(--mono-font); font-size: 12px; font-weight: 600; color: #ffffff; word-break: break-all; }
         .telemetry-value.highlight { color: var(--cyan); }
         .telemetry-value.danger { color: var(--crimson); }
-        .telemetry-full { grid-column: 1 / -1; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px; margin-top: 4px; }
-        .advisory { font-size: 12px; line-height: 1.6; color: var(--text-dim); margin-bottom: 20px; }
+        .telemetry-full { grid-column: 1 / -1; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 10px; margin-top: 2px; }
+        .vgt-copy-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 10px 14px; background: rgba(255, 255, 255, 0.04);
+            border: 1px dashed rgba(255, 255, 255, 0.16); border-radius: 8px;
+            color: var(--text-muted); font-family: var(--mono-font); font-size: 11px;
+            cursor: pointer; transition: all 0.2s; margin-bottom: 18px;
+        }
+        .vgt-copy-btn:hover {
+            background: rgba(255, 255, 255, 0.08); border-color: var(--cyan); color: #ffffff;
+        }
+        .vgt-copy-btn svg { width: 14px; height: 14px; stroke: currentColor; }
+        .advisory { font-size: 12px; line-height: 1.6; color: var(--text-dim); margin-bottom: 18px; }
         .advisory strong { color: var(--text-muted); }
         .footer-brand {
-            border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 18px;
+            border-top: 1px solid var(--border-subtle); padding-top: 16px;
             display: flex; align-items: center; justify-content: space-between;
             font-family: var(--mono-font); font-size: 10px; color: var(--text-dim);
             letter-spacing: 1px; text-transform: uppercase;
         }
         .footer-brand span.shield-name { color: var(--text-muted); font-weight: 700; }
+        @media (max-width: 640px) {
+            .shield-card { padding: 26px 18px; }
+            h1 { font-size: 22px; }
+            .telemetry-box { grid-template-columns: 1fr; gap: 10px; padding: 14px; }
+            .vgt-defense-banner { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 14px; }
+            .vgt-banner-pills { flex-wrap: wrap; gap: 6px; }
+            .vgt-hide-mobile { display: none; }
+            .vgt-action-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="glow-orb"></div>
-    <div class="shield-card">
-        <div class="badge-bar">
-            <span class="pulse-dot"></span>
-            CERBERUS // ACTIVE MITIGATION
-        </div>
-        <div class="icon-wrap">
-            <svg viewBox="0 0 24 24">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                <path d="M9 12l2 2 4-4"/>
-            </svg>
-        </div>
-        <div class="status-code">HTTP 403 // FORBIDDEN</div>
-        <h1>ACCESS RESTRICTED</h1>
-        <p class="summary-text">' . $safe_msg . '</p>
-        <div class="telemetry-box">
-            <div class="telemetry-item">
-                <span class="telemetry-label">Client IP Address</span>
-                <span class="telemetry-value highlight">' . $safe_ip . '</span>
+' . $top_banner_output . '
+<main class="vgt-main-wrapper">
+    <div class="container">
+        <div class="glow-orb"></div>
+        <div class="shield-card">
+            ' . (!$is_branded || $layout_mode === 'classic' ? '<div class="badge-bar"><span class="pulse-dot"></span> ' . $safe_badge . '</div>' : '') . '
+            ' . $logo_or_icon . '
+            <div class="status-code">HTTP 403 // FORBIDDEN</div>
+            <h1>' . ($is_branded ? $safe_company : 'ACCESS RESTRICTED') . '</h1>
+            ' . ($is_branded ? '<div class="company-subtitle">Kundenservice &amp; Entsperrung // Support Portal</div>' : '') . '
+            ' . ($is_branded ? $company_notice_html : '<p class="summary-text">' . $safe_msg . '</p>') . '
+            ' . $actions_html . '
+            ' . $hours_html . '
+            <div class="telemetry-box">
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Client IP Address</span>
+                    <span class="telemetry-value highlight">' . $safe_ip . '</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Incident Reference</span>
+                    <span class="telemetry-value danger">' . $ref_code . '</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Timestamp</span>
+                    <span class="telemetry-value">' . $utc_time . '</span>
+                </div>
+                <div class="telemetry-item">
+                    <span class="telemetry-label">Defense Layer</span>
+                    <span class="telemetry-value">' . $safe_engine . '</span>
+                </div>
+                <div class="telemetry-item telemetry-full">
+                    <span class="telemetry-label">Security Reason</span>
+                    <span class="telemetry-value">' . $safe_msg . '</span>
+                </div>
             </div>
-            <div class="telemetry-item">
-                <span class="telemetry-label">Defense Layer</span>
-                <span class="telemetry-value">CERBERUS XDR KERNEL</span>
+            <button type="button" class="vgt-copy-btn" onclick="vgtCopyIncident()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span id="vgt-copy-text">Vorgangsdaten kopieren</span>
+            </button>
+            <p class="advisory">
+                Ihre Verbindung wurde durch das automatisierte Sicherheitssystem verifiziert und vorsorglich isoliert. 
+                Bitte geben Sie bei Rückfragen Ihre <strong>Vorgangs-Referenz</strong> und <strong>IP-Adresse</strong> an.
+            </p>
+            <div class="footer-brand">
+                <span class="shield-name">VISIONGAIA TECHNOLOGY</span>
+                <span>' . $safe_engine . '</span>
             </div>
-            <div class="telemetry-item">
-                <span class="telemetry-label">Incident Reference</span>
-                <span class="telemetry-value danger">' . $ref_code . '</span>
-            </div>
-            <div class="telemetry-item">
-                <span class="telemetry-label">Timestamp</span>
-                <span class="telemetry-value">' . $utc_time . '</span>
-            </div>
-            <div class="telemetry-item telemetry-full">
-                <span class="telemetry-label">Security Reason</span>
-                <span class="telemetry-value">' . $safe_msg . '</span>
-            </div>
-        </div>
-        <p class="advisory">
-            Your connection has been flagged by the automated perimeter security system. 
-            If you believe this is a false positive, please contact the site administrator and provide your <strong>Incident Reference</strong> and <strong>IP Address</strong>.
-        </p>
-        <div class="footer-brand">
-            <span class="shield-name">VISIONGAIA TECHNOLOGY</span>
-            <span>CERBERUS PROTOCOL V8.1</span>
         </div>
     </div>
-</div>
+</main>
+' . $bottom_banner_output . '
+<script>
+function vgtCopyIncident() {
+    var text = "Vorgangs-ID: ' . esc_js($ref_code) . '\\nIP-Adresse: ' . esc_js($safe_ip) . '\\nZeitpunkt (UTC): ' . esc_js($utc_time) . '\\nSicherheits-Ebene: ' . esc_js($safe_engine) . '\\nBegr\\u00FCndung: ' . esc_js($safe_msg) . '";
+    var copyBtn = document.getElementById("vgt-copy-text");
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function() {
+            if (copyBtn) {
+                var prev = copyBtn.textContent;
+                copyBtn.textContent = "✓ In die Zwischenablage kopiert!";
+                setTimeout(function() { copyBtn.textContent = prev; }, 3000);
+            }
+        }).catch(function() {
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
+    }
+    function fallbackCopy(val) {
+        var ta = document.createElement("textarea");
+        ta.value = val;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+            document.execCommand("copy");
+            if (copyBtn) {
+                var prev = copyBtn.textContent;
+                copyBtn.textContent = "✓ In die Zwischenablage kopiert!";
+                setTimeout(function() { copyBtn.textContent = prev; }, 3000);
+            }
+        } catch(e) {}
+        document.body.removeChild(ta);
+    }
+}
+</script>
 </body>
 </html>';
     }

@@ -635,20 +635,52 @@ final class Prometheus {
                 : $cerberus->ban_subnet($subnet_context, 'PROMETHEUS_PREDICTIVE_INFRA_STRIKE');
         }
 
-        while ( ob_get_level() ) {
+        $reason_text = $subnet_context !== null
+            ? "PROMETHEUS PREDICTIVE INFRA STRIKE // SUBNET {$subnet_context} COOLDOWN (Threat Score: " . (int)$score . ")"
+            : "PROMETHEUS PREDICTIVE STRIKE // ZERO-TRUST MATRIX (Threat Score: " . (int)$score . ")";
+
+        $context = [
+            'engine' => 'PROMETHEUS ZERO-TRUST MATRIX // OMEGA PROTOCOL',
+            'badge' => 'PROMETHEUS // PREDICTIVE MITIGATION',
+            'ref_prefix' => 'PROM',
+            'ip' => $ip,
+            'score' => $score,
+            'defense_engine' => 'VisionGaia-Prometheus',
+        ];
+
+        if (class_exists('VIS_Cerberus')) {
+            VIS_Cerberus::instance()->terminate_request($reason_text, $context);
+        }
+
+        $this->terminate_standalone($reason_text, $ip, $context);
+    }
+
+    /**
+     * VGT KERNEL: Standalone Block Page Fallback (wenn Cerberus deinitialisiert ist)
+     * 100% autark, niemals roher Plaintext.
+     */
+    private function terminate_standalone(string $msg, string $ip, array $context = []): void {
+        while (ob_get_level()) {
             @ob_end_clean();
         }
 
-        if ( ! headers_sent() ) {
-            http_response_code( 403 );
-            header( 'Content-Type: text/plain; charset=utf-8' );
-            header( 'Connection: close' );
-            header( 'Cache-Control: no-cache, no-store, must-revalidate' );
-            header( 'Pragma: no-cache' );
-            header( 'Expires: 0' );
+        if (!headers_sent()) {
+            $protocol = $_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1';
+            header("$protocol 403 Forbidden", true, 403);
+            header('Content-Type: text/html; charset=utf-8');
+            header('X-Robots-Tag: noindex, nofollow, nosnippet');
+            header('X-Content-Type-Options: nosniff');
+            header('X-Frame-Options: DENY');
+            header('Cache-Control: private, max-age=300');
+            header('X-Defense-Engine: VisionGaia-Prometheus');
         }
-        
-        exit( 'VISIONGAIATECHNOLOGY OMEGA PROTOCOL: CONNECTION TERMINATED.' );
+
+        $safe_ip   = htmlspecialchars($ip, ENT_QUOTES, 'UTF-8');
+        $safe_msg  = htmlspecialchars($msg, ENT_QUOTES, 'UTF-8');
+        $ref_code  = 'PROM-' . strtoupper(substr(md5($ip . date('Y-m-d')), 0, 4) . '-' . substr(md5($msg . $ip . 'prom'), 0, 4));
+        $utc_time  = gmdate('Y-m-d H:i:s') . ' UTC';
+
+        die('<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>403 Forbidden — VisionGaia Prometheus</title><style>:root{--bg:#06070a;--surface:rgba(13,16,23,0.92);--border:rgba(255,42,95,0.3);--crimson:#ff2a5f;--cyan:#00e5ff;--text:#f0f3f8;--dim:#94a3b8;--mono:"JetBrains Mono","SF Mono",Consolas,monospace;}*{box-sizing:border-box;margin:0;padding:0;}body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;}.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:36px 28px;max-width:600px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.8);}.badge{display:inline-block;padding:6px 14px;border-radius:20px;background:rgba(255,42,95,0.12);color:var(--crimson);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:16px;}.status{font-family:var(--mono);color:var(--cyan);font-size:12px;letter-spacing:2px;margin-bottom:8px;}h1{font-size:24px;margin-bottom:12px;font-weight:800;}.grid{background:rgba(18,22,34,0.85);border-radius:12px;padding:16px;margin:20px 0;text-align:left;display:grid;gap:10px;font-size:12px;font-family:var(--mono);}.grid span{color:var(--dim);}</style></head><body><div class="card"><div class="badge">PROMETHEUS // PREDICTIVE MITIGATION</div><div class="status">HTTP 403 // FORBIDDEN</div><h1>ACCESS RESTRICTED</h1><p style="color:var(--dim);margin-bottom:16px;font-size:14px;line-height:1.5;">' . $safe_msg . '</p><div class="grid"><div><span>Client IP:</span> <strong style="color:var(--cyan);">' . $safe_ip . '</strong></div><div><span>Incident Reference:</span> <strong style="color:var(--crimson);">' . $ref_code . '</strong></div><div><span>Timestamp:</span> ' . $utc_time . '</div><div><span>Defense Layer:</span> PROMETHEUS ZERO-TRUST MATRIX</div></div><p style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;">VISIONGAIA TECHNOLOGY // OMEGA PROTOCOL</p></div></body></html>');
     }
 
     /**
