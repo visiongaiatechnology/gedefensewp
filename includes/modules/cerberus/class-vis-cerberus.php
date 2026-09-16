@@ -304,7 +304,11 @@ final class VIS_Cerberus {
         return hash('sha256', bin2hex($subnet) . '|' . $ua);
     }
 
-    public function ban_ip(string $ip, string $reason): void {
+    public static function ban_ip(string $ip, string $reason): void {
+        self::instance()->execute_ban($ip, $reason);
+    }
+
+    public function execute_ban(string $ip, string $reason): void {
         if (!self::valid_address_or_network($ip)) {
             error_log('[VIS CERBERUS] Invalid ban target rejected.');
             return;
@@ -337,7 +341,7 @@ final class VIS_Cerberus {
 
     public function ban_subnet(string $subnet, string $reason = 'PROMETHEUS_BOTANICAL_SWARM_BAN'): void {
         if (!str_contains($subnet, '/')) return;
-        $this->ban_ip($subnet, $reason);
+        self::ban_ip($subnet, $reason);
         wp_cache_delete('vis_cidr_bans', 'visiongaia_cerberus');
     }
 
@@ -357,8 +361,8 @@ final class VIS_Cerberus {
         return true;
     }
 
-    public function unban_ip(string $ip): bool {
-        return $this->unban_target($ip);
+    public static function unban_ip(string $ip): bool {
+        return self::instance()->unban_target($ip);
     }
 
     private function schedule_os_firewall_sync(): void {

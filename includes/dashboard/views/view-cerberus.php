@@ -15,7 +15,7 @@ if (current_user_can('manage_options') && isset($_POST['vis_manual_ban_submit'])
 
     if (filter_var($ban_ip, FILTER_VALIDATE_IP)) {
         if (class_exists('VIS_Cerberus')) {
-            VIS_Cerberus::ban_ip($ban_ip, $ban_reason, $ban_duration);
+            VIS_Cerberus::instance()->ban_ip($ban_ip, $ban_reason);
         }
     }
 }
@@ -23,7 +23,7 @@ if (current_user_can('manage_options') && isset($_POST['vis_manual_ban_submit'])
 if (current_user_can('manage_options') && isset($_POST['vis_unban_ip_submit']) && check_admin_referer('vis_unban_ip_action')) {
     $unban_ip = isset($_POST['unban_ip']) && is_string($_POST['unban_ip']) ? sanitize_text_field(wp_unslash($_POST['unban_ip'])) : '';
     if ($unban_ip !== '' && class_exists('VIS_Cerberus')) {
-        VIS_Cerberus::unban_ip($unban_ip);
+        VIS_Cerberus::instance()->unban_target($unban_ip);
     }
 }
 
