@@ -7,7 +7,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.1.2_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.1.3_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -648,6 +648,14 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 # Changelog History
 
+## 8.1.3 — Cerberus Static Invocation Patch & Dual-Mode Unban Hardening
+- **Cerberus Dual-Mode Unban & Ban Dispatch**:
+  - Resolved fatal error `Non-static method VIS_Cerberus::unban_ip() cannot be called statically` triggered when unbanning IPs via the Cerberus cockpit (`view-cerberus.php`).
+  - Refactored `VIS_Cerberus::unban_ip()` and `VIS_Cerberus::ban_ip()` into formal static methods delegating to `self::instance()`, guaranteeing 100% dual-mode invocation compatibility across PHP 8.0–8.4 (allowing both static `VIS_Cerberus::unban_ip($ip)` and instance `$cerberus->unban_ip($ip)` calls).
+  - Modernized `view-cerberus.php` form handlers to directly invoke `VIS_Cerberus::instance()->unban_target($unban_ip)` and `VIS_Cerberus::instance()->ban_ip($ban_ip, $ban_reason)`.
+- **Cryptographic Trust Anchor & Integrity Sync**:
+  - Regenerated Merkle tree root manifest digests across all 27 core components with 100% pass across integrity, security, and Trinity regression suites.
+
 ## 8.1.2 — Cerberus Cyberpunk Block Screen & Perimeter Response Hardening
 - **Cerberus Perimeter Defense NextGen 403 Forbidden Screen**:
   - Transformed the plain HTML 403 blocking page into a zero-dependency Cyberpunk / High-Tech Active Mitigation cockpit.
@@ -700,7 +708,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.1.2 — Open Core
+## GeDefense WP 8.1.3 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 
