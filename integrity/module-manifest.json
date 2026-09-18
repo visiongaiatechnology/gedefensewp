@@ -5,7 +5,7 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "bab8d7122f68c95b681aceefa949c2366a667ef7be15cfb59a027e49ea4177f7"
+            "root_hash": "69eed54161558d58246e4067f434394545095e043a8e3083170250e3cbcd2940"
         },
         "assets": {
             "files": 12,
@@ -17,11 +17,11 @@
         },
         "core": {
             "files": 14,
-            "root_hash": "5d3ce6c58850abce07ace47da0e797235d9e3e9266266de4e247d9044eff54e6"
+            "root_hash": "f4e20cef28f057128ab8b766d3e9cd954f79af0f2c5a723bc1e0ae736bbc0415"
         },
         "dashboard": {
             "files": 85,
-            "root_hash": "4f9e59f521eef6aa92081f15c58df20e7ff9625a34d50adbc8519efd08eecabb"
+            "root_hash": "e6bd7a60ebe1034f2e6725d5eb3e592dc80ac562d65a157f7cf618eb79f655a6"
         },
         "xdr": {
             "files": 9,
@@ -41,7 +41,7 @@
         },
         "cerberus": {
             "files": 1,
-            "root_hash": "e039109bcdef14f359a3d385ae418bac655b354f215989f3c0cf38bb84cfca1c"
+            "root_hash": "1545cec98fcf5004b65a6f0fffbc696dbb2cbf54bac7dc61d116a6a930b575e1"
         },
         "chronos": {
             "files": 5,
@@ -85,7 +85,7 @@
         },
         "styx": {
             "files": 1,
-            "root_hash": "ea6d0778c36f8d19e634f8b7f5e3d10922ea6c8ff9242db961c442e519e76d70"
+            "root_hash": "3427ac3b31ef15e8d3ba83e1267ae062bc0560b1c97a7fb87570e4efd729843b"
         },
         "titan": {
             "files": 13,

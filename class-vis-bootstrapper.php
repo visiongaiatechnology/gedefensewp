@@ -172,6 +172,9 @@ final class VIS_Bootstrapper {
         if (class_exists('\VisionGaia\GeDefense\Modules\Styx\Styx')) {
             \VisionGaia\GeDefense\Modules\Styx\Styx::get_instance();
         }
+        if (class_exists('\VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence')) {
+            \VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence::instance();
+        }
         // ThroneGuard is a fixed core component: its activation and recovery
         // endpoints must remain reachable before enforcement is enabled.
         if (class_exists('VIS_Throne_Guard')) VIS_Throne_Guard::get_instance();

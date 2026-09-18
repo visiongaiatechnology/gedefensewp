@@ -158,6 +158,15 @@ final class Styx {
                 }
             }
         }
+
+        // Threat Intelligence Outbound Check (Blocks known C2, Botnet, and Malicious IP Nodes)
+        if (class_exists('\VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence')) {
+            $threat_intel = \VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence::instance();
+            if ($threat_intel->is_outbound_enabled() && $threat_intel->is_ip_threat($host)) {
+                return false;
+            }
+        }
+
         // O(1) Exact Match
         if (isset($this->exact_hosts[$host])) return true;
         
