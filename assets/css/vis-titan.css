@@ -150,6 +150,14 @@
     color: #fff;
 }
 
+.vgt-titan-nav a.is-active,
+.vgt-titan-nav a.active {
+    background: rgba(0, 229, 255, 0.16);
+    border-color: #00e5ff;
+    color: #00e5ff;
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);
+}
+
 /* PANELS */
 .vgt-titan-panel {
     padding: 24px;
