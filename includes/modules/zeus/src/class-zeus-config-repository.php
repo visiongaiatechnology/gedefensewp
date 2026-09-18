@@ -49,6 +49,7 @@ final class Zeus_Config_Repository {
             'fs_disable_edit'       => false,
             'fs_prevent_hotlink'    => false,
             'spam_comment_block'    => false,
+            'threat_intel_preboot_enabled' => true,
             'policy_digest'         => ''
         ];
     }
@@ -154,6 +155,7 @@ final class Zeus_Config_Repository {
             'fs_disable_edit'       => $getBool('fs_disable_edit'),
             'fs_prevent_hotlink'    => $getBool('fs_prevent_hotlink'),
             'spam_comment_block'    => $getBool('spam_comment_block'),
+            'threat_intel_preboot_enabled' => $getBool('threat_intel_preboot_enabled'),
         ];
 
         $clean['policy_digest'] = Zeus_Policy_Manager::computeDigest($clean);
