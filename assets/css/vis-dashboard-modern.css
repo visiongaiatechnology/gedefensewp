@@ -186,6 +186,7 @@ body[class*="vgt-suite"] { background: var(--vis-shell); }
 .vgt-titan-nav, .vsc-tabs, .vgt-tabs-nav { display: flex; gap: 7px; margin: 0 0 18px; padding: 6px; overflow-x: auto; border: 1px solid var(--vis-line); border-radius: 12px; background: rgba(4, 10, 21, .58); scrollbar-width: thin; }
 .vgt-titan-nav a, .vsc-tabs a, .vgt-tab-btn { flex: 0 0 auto; padding: 9px 13px; border: 1px solid transparent; border-radius: 8px; color: var(--vis-copy-soft); background: transparent; font: 700 10px/1.2 var(--vis-font-ui); letter-spacing: .055em; text-decoration: none; text-transform: uppercase; }
 .vgt-titan-nav a:hover, .vsc-tabs a:hover, .vgt-titan-nav a:focus-visible, .vsc-tabs a:focus-visible, .vgt-tab-btn:hover, .vgt-tab-btn.active { color: var(--vis-copy); border-color: rgba(94, 234, 212, .22); background: rgba(94, 234, 212, .09); }
+.vgt-titan-nav a.is-active, .vgt-titan-nav a.active { color: #00e5ff !important; border-color: rgba(0, 229, 255, .4) !important; background: rgba(0, 229, 255, .12) !important; box-shadow: 0 0 16px rgba(0, 229, 255, .2) !important; }
 
 .vgt-titan-panel, .vis-card, .vgt-glass-panel, .vgt-panel, .vsc-card { margin: 0 0 16px; padding: clamp(18px, 2.4vw, 26px); }
 .vgt-titan-panel-head, .vgt-panel-header, .vis-card-header, .vsc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 18px; padding: 0 0 15px; border-bottom: 1px solid var(--vis-line); }

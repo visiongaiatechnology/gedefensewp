@@ -337,6 +337,13 @@ final class VIS_Dashboard_Settings {
             if ($xdr_sec !== '') {
                 $redirect_args['xdr_section'] = $xdr_sec;
             }
+        } elseif ($context === 'styx') {
+            $styx_sec = isset($_POST['styx_section']) && is_string($_POST['styx_section'])
+                ? sanitize_key(wp_unslash($_POST['styx_section']))
+                : (isset($_GET['styx_section']) && is_string($_GET['styx_section']) ? sanitize_key(wp_unslash($_GET['styx_section'])) : 'outbound');
+            if ($styx_sec !== '') {
+                $redirect_args['styx_section'] = $styx_sec;
+            }
         }
 
         wp_safe_redirect(add_query_arg($redirect_args, admin_url('admin.php')));

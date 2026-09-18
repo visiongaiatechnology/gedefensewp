@@ -9,7 +9,7 @@
         },
         "assets": {
             "files": 12,
-            "root_hash": "1a7de6eb2291703b3bb79a25689ea852dfcc2d1307fea43387c659f6072135d4"
+            "root_hash": "eac24a6abd533fda2ca0fe02b219a291b20dbe02b12404f053f827d21c0de3dc"
         },
         "compatibility": {
             "files": 4,
@@ -21,7 +21,7 @@
         },
         "dashboard": {
             "files": 85,
-            "root_hash": "e6bd7a60ebe1034f2e6725d5eb3e592dc80ac562d65a157f7cf618eb79f655a6"
+            "root_hash": "0337b1405fa67a6aaeab59d467d4cbd231e20554624db96cf3b600ba6091232b"
         },
         "xdr": {
             "files": 9,
