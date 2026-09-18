@@ -165,6 +165,17 @@ final class VIS_Cerberus {
                     if ($custom_ip === null) $this->is_banned_memory_cache = false;
                     return false;
                 }
+            } elseif ($cached_type === 'THREAT_INTEL') {
+                // Re-verify Threat Intelligence status: Unbans IP immediately when pruned/disappeared
+                if (class_exists('\VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence')) {
+                    $threat_intel = \VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence::instance();
+                    if (!$threat_intel->is_inbound_enabled() || !$threat_intel->is_ip_threat($ip)) {
+                        wp_cache_delete($cache_key, 'visiongaia_cerberus');
+                        wp_cache_delete($cache_key . '_type', 'visiongaia_cerberus');
+                        if ($custom_ip === null) $this->is_banned_memory_cache = false;
+                        return false;
+                    }
+                }
             }
             if ($custom_ip === null) $this->is_banned_memory_cache = true;
             return true;
@@ -206,11 +217,13 @@ final class VIS_Cerberus {
             }
         }
 
+        $is_threat_intel = false;
         // Threat Intelligence Inbound Check (Blocks incoming botnets, C2, and malicious IPs)
         if (!$is_banned && class_exists('\VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence')) {
             $threat_intel = \VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence::instance();
             if ($threat_intel->is_inbound_enabled() && $threat_intel->is_ip_threat($ip)) {
                 $is_banned = true;
+                $is_threat_intel = true;
             }
         }
 
@@ -219,8 +232,10 @@ final class VIS_Cerberus {
         }
 
         if ($is_banned) {
-            wp_cache_set($cache_key, 1, 'visiongaia_cerberus', $is_xdr ? 60 : 300);
-            wp_cache_set($cache_key . '_type', $is_xdr ? 'XDR' : 'ADMIN', 'visiongaia_cerberus', $is_xdr ? 60 : 300);
+            $ban_type = $is_xdr ? 'XDR' : ($is_threat_intel ? 'THREAT_INTEL' : 'ADMIN');
+            $ttl = ($is_xdr || $is_threat_intel) ? 60 : 300;
+            wp_cache_set($cache_key, 1, 'visiongaia_cerberus', $ttl);
+            wp_cache_set($cache_key . '_type', $ban_type, 'visiongaia_cerberus', $ttl);
         } else {
             wp_cache_set($cache_key, 0, 'visiongaia_cerberus', 60);
             wp_cache_delete($cache_key . '_type', 'visiongaia_cerberus');

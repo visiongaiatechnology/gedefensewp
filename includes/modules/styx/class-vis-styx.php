@@ -162,6 +162,16 @@ final class Styx {
         // Threat Intelligence Outbound Check (Blocks known C2, Botnet, and Malicious IP Nodes)
         if (class_exists('\VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence')) {
             $threat_intel = \VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence::instance();
+
+            // AUTONOMOUS SYSTEM BYPASS: Threat Intelligence self-synchronization
+            // Erlaubt ausschließlich die fest programmierten Feed-Domains, wenn Threat Intelligence selbst synchronisiert.
+            // Verhindert, dass fremde Plugins oder manipulierte Aufrufe den Egress Shield umgehen können.
+            if (in_array($host, \VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence::TRUSTED_FEED_HOSTS, true)) {
+                if ($origin === 'THREAT_INTEL' || \VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence::is_sync_in_progress()) {
+                    return true;
+                }
+            }
+
             if ($threat_intel->is_outbound_enabled() && $threat_intel->is_ip_threat($host)) {
                 return false;
             }
@@ -190,6 +200,11 @@ final class Styx {
             if (!isset($step['file'])) continue;
             
             $file = wp_normalize_path($step['file']);
+
+            // Threat Intelligence Subsystem Erkennung
+            if (str_contains($file, 'class-vis-threat-intel.php') || str_contains($file, 'threat-intel')) {
+                return 'THREAT_INTEL';
+            }
             
             if (str_starts_with($file, $plugin_dir)) {
                 $rel_path = trim(str_replace($plugin_dir, '', $file), '/');
