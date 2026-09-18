@@ -53,6 +53,7 @@ if (current_user_can('manage_options') && isset($_POST['vis_threat_intel_save'])
         }
         update_option($threat_intel_class::OPTION_CONFIG, $new_cfg);
         $threat_intel->load_config();
+        $threat_intel->purge_inactive_feeds();
         $intel_saved = true;
     }
 }

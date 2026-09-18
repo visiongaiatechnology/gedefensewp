@@ -4,21 +4,25 @@ declare(strict_types=1);
 
 namespace VisionGaia\GeDefense\Modules\ThreatIntel;
 
-if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
+if (!defined('ABSPATH')) {
+    exit('VGT_ACCESS_DENIED');
+}
 
-// MANDATORY EXCEPTION HIERARCHY (PATTERN 1.5.A)
+// ============================================================================
+// PATTERN 1.5.A — Mandatory Exception Hierarchy
+// ============================================================================
 class AppException        extends \Exception {}
-class ValidationException extends AppException {}  // USER-FACING: Shown verbatim to client
-class SecurityException   extends AppException {}  // INTERNAL: Opaque response, logged via error_log
-class StorageException    extends AppException {}  // INTERNAL: Database transaction error
+class ValidationException extends AppException {}  // USER-FACING: Message shown verbatim
+class SecurityException   extends AppException {}  // INTERNAL: Generic message to client, full detail to error_log
+class StorageException    extends AppException {}  // INTERNAL: Generic message to client, full detail to error_log
 
 /**
- * MODULE: THREAT INTELLIGENCE (Layer 0 Multi-Feed Ingestion & Autonomous Synchronization)
- * STATUS: DIAMANT VGT SUPREME
- * ARCHITECT: VGT Intelligence System
+ * THREAT INTELLIGENCE ENGINE — ZERO-TRUST REPUTATION MATRIX & SWAP SYNCHRONIZER
  * 
  * 100% Opt-In Threat Intelligence Matrix: Synchronisiert alle 12 Stunden bösartige IP-Adressen
  * und CIDR-Blöcke aus 9 weltweiten Reputations- und C2-Feeds.
+ * Vollständiger Differential-Swap: Veraltete oder bereinigte IPs werden nach jedem Sync automatisch gepruned.
+ * Styx-Self-Bypass: Interne, fälschungssichere Whitelist für offizielle Feed-Domains verhindert Egress-Blockaden.
  * Gehärtet gegen SQL-Injection, Poisoning und Puffer-Exhaustion via strikter Regex- und Längen-Validierung.
  */
 final class ThreatIntelligence {
@@ -30,12 +34,33 @@ final class ThreatIntelligence {
     private bool $schema_checked = false;
     private static array $request_cache = [];
     private static ?array $cached_cidrs = null;
+    private static bool $sync_in_progress = false;
 
     public const CRON_HOOK     = 'vis_threat_intel_cron_sync';
     public const CRON_INTERVAL = 43200; // 12 Hours
     public const LOCK_KEY      = 'vis_threat_intel_sync_lock';
     public const OPTION_CONFIG = 'vis_threat_intel_config';
     public const OPTION_CIDRS  = 'vis_threat_intel_cidrs';
+
+    /**
+     * Festprogrammierte, fälschungssichere Whitelist der offiziellen Threat-Intelligence-Domains.
+     * Schließt Missbrauch durch beliebige Plugins oder fremde Domains mathematisch aus.
+     */
+    public const TRUSTED_FEED_HOSTS = [
+        'feodotracker.abuse.ch',
+        'www.spamhaus.org',
+        'spamhaus.org',
+        'cinsscore.com',
+        'lists.blocklist.de',
+        'blocklist.de',
+        'rules.emergingthreats.net',
+        'emergingthreats.net',
+        'raw.githubusercontent.com',
+        'iplists.firehol.org',
+        'firehol.org',
+        'check.torproject.org',
+        'torproject.org',
+    ];
 
     public const FEEDS = [
         'feodo_c2' => [
@@ -44,7 +69,6 @@ final class ThreatIntelligence {
             'desc'     => 'Aktive Command-and-Control Server (Abuse.ch)',
             'url'      => 'https://feodotracker.abuse.ch/downloads/ipblocklist.txt',
             'format'   => 'text_ips',
-            'bitmask'  => 1,
             'default'  => true,
         ],
         'spamhaus_drop_v4' => [
@@ -53,7 +77,6 @@ final class ThreatIntelligence {
             'desc'     => 'Don\'t Route Or Peer - Gekaperte / Bösartige Netze (IPv4)',
             'url'      => 'https://www.spamhaus.org/drop/drop_v4.json',
             'format'   => 'json_lines_cidr',
-            'bitmask'  => 2,
             'default'  => true,
         ],
         'spamhaus_drop_v6' => [
@@ -62,7 +85,6 @@ final class ThreatIntelligence {
             'desc'     => 'Don\'t Route Or Peer - Gekaperte / Bösartige Netze (IPv6)',
             'url'      => 'https://www.spamhaus.org/drop/drop_v6.json',
             'format'   => 'json_lines_cidr',
-            'bitmask'  => 4,
             'default'  => true,
         ],
         'cins_badguys' => [
@@ -71,7 +93,6 @@ final class ThreatIntelligence {
             'desc'     => 'Aktive Angreifer & Malicious Scanner (CINS Score)',
             'url'      => 'https://cinsscore.com/list/ci-badguys.txt',
             'format'   => 'text_ips',
-            'bitmask'  => 8,
             'default'  => true,
         ],
         'blocklist_de' => [
@@ -80,7 +101,6 @@ final class ThreatIntelligence {
             'desc'     => 'Fail2ban Reporting Service (SSH, Mail, Web Attackers)',
             'url'      => 'https://lists.blocklist.de/lists/all.txt',
             'format'   => 'text_ips',
-            'bitmask'  => 16,
             'default'  => true,
         ],
         'emerging_threats' => [
@@ -89,7 +109,6 @@ final class ThreatIntelligence {
             'desc'     => 'Proofpoint Emerging Threats Compromised IP List',
             'url'      => 'https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt',
             'format'   => 'text_ips',
-            'bitmask'  => 32,
             'default'  => true,
         ],
         'ipsum' => [
@@ -98,7 +117,6 @@ final class ThreatIntelligence {
             'desc'     => 'Aggregierte Threat-Level Liste (Stamparm)',
             'url'      => 'https://raw.githubusercontent.com/stamparm/ipsum/master/ipsum.txt',
             'format'   => 'tsv_ip_score',
-            'bitmask'  => 64,
             'default'  => true,
         ],
         'firehol_level1' => [
@@ -107,7 +125,6 @@ final class ThreatIntelligence {
             'desc'     => 'Maximale Bedrohungsstufe (Cybercrime, Abuse, Blacklists)',
             'url'      => 'https://iplists.firehol.org/files/firehol_level1.netset',
             'format'   => 'text_ips_and_cidr',
-            'bitmask'  => 128,
             'default'  => true,
         ],
         'tor_exit_nodes' => [
@@ -116,7 +133,6 @@ final class ThreatIntelligence {
             'desc'     => 'Offizielle Tor-Projekt Exit-Node Liste',
             'url'      => 'https://check.torproject.org/torbulkexitlist',
             'format'   => 'text_ips',
-            'bitmask'  => 256,
             'default'  => true,
         ],
     ];
@@ -130,6 +146,10 @@ final class ThreatIntelligence {
 
     public static function get_instance(): self {
         return self::instance();
+    }
+
+    public static function is_sync_in_progress(): bool {
+        return self::$sync_in_progress;
     }
 
     private function __construct() {
@@ -178,7 +198,6 @@ final class ThreatIntelligence {
         add_filter('cron_schedules', [$this, 'filter_cron_schedules']);
         add_action(self::CRON_HOOK, [$this, 'handle_cron_sync']);
 
-        // Schedule prüfen
         if ($this->is_enabled()) {
             if (!wp_next_scheduled(self::CRON_HOOK)) {
                 wp_schedule_event(time() + 60, 'every_12_hours', self::CRON_HOOK);
@@ -212,7 +231,7 @@ final class ThreatIntelligence {
     }
 
     /**
-     * Strikte Tabellen-Initialisierung mit Unikat-Indizes und Enums
+     * Strikte Tabellen-Initialisierung mit Feed-Isolation für atomares Pruning
      */
     public function enforce_schema(): void {
         if ($this->schema_checked) return;
@@ -220,17 +239,26 @@ final class ThreatIntelligence {
         global $wpdb;
         $charset = $wpdb->get_charset_collate();
 
+        // Migration Check: Falls legacy Schema ohne feed_key existiert, erneuern
+        $suppress = $wpdb->suppress_errors(true);
+        $has_feed_key = (bool)$wpdb->get_var("SHOW COLUMNS FROM {$this->table_threats} LIKE 'feed_key'");
+        if (!$has_feed_key && $wpdb->get_var("SHOW TABLES LIKE '{$this->table_threats}'") === $this->table_threats) {
+            $wpdb->query("DROP TABLE IF EXISTS {$this->table_threats}");
+        }
+        $wpdb->suppress_errors($suppress);
+
         $sql = "CREATE TABLE IF NOT EXISTS {$this->table_threats} (
             id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            feed_key VARCHAR(32) NOT NULL DEFAULT 'general',
             ip_or_cidr VARCHAR(49) NOT NULL,
             ip_type VARCHAR(10) NOT NULL DEFAULT 'v4',
-            feed_mask INT(10) UNSIGNED NOT NULL DEFAULT 0,
             first_seen DATETIME NOT NULL,
             last_seen DATETIME NOT NULL,
             PRIMARY KEY  (id),
-            UNIQUE KEY uq_ip_or_cidr (ip_or_cidr),
+            UNIQUE KEY uq_feed_ip (feed_key, ip_or_cidr),
+            KEY idx_ip (ip_or_cidr),
             KEY idx_type (ip_type),
-            KEY idx_last_seen (last_seen)
+            KEY idx_feed_seen (feed_key, last_seen)
         ) {$charset};";
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -240,7 +268,7 @@ final class ThreatIntelligence {
     }
 
     /**
-     * Synchronisiert alle aktivierten Feeds (mit Concurrency Lock).
+     * Synchronisiert alle aktivierten Feeds (mit Concurrency Lock und atomarem Swap).
      * @return array Statusbericht pro Feed
      */
     public function sync_all_feeds(): array {
@@ -256,9 +284,10 @@ final class ThreatIntelligence {
         }
         set_transient(self::LOCK_KEY, time(), 900);
 
+        self::$sync_in_progress = true;
+
         $results = [];
         $total_imported = 0;
-        $all_cidrs = [];
 
         try {
             foreach (self::FEEDS as $feed_key => $feed_meta) {
@@ -271,23 +300,21 @@ final class ThreatIntelligence {
                 $feed_res = $this->fetch_and_ingest_feed($feed_meta);
                 $results[$feed_key] = $feed_res;
                 $total_imported += (int)($feed_res['count'] ?? 0);
-
-                if (!empty($feed_res['cidrs']) && is_array($feed_res['cidrs'])) {
-                    foreach ($feed_res['cidrs'] as $c) {
-                        $all_cidrs[$c] = true;
-                    }
-                }
             }
 
-            // CIDR Cache aktualisieren
-            $cidr_list = array_keys($all_cidrs);
-            update_option(self::OPTION_CIDRS, $cidr_list, false);
-            self::$cached_cidrs = $cidr_list;
+            // Inaktive Feeds bereinigen
+            $this->purge_inactive_feeds();
+
+            // CIDR Cache aus Datenbank aktualisieren
+            $this->refresh_cidr_cache();
+
+            // Cache invalidieren
+            self::$request_cache = [];
 
             // Gesamtzahl aus Datenbank abfragen
             global $wpdb;
             $suppress = $wpdb->suppress_errors(true);
-            $total_count = (int)$wpdb->get_var("SELECT COUNT(id) FROM {$this->table_threats}");
+            $total_count = (int)$wpdb->get_var("SELECT COUNT(DISTINCT ip_or_cidr) FROM {$this->table_threats}");
             $wpdb->suppress_errors($suppress);
 
             // Metadaten speichern
@@ -297,6 +324,7 @@ final class ThreatIntelligence {
             update_option(self::OPTION_CONFIG, $this->config);
 
         } finally {
+            self::$sync_in_progress = false;
             delete_transient(self::LOCK_KEY);
         }
 
@@ -309,32 +337,42 @@ final class ThreatIntelligence {
     }
 
     /**
-     * Lädt einen einzelnen Feed herunter, filtert und speichert ihn in Batches.
+     * Lädt einen einzelnen Feed herunter, filtert und swappt ihn via Batch-Upsert + Pruning.
      */
     public function fetch_and_ingest_feed(array $feed): array {
+        $feed_id = (string)$feed['id'];
         $url     = (string)$feed['url'];
         $format  = (string)$feed['format'];
-        $bitmask = (int)$feed['bitmask'];
 
-        // 1. Sicheres Herunterladen mit Timeout und Header-Schutz
-        $response = wp_safe_remote_get($url, [
-            'timeout'     => 25,
-            'redirection' => 2,
-            'sslverify'   => true,
-            'headers'     => [
-                'User-Agent' => 'VisionGaia-Threat-Intel/8.2.0 (Security Engine; Autonomous Node)',
-                'Accept'     => 'text/plain,application/json,*/*',
-            ],
-        ]);
+        $sync_started_at = current_time('mysql', 1);
+
+        // Flag setzen, damit Styx erkennt, dass Threat Intelligence aktiv Daten bezieht
+        $prev_state = self::$sync_in_progress;
+        self::$sync_in_progress = true;
+
+        try {
+            // 1. Sicheres Herunterladen mit Timeout und Header-Schutz
+            $response = wp_safe_remote_get($url, [
+                'timeout'     => 25,
+                'redirection' => 2,
+                'sslverify'   => true,
+                'headers'     => [
+                    'User-Agent' => 'VisionGaia-Threat-Intel/8.2.2 (Security Engine; Autonomous Node)',
+                    'Accept'     => 'text/plain,application/json,*/*',
+                ],
+            ]);
+        } finally {
+            self::$sync_in_progress = $prev_state;
+        }
 
         if (is_wp_error($response)) {
-            error_log("[VGT THREAT INTEL] Feed {$feed['id']} download error: " . $response->get_error_message());
+            error_log("[VGT THREAT INTEL] Feed {$feed_id} download error: " . $response->get_error_message());
             return ['status' => 'error', 'message' => $response->get_error_message(), 'count' => 0];
         }
 
         $code = (int)wp_remote_retrieve_response_code($response);
         if ($code !== 200) {
-            error_log("[VGT THREAT INTEL] Feed {$feed['id']} HTTP status: {$code}");
+            error_log("[VGT THREAT INTEL] Feed {$feed_id} HTTP status: {$code}");
             return ['status' => 'error', 'message' => "HTTP {$code}", 'count' => 0];
         }
 
@@ -343,7 +381,7 @@ final class ThreatIntelligence {
 
         // Puffer-Schutz: Feeds über 20MB abweisen
         if ($size === 0 || $size > 20 * 1024 * 1024) {
-            error_log("[VGT THREAT INTEL] Feed {$feed['id']} payload size boundary violation ({$size} bytes)");
+            error_log("[VGT THREAT INTEL] Feed {$feed_id} payload size boundary violation ({$size} bytes)");
             return ['status' => 'error', 'message' => 'Size boundary violation', 'count' => 0];
         }
 
@@ -354,7 +392,6 @@ final class ThreatIntelligence {
         }
 
         $sanitized_entries = [];
-        $cidrs_found = [];
 
         foreach ($lines as $raw_line) {
             $candidate = $this->extract_candidate_from_line($raw_line, $format);
@@ -368,20 +405,73 @@ final class ThreatIntelligence {
             }
 
             $sanitized_entries[$validated['target']] = $validated['type'];
-
-            if (str_starts_with($validated['type'], 'cidr_')) {
-                $cidrs_found[] = $validated['target'];
-            }
         }
 
         // 3. Batch-Persistierung in der Datenbank
-        $imported_count = $this->batch_upsert_entries($sanitized_entries, $bitmask);
+        $imported_count = $this->batch_upsert_entries($sanitized_entries, $feed_id);
+
+        // 4. VGT KERNEL PRUNING / LIST-SWAP:
+        // Alle Einträge für diesen Feed, die im neuen Payload nicht mehr enthalten sind, sauber entfernen!
+        $pruned_count = 0;
+        if ($imported_count > 0) {
+            global $wpdb;
+            $suppress = $wpdb->suppress_errors(true);
+            $pruned_count = (int)$wpdb->query($wpdb->prepare(
+                "DELETE FROM {$this->table_threats} WHERE feed_key = %s AND last_seen < %s",
+                $feed_id,
+                $sync_started_at
+            ));
+            $wpdb->suppress_errors($suppress);
+        }
+
+        self::$request_cache = [];
 
         return [
             'status' => 'success',
             'count'  => $imported_count,
-            'cidrs'  => $cidrs_found,
+            'pruned' => $pruned_count,
         ];
+    }
+
+    /**
+     * Bereinigt Einträge von Feeds, die vom Administrator deaktiviert wurden.
+     */
+    public function purge_inactive_feeds(): void {
+        global $wpdb;
+        $this->enforce_schema();
+
+        $active = [];
+        if (!empty($this->config['active_feeds']) && is_array($this->config['active_feeds'])) {
+            foreach ($this->config['active_feeds'] as $fk => $act) {
+                if (!empty($act)) $active[] = (string)$fk;
+            }
+        }
+
+        $suppress = $wpdb->suppress_errors(true);
+        if (!empty($active)) {
+            $placeholders = implode(', ', array_fill(0, count($active), '%s'));
+            $query = $wpdb->prepare("DELETE FROM {$this->table_threats} WHERE feed_key NOT IN ({$placeholders})", $active);
+            $wpdb->query($query);
+        } else {
+            $wpdb->query("TRUNCATE TABLE {$this->table_threats}");
+        }
+        $wpdb->suppress_errors($suppress);
+
+        $this->refresh_cidr_cache();
+        self::$request_cache = [];
+    }
+
+    /**
+     * Aktualisiert den In-Memory- und Options-Cache für CIDR-Bereiche.
+     */
+    public function refresh_cidr_cache(): void {
+        global $wpdb;
+        $suppress = $wpdb->suppress_errors(true);
+        $cidrs = $wpdb->get_col("SELECT DISTINCT ip_or_cidr FROM {$this->table_threats} WHERE ip_type LIKE 'cidr_%'");
+        $wpdb->suppress_errors($suppress);
+        $cidr_list = is_array($cidrs) ? array_values(array_unique($cidrs)) : [];
+        update_option(self::OPTION_CIDRS, $cidr_list, false);
+        self::$cached_cidrs = $cidr_list;
     }
 
     /**
@@ -404,17 +494,14 @@ final class ThreatIntelligence {
         switch ($format) {
             case 'text_ips':
             case 'text_ips_and_cidr':
-                // Zeilen können Inline-Kommentare oder Whitespace enthalten
                 $parts = preg_split('/\s+/', $line);
                 return !empty($parts[0]) ? trim($parts[0]) : null;
 
             case 'tsv_ip_score':
-                // IPsum format: "1.2.3.4\t3"
                 $parts = preg_split('/\s+/', $line);
                 return !empty($parts[0]) ? trim($parts[0]) : null;
 
             case 'json_lines_cidr':
-                // Spamhaus JSONL format: {"cidr":"1.10.16.0/20","sblid":"...","rir":"..."}
                 try {
                     $json = json_decode($line, true, 4, JSON_THROW_ON_ERROR);
                     if (is_array($json) && !empty($json['cidr']) && is_string($json['cidr'])) {
@@ -446,9 +533,7 @@ final class ThreatIntelligence {
         }
 
         // 2. Zeichen-Whitelist: Ausschließlich Ziffern, Hexadezimal (a-f), Punkt, Doppelpunkt, Slash
-        // Verhindert zu 100 % SQL-Sonderzeichen, Quotes, Null-Bytes, Steuerzeichen, Klammern, Semikolons
         if (!preg_match('/^[0-9a-fA-F.:\/]+$/', $candidate)) {
-            // Feindliches Token im Feed erkannt
             error_log('[SEC] VGT Threat Intel: Illegal characters in feed token: ' . substr($candidate, 0, 32));
             return null;
         }
@@ -460,18 +545,16 @@ final class ThreatIntelligence {
                 return null;
             }
 
-            $ip_part = $parts[0];
-            $mask    = (int)$parts[1];
+            $base_ip = $parts[0];
+            $prefix = (int)$parts[1];
 
-            // IPv4 CIDR
-            if (filter_var($ip_part, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
-                if ($mask < 0 || $mask > 32) return null;
+            if (filter_var($base_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                if ($prefix < 0 || $prefix > 32) return null;
                 return ['target' => $candidate, 'type' => 'cidr_v4'];
             }
 
-            // IPv6 CIDR
-            if (filter_var($ip_part, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
-                if ($mask < 0 || $mask > 128) return null;
+            if (filter_var($base_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+                if ($prefix < 0 || $prefix > 128) return null;
                 return ['target' => $candidate, 'type' => 'cidr_v6'];
             }
 
@@ -492,10 +575,9 @@ final class ThreatIntelligence {
     }
 
     /**
-     * Batch-Insert via $wpdb->prepare() in 500er Transaktionen.
-     * Nutzt ON DUPLICATE KEY UPDATE für idempotente, O(n) Performanz.
+     * Batch-Insert via $wpdb->prepare() in 500er Transaktionen mit feed_key Isolation.
      */
-    private function batch_upsert_entries(array $entries, int $bitmask): int {
+    private function batch_upsert_entries(array $entries, string $feed_key): int {
         if (empty($entries)) return 0;
 
         global $wpdb;
@@ -511,19 +593,18 @@ final class ThreatIntelligence {
             $values = [];
 
             foreach ($chunk as $target => $type) {
-                $placeholders[] = "(%s, %s, %d, %s, %s)";
+                $placeholders[] = "(%s, %s, %s, %s, %s)";
+                $values[] = (string)$feed_key;
                 $values[] = (string)$target;
                 $values[] = (string)$type;
-                $values[] = $bitmask;
                 $values[] = $now; // first_seen
                 $values[] = $now; // last_seen
             }
 
             $query = "INSERT INTO {$this->table_threats} 
-                (ip_or_cidr, ip_type, feed_mask, first_seen, last_seen)
+                (feed_key, ip_or_cidr, ip_type, first_seen, last_seen)
                 VALUES " . implode(', ', $placeholders) . "
                 ON DUPLICATE KEY UPDATE 
-                feed_mask = feed_mask | VALUES(feed_mask),
                 last_seen = VALUES(last_seen)";
 
             $prepared = $wpdb->prepare($query, $values);
@@ -549,33 +630,25 @@ final class ThreatIntelligence {
         $ip = trim($ip);
         if ($ip === '') return false;
 
-        // L1 Request Cache Check
+        // L1 Request Cache
         if (isset(self::$request_cache[$ip])) {
             return self::$request_cache[$ip];
         }
 
-        // Validierung der Eingangs-IP
-        if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
-            self::$request_cache[$ip] = false;
-            return false;
-        }
-
         global $wpdb;
         $suppress = $wpdb->suppress_errors(true);
-
-        // 1. Exakter Datenbank-Match (B-Tree Unique Index Lookup, ~0.05ms)
-        $exact_match = $wpdb->get_var($wpdb->prepare(
+        $found = (int)$wpdb->get_var($wpdb->prepare(
             "SELECT 1 FROM {$this->table_threats} WHERE ip_or_cidr = %s LIMIT 1",
             $ip
         ));
         $wpdb->suppress_errors($suppress);
 
-        if (!empty($exact_match)) {
+        if ($found === 1) {
             self::$request_cache[$ip] = true;
             return true;
         }
 
-        // 2. CIDR-Subnetz-Prüfung gegen gecachte CIDR-Listen
+        // Check CIDR Ranges
         if ($this->check_cidr_match($ip)) {
             self::$request_cache[$ip] = true;
             return true;
@@ -586,7 +659,7 @@ final class ThreatIntelligence {
     }
 
     /**
-     * Prüft eine IP gegen die gespeicherten CIDR-Blöcke (Spamhaus DROP / FireHOL)
+     * Prüft ob eine IPv4-Adresse in einem der abonnierten CIDR-Blöcke liegt
      */
     private function check_cidr_match(string $ip): bool {
         if (self::$cached_cidrs === null) {
@@ -636,10 +709,25 @@ final class ThreatIntelligence {
     public function get_statistics(): array {
         global $wpdb;
         $suppress = $wpdb->suppress_errors(true);
-        $total = (int)$wpdb->get_var("SELECT COUNT(id) FROM {$this->table_threats}");
-        $v4    = (int)$wpdb->get_var("SELECT COUNT(id) FROM {$this->table_threats} WHERE ip_type = 'v4'");
-        $v6    = (int)$wpdb->get_var("SELECT COUNT(id) FROM {$this->table_threats} WHERE ip_type = 'v6'");
-        $cidr  = (int)$wpdb->get_var("SELECT COUNT(id) FROM {$this->table_threats} WHERE ip_type LIKE 'cidr%'");
+        $total = 0;
+        $v4 = 0;
+        $v6 = 0;
+        $cidr = 0;
+        $feed_stats = [];
+
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$this->table_threats}'") === $this->table_threats) {
+            $total = (int)$wpdb->get_var("SELECT COUNT(DISTINCT ip_or_cidr) FROM {$this->table_threats}");
+            $v4    = (int)$wpdb->get_var("SELECT COUNT(DISTINCT ip_or_cidr) FROM {$this->table_threats} WHERE ip_type = 'v4'");
+            $v6    = (int)$wpdb->get_var("SELECT COUNT(DISTINCT ip_or_cidr) FROM {$this->table_threats} WHERE ip_type = 'v6'");
+            $cidr  = (int)$wpdb->get_var("SELECT COUNT(DISTINCT ip_or_cidr) FROM {$this->table_threats} WHERE ip_type LIKE 'cidr_%'");
+
+            $f_rows = $wpdb->get_results("SELECT feed_key, COUNT(*) as cnt FROM {$this->table_threats} GROUP BY feed_key");
+            if (is_array($f_rows)) {
+                foreach ($f_rows as $row) {
+                    $feed_stats[(string)$row->feed_key] = ['count' => (int)$row->cnt];
+                }
+            }
+        }
         $wpdb->suppress_errors($suppress);
 
         $next_cron = wp_next_scheduled(self::CRON_HOOK);
@@ -654,7 +742,7 @@ final class ThreatIntelligence {
             'is_enabled'     => $this->is_enabled(),
             'block_outbound' => $this->is_outbound_enabled(),
             'block_inbound'  => $this->is_inbound_enabled(),
-            'feed_stats'     => $this->config['sync_stats'] ?? [],
+            'feed_stats'     => $feed_stats,
         ];
     }
 }
