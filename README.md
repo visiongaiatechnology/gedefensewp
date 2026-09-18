@@ -47,7 +47,8 @@
 
 ---
 
-<img width="2332" height="1182" alt="image" src="https://github.com/user-attachments/assets/48715b64-eeda-4441-ab60-520f67d2cb9e" />
+<img width="1280" height="648" alt="image" src="https://github.com/user-attachments/assets/4245147d-33e1-48c2-b49b-ebcdd1396c00" />
+
 
 
 ## ⚡ 1. ZEUS Next Generation — Pre-Boot Admission Control & Edge Defense Kernel
