@@ -36,7 +36,6 @@
 
 ---
 
-<img width="2338" height="1184" alt="image" src="https://github.com/user-attachments/assets/9fcc11ca-1e91-47e2-a19f-d8c875dd1e15" />
 
 
 ---
