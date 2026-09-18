@@ -7,7 +7,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.1.3_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.2.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -647,6 +647,24 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 ---
 
 # Changelog History
+
+## 8.2.0 — Corporate Landing-Page Block Screen, Prometheus High-Tech Mitigation & Branding Customizer
+- **Corporate Landing-Page & Microsite Block Screen**:
+  - Transformed both Cerberus IP bans and Prometheus AI predictive strikes into a full-fledged, professional corporate microsite / landing-page.
+  - False-positive visitors no longer encounter an intimidating, raw red error screen, but see a recognizable corporate presence with custom logo, custom background artwork with adjustable darkening overlay (30%–98%), company headline, claim, description ("Who we are & what we do"), and core competence / USP feature cards.
+  - Direct customer support hub: one-tap-to-call mobile button (`tel:`), 1-click email button (`mailto:`) with pre-filled subject including the deterministic incident reference code (`PROM-XXXX-XXXX` / `CERB-XXXX-XXXX`), physical address, and business operating hours.
+- **De-escalating Transparent Security Box ("Darunter")**:
+  - Positioned discreetly beneath the corporate presentation to reassure visitors that customer support can unblock them immediately.
+  - Real-time incident telemetry: Incident Reference ID, client IP address, UTC timestamp, defense layer (`PROMETHEUS ZERO-TRUST MATRIX // OMEGA PROTOCOL` / `CERBERUS XDR KERNEL`), and security violation reason with a pulsing beacon status indicator.
+  - 1-Click native clipboard copy button with cross-browser fallback: enables users to copy complete incident telemetry with one tap for support triage.
+  - 100% autarkic, zero external dependencies, zero CDN scripts or fonts, zero database overhead on blocked hits (0.00ms latency).
+- **Prometheus Zero-Trust High-Tech Termination**:
+  - Replaced legacy plaintext mitigation output (`VISIONGAIATECHNOLOGY OMEGA PROTOCOL: CONNECTION TERMINATED`) with high-tech Cerberus block page delegation and standalone fallback.
+- **Cerberus Admin Branding Customizer (`view-cerberus.php`)**:
+  - Integrated 4 dedicated configuration cards under `WP-Admin -> GeDefense / Sentinel -> Cerberus -> Block-Page Personalisierung & Branding` covering visual identity, corporate presentation, contact hub, and custom de-escalation notes.
+  - Instant live preview actions for Cerberus and Prometheus strikes with cryptographic nonce protection.
+- **Cryptographic Trust Anchor & Integrity Sync**:
+  - Regenerated Merkle tree root manifest digests across all 27 core components with 100% pass across integrity, security, Trinity, and integration regression suites.
 
 ## 8.1.3 — Cerberus Static Invocation Patch & Dual-Mode Unban Hardening
 - **Cerberus Dual-Mode Unban & Ban Dispatch**:
