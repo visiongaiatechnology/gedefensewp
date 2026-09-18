@@ -551,6 +551,83 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
         }
     }
 
+    // 8.5 PRE-BOOT THREAT INTELLIGENCE DROP (O(log N) PACKED-BINARY SEEK & ATOMIC SWAP AWARE)
+    if (!\$isWhitelisted && !empty(\$config['threat_intel_preboot_enabled'])) {
+        // A. IPv4 Packed-Binary Search (135.000 IPs in 527 KB, ~3 Mikrosekunden)
+        if (strpos(\$ip, ':') === false) {
+            \$threatBlob = null;
+            if (function_exists('apcu_fetch')) {
+                \$apcuSuccess = false;
+                \$threatBlob = apcu_fetch('vgt_threat_blob_v4', \$apcuSuccess);
+                if (!\$apcuSuccess) \$threatBlob = null;
+            }
+            if (\$threatBlob === null) {
+                \$binFile = \$vaultDir . 'threat_intel_v4.bin';
+                if (file_exists(\$binFile)) {
+                    \$threatBlob = @file_get_contents(\$binFile);
+                    if (is_string(\$threatBlob) && \$threatBlob !== '' && function_exists('apcu_store')) {
+                        @apcu_store('vgt_threat_blob_v4', \$threatBlob, 3600);
+                    }
+                }
+            }
+            if (is_string(\$threatBlob) && \$threatBlob !== '') {
+                \$blobLen = strlen(\$threatBlob);
+                if ((\$blobLen % 4) === 0 && \$blobLen > 0) {
+                    \$ipPacked = @inet_pton(\$ip);
+                    if (\$ipPacked !== false && strlen(\$ipPacked) === 4) {
+                        \$target = unpack('N', \$ipPacked)[1];
+                        \$low = 0;
+                        \$high = (\$blobLen >> 2) - 1;
+                        \$isThreat = false;
+                        while (\$low <= \$high) {
+                            \$mid = (\$low + \$high) >> 1;
+                            \$val = unpack('N', substr(\$threatBlob, \$mid << 2, 4))[1];
+                            if (\$val === \$target) {
+                                \$isThreat = true;
+                                break;
+                            }
+                            if (\$val < \$target) {
+                                \$low = \$mid + 1;
+                            } else {
+                                \$high = \$mid - 1;
+                            }
+                        }
+                        if (\$isThreat) {
+                            \$record_and_force_kill('ZEUS.THREAT_INTEL_REJECT', 'THREAT_FEED_BOTNET_DROP', 'IP identified as active C2 botnet or listed threat node.', 10, 403);
+                        }
+                    }
+                }
+            }
+        }
+
+        // B. Threat CIDR Subnet Abgleich
+        \$threatCidrs = null;
+        if (function_exists('apcu_fetch')) {
+            \$cSuccess = false;
+            \$threatCidrs = apcu_fetch('vgt_threat_cidrs', \$cSuccess);
+            if (!\$cSuccess) \$threatCidrs = null;
+        }
+        if (\$threatCidrs === null) {
+            \$cidrFile = \$vaultDir . 'threat_cidrs.json';
+            if (file_exists(\$cidrFile)) {
+                \$cidrRaw = @file_get_contents(\$cidrFile);
+                if (is_string(\$cidrRaw) && \$cidrRaw !== '') {
+                    \$threatCidrs = @json_decode(\$cidrRaw, true);
+                    if (is_array(\$threatCidrs) && function_exists('apcu_store')) {
+                        @apcu_store('vgt_threat_cidrs', \$threatCidrs, 3600);
+                    }
+                }
+            }
+        }
+        if (is_array(\$threatCidrs) && !empty(\$threatCidrs)) {
+            foreach (\$threatCidrs as \$threatCidr) {
+                if (is_string(\$threatCidr) && \$cidr_match(\$ip, \$threatCidr)) {
+                    \$record_and_force_kill('ZEUS.THREAT_INTEL_REJECT', 'THREAT_FEED_CIDR_DROP', 'IP subnet listed in active threat intelligence feed.', 10, 403);
+                }
+            }
+        }
+    }
+
     // 9. REQUEST ENVELOPE CEILINGS
     \$queryStr = (string)(\$_SERVER['QUERY_STRING'] ?? '');
     \$queryLen = strlen(\$queryStr);
