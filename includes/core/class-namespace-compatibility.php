@@ -64,6 +64,7 @@ final class NamespaceCompatibility {
         'VisionGaia\\GeDefense\\Modules\\Prometheus\\Prometheus' => ['includes/modules/prometheus/class-vis-prometheus.php', ['VisionGaia\\Integrity\\Modules\\Prometheus\\VIS_Prometheus']],
         'VisionGaia\\GeDefense\\Modules\\Nemesis\\Nemesis' => ['includes/modules/nemesis/class-vis-nemesis.php', ['VisionGaia\\Integrity\\Modules\\Nemesis\\VIS_Nemesis']],
         'VisionGaia\\GeDefense\\Modules\\Styx\\Styx' => ['includes/modules/styx/class-vis-styx.php', ['VIS_Styx', 'VisionGaia\\Integrity\\Modules\\Styx\\VIS_Styx']],
+        'VisionGaia\\GeDefense\\Modules\\ThreatIntel\\ThreatIntelligence' => ['includes/modules/threat-intel/class-vis-threat-intel.php', ['VIS_Threat_Intelligence', 'VisionGaia\\Integrity\\Modules\\ThreatIntel\\VIS_Threat_Intelligence']],
         'VisionGaia\\GeDefense\\Modules\\Morpheus\\Morpheus' => ['includes/modules/morpheus/class-vis-morpheus.php', ['VGT\\Sentinel\\Modules\\Morpheus\\Vis_Morpheus']],
         'VisionGaia\\GeDefense\\Modules\\Gorgon\\Gorgon' => ['includes/modules/gorgon/class-vis-gorgon.php', ['VGT\\Sentinel\\Modules\\Gorgon\\Vis_Gorgon']],
     ];

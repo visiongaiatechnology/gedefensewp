@@ -206,6 +206,14 @@ final class VIS_Cerberus {
             }
         }
 
+        // Threat Intelligence Inbound Check (Blocks incoming botnets, C2, and malicious IPs)
+        if (!$is_banned && class_exists('\VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence')) {
+            $threat_intel = \VisionGaia\GeDefense\Modules\ThreatIntel\ThreatIntelligence::instance();
+            if ($threat_intel->is_inbound_enabled() && $threat_intel->is_ip_threat($ip)) {
+                $is_banned = true;
+            }
+        }
+
         if ($custom_ip === null) {
             $this->is_banned_memory_cache = $is_banned;
         }
