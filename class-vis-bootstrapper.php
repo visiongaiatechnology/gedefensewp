@@ -65,6 +65,26 @@ final class VIS_Bootstrapper {
     public static function engage_phase_1(array $config): void {
         self::ensure_sovereign_temp_dir();
 
+        // Reconcile any expired 12-hour ThroneGuard Master IP whitelist leases before security modules boot
+        if (!class_exists('VIS_Throne_Guard')) {
+            $tg_file = VIS_PATH . 'includes/modules/throneguard/class-vis-throne-guard.php';
+            if (is_readable($tg_file)) {
+                require_once $tg_file;
+            }
+        }
+        if (class_exists('VIS_Throne_Guard') && method_exists('VIS_Throne_Guard', 'reconcile_ip_leases')) {
+            try {
+                if (\VIS_Throne_Guard::reconcile_ip_leases()) {
+                    $fresh_config = get_option('vis_config', []);
+                    if (is_array($fresh_config)) {
+                        $config = $fresh_config;
+                    }
+                }
+            } catch (\Throwable $e) {
+                error_log('[VGT BOOTSTRAPPER] ThroneGuard lease reconciliation warning: ' . $e->getMessage());
+            }
+        }
+
         $xdr = '\\VisionGaia\\GeDefense\\Xdr\\EventFabric';
         if (class_exists($xdr)) {
             $xdr::boot();

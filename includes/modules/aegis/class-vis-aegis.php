@@ -129,15 +129,21 @@ final class VIS_Aegis {
         $raw_ips = $options['aegis_whitelist_ips'] ?? ($options['whitelist_ips'] ?? '');
         $raw_uas = $options['aegis_whitelist_uas'] ?? ($options['whitelist_uas'] ?? '');
 
-        // VGT NATIVE IP VALIDATION
-        $this->whitelist_ips = array_filter(array_map('trim', explode("\n", $raw_ips)), static function($ip) {
-            return filter_var($ip, FILTER_VALIDATE_IP);
-        });
+        // VGT NATIVE IP & CIDR VALIDATION
+        $this->whitelist_ips = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string)$raw_ips) ?: []), static function(string $ip): bool {
+            if ($ip === '') return false;
+            if (filter_var($ip, FILTER_VALIDATE_IP) !== false) return true;
+            if (str_contains($ip, '/')) {
+                [$subnet, $bits] = explode('/', $ip, 2);
+                return filter_var(trim($subnet), FILTER_VALIDATE_IP) !== false && ctype_digit(trim($bits));
+            }
+            return false;
+        }));
         
         // VGT NATIVE UA SANITIZATION
         $this->whitelist_uas = array_filter(array_map(static function($ua) {
             return preg_replace('/[\x00-\x1F\x7F]/u', '', trim((string)$ua));
-        }, explode("\n", $raw_uas)));
+        }, explode("\n", (string)$raw_uas)));
 
         // Dynamic Constant Definitions linked to native Dashboard Logging Layout
         if (!defined('VIS_TABLE_LOGS')) {
@@ -749,8 +755,17 @@ final class VIS_Aegis {
             if ($server_ip && $ip === $server_ip) return true;
         }
 
-        if (!empty($this->whitelist_ips) && in_array($ip, $this->whitelist_ips, true)) {
-            return true;
+        if (!empty($this->whitelist_ips)) {
+            if (in_array($ip, $this->whitelist_ips, true)) {
+                return true;
+            }
+            if (class_exists('VIS_Security')) {
+                foreach ($this->whitelist_ips as $wl_entry) {
+                    if (str_contains($wl_entry, '/') && VIS_Security::ip_in_cidr($ip, $wl_entry)) {
+                        return true;
+                    }
+                }
+            }
         }
 
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';

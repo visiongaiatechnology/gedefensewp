@@ -60,9 +60,43 @@ class VIS_Zeus {
 
     private function init_modules(): void {
         $this->env_manager = new VIS_Zeus_Env($this->vault_dir, $this->waf_file, $this->config);
-        $this->compiler    = new VIS_Zeus_Compiler($this->vault_dir, $this->waf_file, $this->config, $this->swarm_ip);
+        $this->compiler    = new VIS_Zeus_Compiler($this->vault_dir, $this->waf_file, $this->config, '');
         $this->shield      = new VIS_Zeus_Shield($this->config, $this->client_ip, $this->swarm_ip, $this->vault_dir);
         $this->shield->init_hooks();
+
+        $this->ensure_waf_compiler_version();
+    }
+
+    private function ensure_waf_compiler_version(): void {
+        if (!is_file($this->waf_file) || !is_readable($this->waf_file)) {
+            return;
+        }
+        $fh = @fopen($this->waf_file, 'rb');
+        if (!$fh) {
+            return;
+        }
+        $header = (string)@fread($fh, 512);
+        @fclose($fh);
+
+        $expected_marker = 'COMPILER_VERSION: ' . VIS_Zeus_Compiler::COMPILER_VERSION;
+        if (!str_contains($header, $expected_marker)) {
+            try {
+                $this->compiler->deploy_waf();
+            } catch (\Throwable $e) {
+                error_log('[ZEUS SELF-HEAL] Failed to recompile outdated WAF kernel: ' . $e->getMessage());
+            }
+        }
+    }
+
+    public static function recompile_waf(): bool {
+        try {
+            $instance = new self();
+            $instance->compiler->deploy_waf();
+            return is_file($instance->waf_file) && is_readable($instance->waf_file);
+        } catch (\Throwable $e) {
+            error_log('[ZEUS RECOMPILE] ' . $e->getMessage());
+            return false;
+        }
     }
 
     public function deploy_perimeter_shield(): array {

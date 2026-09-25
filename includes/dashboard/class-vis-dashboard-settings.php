@@ -200,22 +200,16 @@ final class VIS_Dashboard_Settings {
 
             if (isset($_POST['vis_zeus_config']) && is_array($_POST['vis_zeus_config'])) {
                 $zeus_raw = wp_unslash($_POST['vis_zeus_config']);
-                $zeus_clean = [
-                    'fw_basic'             => isset($zeus_raw['fw_basic']),
-                    'fw_6g_blacklist'      => isset($zeus_raw['fw_6g_blacklist']),
-                    'fw_fake_googlebot'    => isset($zeus_raw['fw_fake_googlebot']),
-                    'fw_block_xmlrpc'      => isset($zeus_raw['fw_block_xmlrpc']),
-                    'brute_rename_login'   => sanitize_text_field($zeus_raw['brute_rename_login'] ?? ''),
-                    'brute_magic_cookie'   => sanitize_text_field($zeus_raw['brute_magic_cookie'] ?? ''),
-                    'brute_404_lockout'    => 20,
-                    'user_login_lockdown'  => 5,
-                    'user_force_logout'    => 3600,
-                    'fs_disable_edit'      => false,
-                    'fs_prevent_hotlink'   => false,
-                    'spam_comment_block'   => false
-                ];
-                update_option('vis_zeus_config', $zeus_clean);
-                self::deploy_zeus_safely();
+                VIS_Dashboard_Ajax::ensure_zeus_dependencies();
+                if (class_exists('\VisionGaia\GeDefense\Modules\Zeus\Zeus_Config_Repository')) {
+                    try {
+                        \VisionGaia\GeDefense\Modules\Zeus\Zeus_Config_Repository::save($zeus_raw);
+                    } catch (\Throwable $e) {
+                        error_log('[ZEUS SETUP WIZARD] ' . $e->getMessage());
+                    }
+                } else {
+                    self::deploy_zeus_safely();
+                }
             }
 
             // Flush rewrite rules automatically to bind Hades stealth routing

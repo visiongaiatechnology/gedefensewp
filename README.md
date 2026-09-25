@@ -7,7 +7,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.2.4_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.2.5_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -659,6 +659,24 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 # Changelog History
 
+## 8.2.5 — Zeus L0 Route Contract Wildcard Fix & ThroneGuard 12-Hour Master Omni-Whitelist (AEGIS, Prometheus & ZEUS)
+- **Zeus L0 Pre-Boot Route Contract Content-Type Fix (`CONTRACT_CONTENT_TYPE_REJECT`)**:
+  - Fixed a false-positive HTTP `415` (`VGT_ZEUS_ADMISSION_DENIED: CONTRACT_CONTENT_TYPE_REJECT`) in compiled `zeus-waf.php` where routes configured with wildcard `allowed_content_types` (`['*']` or `['*/*']`, such as `/wp-admin/`) compared incoming `POST` `Content-Type` headers literally against `'*'` instead of permitting wildcard MIME types.
+  - Expanded default WordPress Route Contracts (`wp_admin`, `admin_ajax`, `admin_post`, `wp_json`, `wp_login`) in `Zeus_Contracts` to explicitly support standard form, multipart, JSON, and text payloads with case-insensitive MIME normalization.
+  - Added automatic Pre-Boot WAF compiler version self-healing (`COMPILER_VERSION = 8.2.5`): existing outdated `zeus-waf.php` kernels on disk automatically recompile on the first admin request.
+- **ThroneGuard 12-Hour Master IP Omni-Whitelist (`AEGIS` + `Prometheus` + `ZEUS`)**:
+  - Authenticating as a Sovereign Master (`mcp_master_access`) with the ThroneGuard Superkey (via Lockscreen Unlock, ThroneGuard Settings Save, or the dedicated 1-click **12h Omni-Whitelist** bar) automatically whitelists the Master's current IP for **12 hours (`43,200` seconds)** across **AEGIS**, **Prometheus**, and **ZEUS** (both L0 Pre-Boot `zeus-waf.php` and L7 `VIS_Zeus_Shield`).
+  - **Triple-Guarded 12-Hour Automatic Expiration & Pruning**:
+    - **Layer 0 Real-Time Lease Guard**: `zeus-waf.php` embeds per-IP lease expiration timestamps (`$tgLeases`) and immediately stops honoring expired leases at the exact second of expiry—even before any cron job executes.
+    - **Phase-1 Bootstrapper Reconciliation (`VIS_Throne_Guard::reconcile_ip_leases`)**: Automatically prunes expired 12-hour Master IP leases from AEGIS, Prometheus, and ZEUS options and recompiles `zeus-waf.php` while preserving any static administrator whitelist entries (`preserve_existing`).
+    - **Hourly WP-Cron & Instant Manual Revocation**: Added `vis_throneguard_prune_leases` background cleanup and a 1-click revocation button (`vis_throneguard_revoke_lease`) in the ThroneGuard cockpit.
+- **Dashboard & Whitelist Synchronization Enhancements**:
+  - Added a live **12h Master-Omni-Whitelist** countdown metric card and instant activation/revocation bar in `view-throneguard.php`.
+  - Added a dedicated **ZEUS Whitelisted IPs / CIDRs** configuration field in `view-zeus.php` (`03 / Rate Budgeting`) synchronized with `Zeus_Config_Repository`.
+  - Upgraded `VIS_Aegis::is_whitelisted()` and `VIS_Prometheus::is_whitelisted()` to support both newline/comma-separated IPs and CIDR ranges.
+- **Cryptographic Trust Anchor & Integrity Sync**:
+  - Regenerated Merkle tree root manifest digests across all 27 core components with 100% pass across `integrity-regression`, `zeus-nextgen-regression` (10/10), and `zeus-live-waf-regression` (36/36).
+
 ## 8.2.4 — Trinity Pre-Boot Threat Intelligence Ring: Zeus 3-µs Drop, Zero-Lock Atomic Swap & 527 KB Packed-Binary Engine
 - **Zeus Pre-Boot Threat Intelligence Drop (`auto_prepend_file`)**:
   - Integrated zero-allocation Threat Intelligence screening directly into `zeus-waf.php` at Layer 0, executing **before WordPress application boot and before MySQL initialization**.
@@ -784,7 +802,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.2.4 — Open Core
+## GeDefense WP 8.2.5 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

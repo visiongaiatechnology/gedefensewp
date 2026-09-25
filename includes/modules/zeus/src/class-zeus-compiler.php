@@ -11,7 +11,9 @@ if (!defined('ABSPATH') && !defined('VGT_ZEUS_PREBOOT')) exit('VGT_ACCESS_DENIED
  * Compiles canonical policies into the ultra-fast, zero-dependency pre-boot admission kernel.
  */
 class VIS_Zeus_Compiler {
-    
+
+    public const COMPILER_VERSION = '8.2.5';
+
     private string $vault_dir;
     private string $waf_file;
     private string $lkg_file;
@@ -34,26 +36,92 @@ class VIS_Zeus_Compiler {
         $this->compile_waf_payload();
     }
 
+    /**
+     * Resolves the authoritative Zeus IP/CIDR whitelist combined with active ThroneGuard 12h leases.
+     *
+     * @return array{whitelist: string[], tg_leases: array<string, int>}
+     */
+    private function resolve_effective_whitelist(): array {
+        $stored = function_exists('get_option') ? get_option('vgt_zeus_whitelist_ips', null) : null;
+        if (!is_array($stored)) {
+            $stored = ['127.0.0.1', '::1'];
+            if (function_exists('update_option')) {
+                update_option('vgt_zeus_whitelist_ips', $stored);
+            }
+        }
+
+        $cfg_list = $this->config['ip_whitelist'] ?? [];
+        if (is_string($cfg_list)) {
+            $cfg_list = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $cfg_list) ?: []));
+        } elseif (!is_array($cfg_list)) {
+            $cfg_list = [];
+        }
+
+        $swarm_list = $this->swarm_ip !== ''
+            ? array_filter(array_map('trim', preg_split('/[\r\n,]+/', $this->swarm_ip) ?: []))
+            : [];
+
+        $merged = array_values(array_unique(array_filter(
+            array_map('trim', array_map('strval', array_merge(['127.0.0.1', '::1'], $stored, $cfg_list, $swarm_list))),
+            static fn(string $v): bool => $v !== ''
+        )));
+
+        $now = time();
+        $raw_leases = function_exists('get_option') ? get_option('vis_throneguard_ip_leases', []) : [];
+        $tg_leases = [];
+        $expired_ips = [];
+
+        if (is_array($raw_leases)) {
+            foreach ($raw_leases as $lease_ip => $info) {
+                $ip_str = is_string($lease_ip) && $lease_ip !== '' ? $lease_ip : (string)($info['ip'] ?? '');
+                if ($ip_str === '') {
+                    continue;
+                }
+                $exp = (int)($info['expires_at'] ?? 0);
+                if ($exp > $now) {
+                    $tg_leases[$ip_str] = $exp;
+                    if (!in_array($ip_str, $merged, true)) {
+                        $merged[] = $ip_str;
+                    }
+                } else {
+                    $expired_ips[$ip_str] = empty($info['preexisting_zeus']);
+                }
+            }
+        }
+
+        if (!empty($expired_ips)) {
+            $merged = array_values(array_filter($merged, static function(string $entry) use ($expired_ips): bool {
+                return !isset($expired_ips[$entry]) || $expired_ips[$entry] === false;
+            }));
+        }
+
+        return [
+            'whitelist' => $merged,
+            'tg_leases' => $tg_leases,
+        ];
+    }
+
     private function sync_dynamic_whitelist(): void {
-        $whitelist_ips = (function_exists('get_option') ? get_option('vgt_zeus_whitelist_ips', null) : null);
-        
-        if ($whitelist_ips === null) {
-            $whitelist_ips = [$this->swarm_ip];
+        $resolved = $this->resolve_effective_whitelist();
+        $whitelist_ips = $resolved['whitelist'];
+
+        if (function_exists('update_option')) {
             update_option('vgt_zeus_whitelist_ips', $whitelist_ips);
         }
-        
+
         $whitelist_file = $this->vault_dir . 'whitelist.json';
-        file_put_contents($whitelist_file, wp_json_encode($whitelist_ips, JSON_THROW_ON_ERROR), LOCK_EX);
+        $json = function_exists('wp_json_encode')
+            ? wp_json_encode($whitelist_ips, JSON_THROW_ON_ERROR)
+            : json_encode($whitelist_ips, JSON_THROW_ON_ERROR);
+        file_put_contents($whitelist_file, $json, LOCK_EX);
         @chmod($whitelist_file, 0600);
     }
 
     public function generate_payload_code(): string {
-        $whitelist_ips = $this->config['ip_whitelist'] ?? (function_exists('get_option') ? get_option('vgt_zeus_whitelist_ips', []) : []);
-        if (!is_array($whitelist_ips)) $whitelist_ips = [$whitelist_ips];
-        if ($this->swarm_ip !== '' && !in_array($this->swarm_ip, $whitelist_ips, true)) {
-            $whitelist_ips[] = $this->swarm_ip;
-        }
-        $wl_export = var_export(array_values(array_filter($whitelist_ips)), true);
+        $resolved = $this->resolve_effective_whitelist();
+        $wl_export = var_export($resolved['whitelist'], true);
+        $tg_leases_export = var_export($resolved['tg_leases'], true);
+        $compiler_ver = self::COMPILER_VERSION;
 
         // Compile Cloudflare CIDRs
         $cf_v4 = ['173.245.48.0/20','103.21.244.0/22','103.22.200.0/22','103.31.4.0/22','141.101.64.0/18','108.162.192.0/18','190.93.240.0/20','188.114.96.0/20','197.234.240.0/22','198.41.128.0/17','162.158.0.0/15','104.16.0.0/13','104.24.0.0/14','172.64.0.0/13','131.0.72.0/22'];
@@ -98,6 +166,7 @@ class VIS_Zeus_Compiler {
 <?php
 /**
  * GEDEFENSE ZEUS — PRE-BOOT ADMISSION CONTROL & EDGE DEFENSE KERNEL
+ * COMPILER_VERSION: {$compiler_ver}
  * COMPILED: {$date_utc} UTC
  * STATUS: DIAMANT VGT SUPREME (ZERO-ALLOCATION L0 ADMISSION)
  */
@@ -110,6 +179,7 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
     \$config = {$config_export};
     \$contracts = {$contracts_export};
     \$xdrContainedRoutes = {$xdr_routes_export};
+    \$tgLeases = {$tg_leases_export};
 
     // P0: ZEUS MASTER SWITCH (Authoritative check — returns immediately if disabled)
     if (empty(\$config['zeus_enabled'])) {
@@ -544,8 +614,13 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
     };
 
     \$isWhitelisted = false;
+    \$nowTsWl = time();
     foreach (\$wl as \$wEntry) {
-        if (is_string(\$wEntry) && \$cidr_match(\$ip, \$wEntry)) {
+        if (!is_string(\$wEntry) || \$wEntry === '') continue;
+        if (isset(\$tgLeases[\$wEntry]) && \$nowTsWl >= (int)\$tgLeases[\$wEntry]) {
+            continue;
+        }
+        if (\$cidr_match(\$ip, \$wEntry)) {
             \$isWhitelisted = true;
             break;
         }
@@ -635,35 +710,37 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
     \$maxQuery = (int)(\$config['max_query_length'] ?? 2048);
     \$maxParams = (int)(\$config['max_query_params'] ?? 100);
 
-    if (\$queryLen > \$maxQuery) {
-        \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_QUERY_TOO_LONG', "Query length {\$queryLen} exceeds ceiling {\$maxQuery}.", 7, 414);
-    }
-    if (\$paramCount > \$maxParams) {
-        \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_PARAMS_EXCEEDED', "Parameter count {\$paramCount} exceeds ceiling {\$maxParams}.", 7, 400);
-    }
-
-    \$headerCount = 0;
-    \$totalHeaderSize = 0;
-    foreach (\$_SERVER as \$k => \$v) {
-        if (str_starts_with(\$k, 'HTTP_') || in_array(\$k, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'AUTHORIZATION'], true)) {
-            \$headerCount++;
-            \$totalHeaderSize += strlen(\$k) + (is_string(\$v) ? strlen(\$v) : 0);
+    if (!\$isWhitelisted) {
+        if (\$queryLen > \$maxQuery) {
+            \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_QUERY_TOO_LONG', "Query length {\$queryLen} exceeds ceiling {\$maxQuery}.", 7, 414);
         }
-    }
-    \$maxHeaders = (int)(\$config['max_header_count'] ?? 50);
-    \$maxHeaderSize = (int)(\$config['max_header_size'] ?? 16384);
-    if (\$headerCount > \$maxHeaders) {
-        \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_HEADER_COUNT_EXCEEDED', "Header count {\$headerCount} exceeds ceiling {\$maxHeaders}.", 6, 431);
-    }
-    if (\$totalHeaderSize > \$maxHeaderSize) {
-        \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_HEADER_SIZE_EXCEEDED', "Total header size {\$totalHeaderSize} exceeds ceiling {\$maxHeaderSize}.", 6, 431);
-    }
+        if (\$paramCount > \$maxParams) {
+            \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_PARAMS_EXCEEDED', "Parameter count {\$paramCount} exceeds ceiling {\$maxParams}.", 7, 400);
+        }
 
-    \$rawCookie = (string)(\$_SERVER['HTTP_COOKIE'] ?? '');
-    \$cookieSize = strlen(\$rawCookie);
-    \$maxCookie = (int)(\$config['max_cookie_size'] ?? 8192);
-    if (\$cookieSize > \$maxCookie) {
-        \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_COOKIE_SIZE_EXCEEDED', "Cookie payload {\$cookieSize} exceeds ceiling {\$maxCookie}.", 6, 400);
+        \$headerCount = 0;
+        \$totalHeaderSize = 0;
+        foreach (\$_SERVER as \$k => \$v) {
+            if (str_starts_with(\$k, 'HTTP_') || in_array(\$k, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'AUTHORIZATION'], true)) {
+                \$headerCount++;
+                \$totalHeaderSize += strlen(\$k) + (is_string(\$v) ? strlen(\$v) : 0);
+            }
+        }
+        \$maxHeaders = (int)(\$config['max_header_count'] ?? 50);
+        \$maxHeaderSize = (int)(\$config['max_header_size'] ?? 16384);
+        if (\$headerCount > \$maxHeaders) {
+            \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_HEADER_COUNT_EXCEEDED', "Header count {\$headerCount} exceeds ceiling {\$maxHeaders}.", 6, 431);
+        }
+        if (\$totalHeaderSize > \$maxHeaderSize) {
+            \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_HEADER_SIZE_EXCEEDED', "Total header size {\$totalHeaderSize} exceeds ceiling {\$maxHeaderSize}.", 6, 431);
+        }
+
+        \$rawCookie = (string)(\$_SERVER['HTTP_COOKIE'] ?? '');
+        \$cookieSize = strlen(\$rawCookie);
+        \$maxCookie = (int)(\$config['max_cookie_size'] ?? 8192);
+        if (\$cookieSize > \$maxCookie) {
+            \$record_and_kill('ZEUS.REQUEST_MALFORMED', 'ENV_COOKIE_SIZE_EXCEEDED', "Cookie payload {\$cookieSize} exceeds ceiling {\$maxCookie}.", 6, 400);
+        }
     }
 
     // 10. ROUTE CONTRACT MATCHING & LIVE ENFORCEMENT
@@ -692,32 +769,40 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
 
     if (\$matchedContract !== null) {
         \$cMethods = \$matchedContract['methods'] ?? ['GET', 'POST'];
-        if (is_array(\$cMethods) && !in_array(\$method, \$cMethods, true)) {
+        if (!\$isWhitelisted && is_array(\$cMethods) && !in_array(\$method, \$cMethods, true)) {
             \$record_and_kill('ZEUS.REQUEST_CONTRACT_VIOLATION', 'CONTRACT_METHOD_VIOLATION', "Method {\$method} not permitted on route {\$pathOnly}.", 8, 405);
         }
         \$cMaxBody = (int)(\$matchedContract['max_body_bytes'] ?? 65536);
-        if (\$contentLength > \$cMaxBody) {
+        if (!\$isWhitelisted && \$contentLength > \$cMaxBody) {
             \$record_and_kill('ZEUS.REQUEST_CONTRACT_VIOLATION', 'CONTRACT_BODY_LIMIT', "Body size {\$contentLength} exceeds ceiling {\$cMaxBody}.", 7, 413);
         }
         \$allowedTypes = \$matchedContract['allowed_content_types'] ?? null;
-        if (is_array(\$allowedTypes) && !empty(\$allowedTypes) && in_array(\$method, ['POST', 'PUT', 'PATCH'], true)) {
+        if (
+            !\$isWhitelisted &&
+            is_array(\$allowedTypes) &&
+            !empty(\$allowedTypes) &&
+            !in_array('*', \$allowedTypes, true) &&
+            !in_array('*/*', \$allowedTypes, true) &&
+            in_array(\$method, ['POST', 'PUT', 'PATCH'], true)
+        ) {
             \$cleanType = strtolower(trim((string)explode(';', \$contentType)[0]));
-            if (\$cleanType !== '' && !in_array(\$cleanType, \$allowedTypes, true)) {
+            \$normAllowed = array_map('strtolower', array_map('strval', \$allowedTypes));
+            if (\$cleanType !== '' && !in_array(\$cleanType, \$normAllowed, true)) {
                 \$record_and_kill('ZEUS.REQUEST_CONTRACT_VIOLATION', 'CONTRACT_CONTENT_TYPE_REJECT', "Content type {\$cleanType} not permitted.", 7, 415);
             }
         }
 
         // Contract route-specific query bounds
-        if (!empty(\$matchedContract['max_query_length']) && \$queryLen > (int)\$matchedContract['max_query_length']) {
+        if (!\$isWhitelisted && !empty(\$matchedContract['max_query_length']) && \$queryLen > (int)\$matchedContract['max_query_length']) {
             \$record_and_kill('ZEUS.REQUEST_CONTRACT_VIOLATION', 'CONTRACT_QUERY_TOO_LONG', "Route query length exceeds contract ceiling.", 7, 414);
         }
-        if (!empty(\$matchedContract['max_query_params']) && \$paramCount > (int)\$matchedContract['max_query_params']) {
+        if (!\$isWhitelisted && !empty(\$matchedContract['max_query_params']) && \$paramCount > (int)\$matchedContract['max_query_params']) {
             \$record_and_kill('ZEUS.REQUEST_CONTRACT_VIOLATION', 'CONTRACT_PARAMS_EXCEEDED', "Route param count exceeds contract ceiling.", 7, 400);
         }
 
         // Contract cross-site policy check (Sec-Fetch-Site on state-changing requests)
         \$crossSitePolicy = strtoupper((string)(\$matchedContract['cross_site_policy'] ?? 'SAME_ORIGIN'));
-        if (\$crossSitePolicy === 'SAME_ORIGIN' && in_array(\$method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+        if (!\$isWhitelisted && \$crossSitePolicy === 'SAME_ORIGIN' && in_array(\$method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
             \$secFetchSite = strtolower((string)(\$_SERVER['HTTP_SEC_FETCH_SITE'] ?? ''));
             if (\$secFetchSite === 'cross-site') {
                 \$record_and_kill('ZEUS.REQUEST_CONTRACT_VIOLATION', 'CONTRACT_CROSS_SITE_VIOLATION', "Cross-site state mutation blocked by contract.", 8, 403);
@@ -752,7 +837,7 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
         }
 
         // Contract Admission Requirement
-        if (!empty(\$matchedContract['admission_required'])) {
+        if (!\$isWhitelisted && !empty(\$matchedContract['admission_required'])) {
             \$admToken = \$_COOKIE['vgt_zeus_adm'] ?? (\$_GET['vgt_adm'] ?? null);
             \$surface = str_starts_with(\$pathOnly, '/wp-admin/') ? 'admin' : (str_starts_with(\$pathOnly, '/wp-login.php') ? 'login' : 'all');
             \$res = \$verify_admission_token(\$admToken, \$surface);
@@ -782,7 +867,7 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
     }
 
     // 11. GLOBAL LOGIN ADMISSION MODE (If configured in dashboard)
-    if ((\$config['login_admission_mode'] ?? 'DISABLED') === 'ADMISSION_TOKEN') {
+    if (!\$isWhitelisted && (\$config['login_admission_mode'] ?? 'DISABLED') === 'ADMISSION_TOKEN') {
         if (\$pathOnly === '/wp-login.php' || str_starts_with(\$pathOnly, '/wp-admin/')) {
             \$admToken = \$_COOKIE['vgt_zeus_adm'] ?? (\$_GET['vgt_adm'] ?? null);
             \$surface = str_starts_with(\$pathOnly, '/wp-admin/') ? 'admin' : 'login';

@@ -197,7 +197,13 @@ class VIS_Zeus_Env {
     }
 
     private function atomic_replace(string $destination, string $content, int $mode, ?string $temporary = null): void {
-        $normalize = static fn(string $p): string => function_exists('wp_normalize_path') ? wp_normalize_path($p) : str_replace('\\', '/', $p);
+        $normalize = static function (string $p): string {
+            $norm = function_exists('wp_normalize_path') ? wp_normalize_path($p) : str_replace('\\', '/', $p);
+            if (preg_match('/^[a-z]:\//i', $norm)) {
+                $norm = strtoupper($norm[0]) . substr($norm, 1);
+            }
+            return $norm;
+        };
 
         $raw_root = realpath(ABSPATH);
         $raw_dir  = realpath(dirname($destination));

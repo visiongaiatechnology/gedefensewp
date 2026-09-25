@@ -8,6 +8,9 @@ final class VIS_Throne_Guard {
     public const MASTER_ROLE = 'master';
     public const MASTER_CAP = 'mcp_master_access';
     private const SESSION_TTL = 7200;
+    public const WHITELIST_LEASE_TTL = 43200; // 12 Hours (43,200 seconds)
+    public const OPTION_IP_LEASES = 'vis_throneguard_ip_leases';
+    public const CRON_PRUNE_HOOK = 'vis_throneguard_prune_leases';
     
     public const TOXIC_CAPABILITIES = [
         'activate_plugins', 'delete_plugins', 'install_plugins', 'edit_plugins', 'update_plugins',
@@ -68,6 +71,8 @@ final class VIS_Throne_Guard {
     }
 
     private function __construct() {
+        self::reconcile_ip_leases();
+
         $config = get_option('vis_config', []);
         $this->config = is_array($config) ? $config : [];
         $this->ensure_master_role();
@@ -75,6 +80,8 @@ final class VIS_Throne_Guard {
         add_action('admin_post_vis_throneguard_claim', [$this, 'handle_claim_master']);
         add_action('admin_post_vis_throneguard_save', [$this, 'handle_save']);
         add_action('admin_post_vis_throneguard_unlock', [$this, 'handle_unlock']);
+        add_action('admin_post_vis_throneguard_revoke_lease', [$this, 'handle_revoke_lease']);
+        add_action(self::CRON_PRUNE_HOOK, [self::class, 'reconcile_ip_leases']);
         add_action('wp_ajax_vis_throneguard_clear_logs', [$this, 'handle_clear_logs']);
         add_action('clear_auth_cookie', [$this, 'destroy_session']);
         add_action('delete_user', [$this, 'protect_master_deletion']);
@@ -110,9 +117,12 @@ final class VIS_Throne_Guard {
     }
 
     public static function status(): array {
+        self::reconcile_ip_leases();
         $config = get_option('vis_config', []);
         $config = is_array($config) ? $config : [];
         $instance = self::get_instance();
+        $current_ip = self::resolve_client_ip();
+        $active_leases = self::get_active_ip_leases();
         return [
             'is_master' => current_user_can(self::MASTER_CAP),
             'master_count' => count(get_users(['role' => self::MASTER_ROLE, 'fields' => 'ids'])),
@@ -123,7 +133,320 @@ final class VIS_Throne_Guard {
             'restricted_caps' => $instance->get_restricted_capabilities(),
             'available_caps'  => self::AVAILABLE_CAPABILITIES,
             'logs'            => self::get_logs(),
+            'current_ip'      => $current_ip,
+            'active_leases'   => $active_leases,
+            'current_ip_lease'=> $active_leases[$current_ip] ?? null,
         ];
+    }
+
+    private static function resolve_client_ip(): string {
+        $ip = class_exists('VIS_Security') ? VIS_Security::client_ip() : (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+        $ip = trim($ip);
+        return filter_var($ip, FILTER_VALIDATE_IP) !== false ? $ip : '127.0.0.1';
+    }
+
+    /** @return string[] */
+    private static function parse_ip_lines(string $raw): array {
+        $lines = preg_split('/\r\n|\r|\n/', $raw) ?: [];
+        $clean = [];
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed !== '' && !in_array($trimmed, $clean, true)) {
+                $clean[] = $trimmed;
+            }
+        }
+        return $clean;
+    }
+
+    private static function compute_swarm_subnet(string $ip): string {
+        $packed = @inet_pton($ip);
+        if ($packed === false) {
+            return '';
+        }
+        if (strlen($packed) === 4) {
+            $parts = explode('.', $ip);
+            return $parts[0] . '.' . $parts[1] . '.' . $parts[2] . '.0/24';
+        }
+        if (strlen($packed) === 16) {
+            $parts = explode(':', $ip);
+            return implode(':', array_slice($parts, 0, 4)) . '::/64';
+        }
+        return '';
+    }
+
+    private static function sync_zeus_waf(): void {
+        if (!class_exists('VIS_Zeus')) {
+            $zeus_file = defined('VIS_PATH')
+                ? VIS_PATH . 'includes/modules/zeus/class-vis-zeus.php'
+                : dirname(__DIR__) . '/zeus/class-vis-zeus.php';
+            if (is_readable($zeus_file)) {
+                require_once $zeus_file;
+            }
+        }
+        if (class_exists('VIS_Zeus') && method_exists('VIS_Zeus', 'recompile_waf')) {
+            \VIS_Zeus::recompile_waf();
+        }
+    }
+
+    /**
+     * Grants a 12-hour (43,200s) Master IP whitelist across AEGIS, Prometheus, and ZEUS.
+     *
+     * @param string|null $ip
+     * @param int $ttl
+     * @return array<string, mixed>
+     */
+    public static function grant_master_ip_whitelist(?string $ip = null, int $ttl = self::WHITELIST_LEASE_TTL): array {
+        self::reconcile_ip_leases();
+
+        $target_ip = ($ip !== null && trim($ip) !== '') ? trim($ip) : self::resolve_client_ip();
+        if (filter_var($target_ip, FILTER_VALIDATE_IP) === false) {
+            $target_ip = '127.0.0.1';
+        }
+
+        $ttl = max(60, $ttl);
+        $now = time();
+        $expires_at = $now + $ttl;
+
+        // 1. Update AEGIS & Prometheus Whitelists in vis_config
+        $config = get_option('vis_config', []);
+        $config = is_array($config) ? $config : [];
+
+        $aegis_ips = self::parse_ip_lines((string)($config['aegis_whitelist_ips'] ?? ''));
+        if (!in_array($target_ip, $aegis_ips, true)) {
+            $aegis_ips[] = $target_ip;
+        }
+        $config['aegis_whitelist_ips'] = implode("\n", $aegis_ips);
+
+        $prom_ips = self::parse_ip_lines((string)($config['prometheus_whitelist_ips'] ?? ''));
+        if (!in_array($target_ip, $prom_ips, true)) {
+            $prom_ips[] = $target_ip;
+        }
+        $config['prometheus_whitelist_ips'] = implode("\n", $prom_ips);
+
+        update_option('vis_config', $config, false);
+
+        // 2. Update ZEUS Whitelist (vgt_zeus_whitelist_ips + vis_zeus_config['ip_whitelist'])
+        $zeus_wl = get_option('vgt_zeus_whitelist_ips', []);
+        $zeus_wl = is_array($zeus_wl) ? $zeus_wl : [];
+
+        $zeus_cfg = get_option('vis_zeus_config', []);
+        $zeus_cfg = is_array($zeus_cfg) ? $zeus_cfg : [];
+        $cfg_wl = is_array($zeus_cfg['ip_whitelist'] ?? null) ? $zeus_cfg['ip_whitelist'] : [];
+
+        $legacy_swarm = self::compute_swarm_subnet($target_ip);
+        $merged_zeus = array_values(array_unique(array_filter(
+            array_map('trim', array_map('strval', array_merge(['127.0.0.1', '::1'], $zeus_wl, $cfg_wl))),
+            static fn(string $v): bool => $v !== '' && ($legacy_swarm === '' || $v !== $legacy_swarm || in_array($legacy_swarm, $aegis_ips, true))
+        )));
+
+        if (!in_array($target_ip, $merged_zeus, true)) {
+            $merged_zeus[] = $target_ip;
+        }
+
+        update_option('vgt_zeus_whitelist_ips', $merged_zeus);
+        $zeus_cfg['ip_whitelist'] = $merged_zeus;
+        update_option('vis_zeus_config', $zeus_cfg);
+
+        // 3. Record 12-Hour Lease in vis_throneguard_ip_leases
+        $leases = get_option(self::OPTION_IP_LEASES, []);
+        $leases = is_array($leases) ? $leases : [];
+
+        $user = function_exists('wp_get_current_user') ? wp_get_current_user() : null;
+        $lease_record = [
+            'ip'         => $target_ip,
+            'user_id'    => ($user && $user->exists()) ? (int)$user->ID : 0,
+            'user_login' => ($user && $user->exists()) ? (string)$user->user_login : 'MASTER',
+            'granted_at' => $now,
+            'expires_at' => $expires_at,
+            'ttl'        => $ttl,
+            'modules'    => ['AEGIS', 'PROMETHEUS', 'ZEUS'],
+        ];
+        $leases[$target_ip] = $lease_record;
+        update_option(self::OPTION_IP_LEASES, $leases, false);
+
+        // 4. Schedule WP-Cron Prune Event at expiration
+        if (function_exists('wp_schedule_single_event')) {
+            wp_schedule_single_event($expires_at + 1, self::CRON_PRUNE_HOOK);
+        }
+
+        // 5. Clear any existing Prometheus anomaly state or Cerberus ban for this IP
+        if (function_exists('delete_transient')) {
+            delete_transient('vis_prom_state_' . md5($target_ip));
+        }
+        if (function_exists('apcu_delete')) {
+            @apcu_delete('vis_prom_state_' . md5($target_ip));
+            if ($legacy_swarm !== '') {
+                @apcu_delete('vis_prom_infra_' . md5($legacy_swarm));
+            }
+        }
+        if (class_exists('VIS_Cerberus') && method_exists('VIS_Cerberus', 'unban_ip')) {
+            try {
+                \VIS_Cerberus::unban_ip($target_ip);
+            } catch (\Throwable $e) {
+                // Non-fatal
+            }
+        }
+
+        // 6. Recompile Zeus Pre-Boot WAF so whitelist.json and zeus-waf.php reflect the lease immediately
+        self::sync_zeus_waf();
+
+        $hours = round($ttl / 3600, 1);
+        self::log_event(
+            'MASTER_WHITELIST_GRANTED',
+            sprintf(
+                'Master-IP [%s] nach Superkey-Verifikation für %s Stunden in AEGIS, PROMETHEUS und ZEUS gewhitelistet (bis %s UTC).',
+                $target_ip,
+                (string)$hours,
+                gmdate('Y-m-d H:i:s', $expires_at)
+            ),
+            'success',
+            $lease_record
+        );
+
+        return $lease_record;
+    }
+
+    /**
+     * Reconciles and removes expired 12-hour Master IP leases from AEGIS, Prometheus, and ZEUS.
+     * Fast O(1) no-op when no leases exist or none are expired.
+     */
+    public static function reconcile_ip_leases(): bool {
+        $leases = get_option(self::OPTION_IP_LEASES, []);
+        if (!is_array($leases) || empty($leases)) {
+            return false;
+        }
+
+        $now = time();
+        $expired = [];
+        $active = [];
+
+        foreach ($leases as $ip_key => $info) {
+            $ip_str = is_string($ip_key) && $ip_key !== '' ? $ip_key : (string)($info['ip'] ?? '');
+            if ($ip_str === '') {
+                continue;
+            }
+            $exp = (int)($info['expires_at'] ?? 0);
+            if ($exp <= $now) {
+                $expired[$ip_str] = $info;
+            } else {
+                $active[$ip_str] = $info;
+            }
+        }
+
+        if (empty($expired)) {
+            return false;
+        }
+
+        // Update active leases first to prevent re-entrancy
+        update_option(self::OPTION_IP_LEASES, $active, false);
+
+        $expired_targets = [];
+        foreach (array_keys($expired) as $exp_ip) {
+            $expired_targets[$exp_ip] = true;
+            $swarm = self::compute_swarm_subnet($exp_ip);
+            if ($swarm !== '') {
+                $expired_targets[$swarm] = true;
+            }
+        }
+
+        // 1. Remove expired IP(s) from AEGIS & Prometheus in vis_config
+        $config = get_option('vis_config', []);
+        $config = is_array($config) ? $config : [];
+
+        $aegis_ips = self::parse_ip_lines((string)($config['aegis_whitelist_ips'] ?? ''));
+        $aegis_ips = array_values(array_filter($aegis_ips, static fn(string $entry): bool => !isset($expired_targets[$entry])));
+        $config['aegis_whitelist_ips'] = implode("\n", $aegis_ips);
+
+        $prom_ips = self::parse_ip_lines((string)($config['prometheus_whitelist_ips'] ?? ''));
+        $prom_ips = array_values(array_filter($prom_ips, static fn(string $entry): bool => !isset($expired_targets[$entry])));
+        $config['prometheus_whitelist_ips'] = implode("\n", $prom_ips);
+
+        update_option('vis_config', $config, false);
+
+        // 2. Remove expired IP(s) from ZEUS (vgt_zeus_whitelist_ips + vis_zeus_config['ip_whitelist'])
+        $zeus_wl = get_option('vgt_zeus_whitelist_ips', []);
+        $zeus_wl = is_array($zeus_wl) ? $zeus_wl : [];
+        $zeus_cfg = get_option('vis_zeus_config', []);
+        $zeus_cfg = is_array($zeus_cfg) ? $zeus_cfg : [];
+        $cfg_wl = is_array($zeus_cfg['ip_whitelist'] ?? null) ? $zeus_cfg['ip_whitelist'] : [];
+
+        $merged_zeus = array_values(array_unique(array_filter(
+            array_map('trim', array_map('strval', array_merge($zeus_wl, $cfg_wl))),
+            static fn(string $entry): bool => $entry !== '' && !isset($expired_targets[$entry])
+        )));
+        foreach (['127.0.0.1', '::1'] as $loopback) {
+            if (!isset($expired_targets[$loopback]) && !in_array($loopback, $merged_zeus, true)) {
+                array_unshift($merged_zeus, $loopback);
+            }
+        }
+        $merged_zeus = array_values(array_unique($merged_zeus));
+
+        update_option('vgt_zeus_whitelist_ips', $merged_zeus);
+        $zeus_cfg['ip_whitelist'] = $merged_zeus;
+        update_option('vis_zeus_config', $zeus_cfg);
+
+        // 3. Recompile Zeus Pre-Boot WAF so whitelist.json and zeus-waf.php drop the expired IP
+        self::sync_zeus_waf();
+
+        foreach ($expired as $exp_ip => $info) {
+            self::log_event(
+                'MASTER_WHITELIST_EXPIRED',
+                sprintf(
+                    '12-Stunden Master-Whitelist für IP [%s] abgelaufen. IP wurde automatisch aus AEGIS, PROMETHEUS und ZEUS entfernt.',
+                    $exp_ip
+                ),
+                'info',
+                is_array($info) ? $info : ['ip' => $exp_ip]
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * Immediately revokes a Master IP whitelist lease and removes the IP from AEGIS, Prometheus, and ZEUS.
+     */
+    public static function revoke_master_ip_whitelist(?string $ip = null): bool {
+        $target_ip = ($ip !== null && trim($ip) !== '') ? trim($ip) : self::resolve_client_ip();
+        $leases = get_option(self::OPTION_IP_LEASES, []);
+        $leases = is_array($leases) ? $leases : [];
+
+        if (!isset($leases[$target_ip])) {
+            $leases[$target_ip] = [
+                'ip'         => $target_ip,
+                'granted_at' => time() - self::WHITELIST_LEASE_TTL,
+                'expires_at' => time() - 1,
+            ];
+        } else {
+            $leases[$target_ip]['expires_at'] = time() - 1;
+        }
+
+        update_option(self::OPTION_IP_LEASES, $leases, false);
+        return self::reconcile_ip_leases();
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    public static function get_active_ip_leases(): array {
+        self::reconcile_ip_leases();
+        $leases = get_option(self::OPTION_IP_LEASES, []);
+        if (!is_array($leases)) {
+            return [];
+        }
+        $now = time();
+        $active = [];
+        foreach ($leases as $ip_key => $info) {
+            if (!is_array($info)) {
+                continue;
+            }
+            $exp = (int)($info['expires_at'] ?? 0);
+            if ($exp > $now) {
+                $info['remaining_seconds'] = $exp - $now;
+                $active[(string)$ip_key] = $info;
+            }
+        }
+        return $active;
     }
 
     /** @return string[] */
@@ -251,18 +574,43 @@ final class VIS_Throne_Guard {
         exit;
     }
 
+    private function establish_session(): void {
+        $token = bin2hex(random_bytes(32));
+        $expires = time() + self::SESSION_TTL;
+        update_user_meta(get_current_user_id(), '_vis_throneguard_session', [
+            'expires' => $expires,
+            'token_hash' => hash('sha256', $token),
+            'fingerprint' => $this->fingerprint(),
+        ]);
+        if (!headers_sent()) {
+            setcookie($this->cookie_name(), $token, [
+                'expires' => $expires,
+                'path' => defined('COOKIEPATH') && COOKIEPATH !== '' ? COOKIEPATH : '/',
+                'domain' => defined('COOKIE_DOMAIN') ? COOKIE_DOMAIN : '',
+                'secure' => is_ssl(),
+                'httponly' => true,
+                'samesite' => 'Strict',
+            ]);
+        }
+        $_COOKIE[$this->cookie_name()] = $token;
+    }
+
     public function handle_save(): never {
         if (!current_user_can(self::MASTER_CAP)) wp_die('Request rejected for security reasons.', 'Security Error', ['response' => 403]);
         check_admin_referer('vis_throneguard_save');
 
         $existingHash = (string)get_option('vis_throneguard_superkey_hash', '');
-        $currentKey = isset($_POST['current_superkey']) && is_string($_POST['current_superkey']) ? $_POST['current_superkey'] : '';
-        $newKey = isset($_POST['new_superkey']) && is_string($_POST['new_superkey']) ? $_POST['new_superkey'] : '';
-        
-        if ($existingHash !== '' && !empty($newKey) && !password_verify($currentKey, $existingHash)) {
-            self::log_event('KEY_UPDATE_FAIL', 'Fehlgeschlagene Superkey-Änderung: Aktueller Superkey war falsch.', 'warning');
-            wp_safe_redirect($this->dashboard_url(['throne_error' => 'verification']));
-            exit;
+        $currentKey = isset($_POST['current_superkey']) && is_string($_POST['current_superkey']) ? wp_unslash($_POST['current_superkey']) : '';
+        $newKey = isset($_POST['new_superkey']) && is_string($_POST['new_superkey']) ? wp_unslash($_POST['new_superkey']) : '';
+        $superkeyVerified = false;
+
+        if ($existingHash !== '' && ($currentKey !== '' || $newKey !== '')) {
+            if (!password_verify($currentKey, $existingHash)) {
+                self::log_event('KEY_UPDATE_FAIL', 'Fehlgeschlagene Superkey-Verifikation: Eingegebener Superkey war falsch.', 'warning');
+                wp_safe_redirect($this->dashboard_url(['throne_error' => 'verification']));
+                exit;
+            }
+            $superkeyVerified = true;
         }
         
         if ($existingHash === '' || $newKey !== '') {
@@ -278,6 +626,7 @@ final class VIS_Throne_Guard {
                     }
                 }
                 self::log_event('SUPERKEY_UPDATE', 'ThroneGuard Superkey wurde erfolgreich neu gesetzt.', 'success');
+                $superkeyVerified = true;
             }
         }
 
@@ -312,41 +661,61 @@ final class VIS_Throne_Guard {
             'info'
         );
 
-        $this->destroy_session();
-        wp_safe_redirect($this->dashboard_url(['updated' => '1']));
+        $redirectParams = ['updated' => '1'];
+        if ($superkeyVerified) {
+            $this->establish_session();
+            self::grant_master_ip_whitelist();
+            $redirectParams['whitelisted'] = '1';
+        } elseif (!$this->is_session_unlocked()) {
+            $this->destroy_session();
+        }
+
+        wp_safe_redirect($this->dashboard_url($redirectParams));
         exit;
     }
 
     public function handle_unlock(): never {
         if (!current_user_can(self::MASTER_CAP)) wp_die('Request rejected for security reasons.', 'Security Error', ['response' => 403]);
         check_admin_referer('vis_throneguard_unlock');
-        $provided = isset($_POST['superkey']) && is_string($_POST['superkey']) ? $_POST['superkey'] : '';
+        $provided = isset($_POST['superkey']) && is_string($_POST['superkey']) ? wp_unslash($_POST['superkey']) : '';
         $hash = (string)get_option('vis_throneguard_superkey_hash', '');
         
         if ($hash === '' || !password_verify($provided, $hash)) {
             self::log_event('AUTH_FAILED', 'Fehlgeschlagener Entsperrversuch mit ungültigem Superkey.', 'critical');
+            if (!empty($_POST['from_dashboard'])) {
+                wp_safe_redirect($this->dashboard_url(['throne_error' => 'verification']));
+                exit;
+            }
             wp_safe_redirect(admin_url('?throneguard_locked=1&auth_error=1'));
             exit;
         }
 
-        $token = bin2hex(random_bytes(32));
-        $expires = time() + self::SESSION_TTL;
-        update_user_meta(get_current_user_id(), '_vis_throneguard_session', [
-            'expires' => $expires,
-            'token_hash' => hash('sha256', $token),
-            'fingerprint' => $this->fingerprint(),
-        ]);
-        setcookie($this->cookie_name(), $token, [
-            'expires' => $expires,
-            'path' => defined('COOKIEPATH') && COOKIEPATH !== '' ? COOKIEPATH : '/',
-            'domain' => defined('COOKIE_DOMAIN') ? COOKIE_DOMAIN : '',
-            'secure' => is_ssl(),
-            'httponly' => true,
-            'samesite' => 'Strict',
-        ]);
+        $this->establish_session();
+        $lease = self::grant_master_ip_whitelist();
         
-        self::log_event('SESSION_UNLOCKED', 'Master-Session erfolgreich mit Superkey freigegeben (Gültigkeit: 2 Stunden).', 'success');
+        self::log_event(
+            'SESSION_UNLOCKED',
+            sprintf(
+                'Master-Session mit Superkey freigegeben & IP [%s] für 12h in AEGIS, PROMETHEUS und ZEUS gewhitelistet.',
+                (string)($lease['ip'] ?? self::resolve_client_ip())
+            ),
+            'success'
+        );
+
+        if (!empty($_POST['from_dashboard'])) {
+            wp_safe_redirect($this->dashboard_url(['whitelisted' => '1']));
+            exit;
+        }
         wp_safe_redirect(admin_url());
+        exit;
+    }
+
+    public function handle_revoke_lease(): never {
+        if (!current_user_can(self::MASTER_CAP)) wp_die('Request rejected for security reasons.', 'Security Error', ['response' => 403]);
+        check_admin_referer('vis_throneguard_revoke_lease');
+        $ip = isset($_POST['lease_ip']) && is_string($_POST['lease_ip']) ? sanitize_text_field(wp_unslash($_POST['lease_ip'])) : null;
+        self::revoke_master_ip_whitelist($ip);
+        wp_safe_redirect($this->dashboard_url(['lease_revoked' => '1']));
         exit;
     }
 

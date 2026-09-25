@@ -155,11 +155,13 @@ final class Zeus_Benchmark {
             'rule_id' => $t5['rule_id'] ?? 'NONE'
         ];
 
-        // 6. Route Contract Body Ceiling
+        // 6. Route Contract Body Ceiling & Content-Type Wildcard Enforcement
         $t6 = Zeus_Contracts::evaluate('/wp-login.php', 'POST', 131072, 'application/x-www-form-urlencoded', 0, 0, $contracts);
+        $adminPostForm = Zeus_Contracts::evaluate('/wp-admin/admin.php', 'POST', 512, 'application/x-www-form-urlencoded; charset=UTF-8', 24, 2, $contracts);
+        $loginBadType = Zeus_Contracts::evaluate('/wp-login.php', 'POST', 128, 'text/plain', 0, 0, $contracts);
         $tests['contract_body_ceiling'] = [
-            'title' => 'Route Contract Max Body Ceiling (128KB > 64KB)',
-            'pass' => ($t6 !== null && ($t6['status_code'] ?? 0) === 413),
+            'title' => 'Route Contract Max Body & Content-Type Wildcard Enforcement',
+            'pass' => ($t6 !== null && ($t6['status_code'] ?? 0) === 413 && $adminPostForm === null && $loginBadType !== null && ($loginBadType['status_code'] ?? 0) === 415),
             'rule_id' => $t6['rule_id'] ?? 'NONE'
         ];
 

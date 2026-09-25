@@ -52,8 +52,36 @@ class VIS_Zeus_Shield {
         }
     }
 
+    private function is_whitelisted(): bool {
+        if (in_array($this->client_ip, ['127.0.0.1', '::1', 'fe80::1'], true)) {
+            return true;
+        }
+        $wl = $this->config['ip_whitelist'] ?? (function_exists('get_option') ? get_option('vgt_zeus_whitelist_ips', []) : []);
+        if (!is_array($wl) || empty($wl)) {
+            return false;
+        }
+        $leases = function_exists('get_option') ? get_option('vis_throneguard_ip_leases', []) : [];
+        $now = time();
+
+        foreach ($wl as $entry) {
+            if (!is_string($entry) || $entry === '') {
+                continue;
+            }
+            if (is_array($leases) && isset($leases[$entry]['expires_at']) && $now >= (int)$leases[$entry]['expires_at']) {
+                continue;
+            }
+            if ($this->client_ip === $entry) {
+                return true;
+            }
+            if (str_contains($entry, '/') && class_exists('\VIS_Security') && \VIS_Security::ip_in_cidr($this->client_ip, $entry)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function enforce_login_portal_obfuscation(): void {
-        if ( is_user_logged_in() || wp_doing_ajax() || wp_doing_cron() ) return;
+        if ( is_user_logged_in() || wp_doing_ajax() || wp_doing_cron() || $this->is_whitelisted() ) return;
 
         $path = parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH );
         $is_login_path = ( strpos( (string) $path, 'wp-login.php' ) !== false || strpos( (string) $path, 'wp-admin' ) !== false );
@@ -100,7 +128,7 @@ class VIS_Zeus_Shield {
     }
 
     public function track_404_anomalies(): void {
-        if ( ! is_404() || is_user_logged_in() ) return;
+        if ( ! is_404() || is_user_logged_in() || $this->is_whitelisted() ) return;
 
         $limit     = (int) $this->config['brute_404_lockout'];
         $cache_key = 'vgt_404_' . md5( $this->swarm_ip );
@@ -119,6 +147,7 @@ class VIS_Zeus_Shield {
     }
 
     public function track_login_failures( string $username ): void {
+        if ( $this->is_whitelisted() ) return;
         $cache_key = 'vgt_login_fail_' . md5( $this->swarm_ip );
 
         $strikes = $this->get_vault_strike( $cache_key, HOUR_IN_SECONDS * 12 );
@@ -133,6 +162,7 @@ class VIS_Zeus_Shield {
     }
 
     public function verify_login_lockout( string $user_login = '' ): void {
+        if ( $this->is_whitelisted() ) return;
         $limit     = (int) $this->config['user_login_lockdown'];
         $cache_key = 'vgt_login_fail_' . md5( $this->swarm_ip );
 
@@ -170,6 +200,7 @@ class VIS_Zeus_Shield {
     }
 
     public function intercept_spam_comments( array $commentdata ): array {
+        if ( $this->is_whitelisted() ) return $commentdata;
         $content = $commentdata['comment_content'] ?? '';
         $link_count = substr_count( $content, 'http://' ) + substr_count( $content, 'https://' );
         

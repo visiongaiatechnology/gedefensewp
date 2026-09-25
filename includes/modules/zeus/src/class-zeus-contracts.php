@@ -21,7 +21,7 @@ final class Zeus_Contracts {
                 'path' => '/wp-login.php',
                 'methods' => ['GET', 'POST'],
                 'max_body_bytes' => 65536, // 64 KB
-                'allowed_content_types' => ['application/x-www-form-urlencoded'],
+                'allowed_content_types' => ['application/x-www-form-urlencoded', 'multipart/form-data'],
                 'max_query_length' => 1024,
                 'max_query_params' => 20,
                 'cross_site_policy' => 'DENY',
@@ -34,11 +34,11 @@ final class Zeus_Contracts {
                 'name' => 'WordPress Admin Core',
                 'match_type' => 'PREFIX',
                 'path' => '/wp-admin/',
-                'methods' => ['GET', 'POST', 'HEAD'],
+                'methods' => ['GET', 'POST', 'HEAD', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'],
                 'max_body_bytes' => 33554432, // 32 MB for uploads
                 'allowed_content_types' => ['*'],
-                'max_query_length' => 2048,
-                'max_query_params' => 50,
+                'max_query_length' => 4096,
+                'max_query_params' => 100,
                 'cross_site_policy' => 'ALLOW',
                 'admission_required' => false,
                 'rate_budget' => ['limit' => 120, 'window' => 60],
@@ -49,11 +49,11 @@ final class Zeus_Contracts {
                 'name' => 'WordPress AJAX Gateway',
                 'match_type' => 'EXACT',
                 'path' => '/wp-admin/admin-ajax.php',
-                'methods' => ['GET', 'POST'],
+                'methods' => ['GET', 'POST', 'OPTIONS'],
                 'max_body_bytes' => 16777216, // 16 MB
-                'allowed_content_types' => ['application/x-www-form-urlencoded', 'multipart/form-data', 'application/json'],
-                'max_query_length' => 2048,
-                'max_query_params' => 50,
+                'allowed_content_types' => ['*'],
+                'max_query_length' => 4096,
+                'max_query_params' => 100,
                 'cross_site_policy' => 'ALLOW',
                 'admission_required' => false,
                 'rate_budget' => ['limit' => 300, 'window' => 60],
@@ -64,11 +64,11 @@ final class Zeus_Contracts {
                 'name' => 'WordPress Admin POST Gateway',
                 'match_type' => 'EXACT',
                 'path' => '/wp-admin/admin-post.php',
-                'methods' => ['GET', 'POST'],
+                'methods' => ['GET', 'POST', 'OPTIONS'],
                 'max_body_bytes' => 16777216,
-                'allowed_content_types' => ['application/x-www-form-urlencoded', 'multipart/form-data'],
-                'max_query_length' => 2048,
-                'max_query_params' => 50,
+                'allowed_content_types' => ['*'],
+                'max_query_length' => 4096,
+                'max_query_params' => 100,
                 'cross_site_policy' => 'ALLOW',
                 'admission_required' => false,
                 'rate_budget' => ['limit' => 120, 'window' => 60],
@@ -80,10 +80,10 @@ final class Zeus_Contracts {
                 'match_type' => 'PREFIX',
                 'path' => '/wp-json/',
                 'methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
-                'max_body_bytes' => 16777216, // 16 MB
-                'allowed_content_types' => ['application/json', 'application/x-www-form-urlencoded', 'multipart/form-data'],
-                'max_query_length' => 2048,
-                'max_query_params' => 50,
+                'max_body_bytes' => 33554432, // 32 MB for Gutenberg / Media REST uploads
+                'allowed_content_types' => ['*'],
+                'max_query_length' => 4096,
+                'max_query_params' => 100,
                 'cross_site_policy' => 'ALLOW',
                 'admission_required' => false,
                 'rate_budget' => ['limit' => 300, 'window' => 60],
@@ -226,11 +226,18 @@ final class Zeus_Contracts {
 
         // 3. Content-Type Check
         $allowedTypes = $matchedContract['allowed_content_types'] ?? ['*'];
-        if ($contentLength > 0 && is_array($allowedTypes) && !in_array('*', $allowedTypes, true)) {
+        if (
+            $contentLength > 0 &&
+            is_array($allowedTypes) &&
+            !empty($allowedTypes) &&
+            !in_array('*', $allowedTypes, true) &&
+            !in_array('*/*', $allowedTypes, true)
+        ) {
             $baseContentType = strtolower(trim(explode(';', $contentType)[0]));
-            if ($baseContentType !== '' && !in_array($baseContentType, $allowedTypes, true)) {
+            $normalizedAllowed = array_map('strtolower', array_map('strval', $allowedTypes));
+            if ($baseContentType !== '' && !in_array($baseContentType, $normalizedAllowed, true)) {
                 return [
-                    'rule_id' => 'CONTRACT_CONTENT_TYPE_VIOLATION',
+                    'rule_id' => 'CONTRACT_CONTENT_TYPE_REJECT',
                     'reason' => sprintf('Content-Type "%s" is not permitted on route "%s".', substr($baseContentType, 0, 64), $cleanPath),
                     'severity' => 7,
                     'event_type' => 'ZEUS.REQUEST_CONTRACT_VIOLATION',

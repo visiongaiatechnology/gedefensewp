@@ -211,6 +211,13 @@ $zeusToggle = static function(string $name, bool $enabled, string $label): void 
                             <option value="XDR_SIGNAL" <?php selected($zeus_config['budget_action_mode'] ?? 'THROTTLE', 'XDR_SIGNAL'); ?>><?php esc_html_e('XDR SIGNAL (Trigger Incident Isolation)', 'vgt-sentinel'); ?></option>
                         </select>
                     </label>
+                    <label class="vgt-titan-wide-field" style="grid-column: 1 / -1;">
+                        <span><?php esc_html_e('ZEUS Whitelisted IPs / CIDRs (Eine pro Zeile — inkl. 12h ThroneGuard Master-Leases)', 'vgt-sentinel'); ?></span>
+                        <textarea name="ip_whitelist" rows="2" placeholder="203.0.113.10&#10;198.51.100.0/24"><?php
+                            $zeus_wl = $zeus_config['ip_whitelist'] ?? get_option('vgt_zeus_whitelist_ips', '');
+                            echo esc_textarea(is_array($zeus_wl) ? implode("\n", $zeus_wl) : (string)$zeus_wl);
+                        ?></textarea>
+                    </label>
                 </div>
             </section>
 

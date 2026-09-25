@@ -5,7 +5,7 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "69eed54161558d58246e4067f434394545095e043a8e3083170250e3cbcd2940"
+            "root_hash": "dc218a5a80bb40d417a8cec9d7711254d9b84bea4045519e3cc580d3eb734037"
         },
         "assets": {
             "files": 12,
@@ -21,7 +21,7 @@
         },
         "dashboard": {
             "files": 85,
-            "root_hash": "a585325dadcb08abd03a7c6ad5449028fe61b6e48cbdd9a6b027bd8ed8f5b1f6"
+            "root_hash": "18b4185dad9fd6e49611d6aa7f5c44af6ff596e54ce92a86b851fa80ab92d120"
         },
         "xdr": {
             "files": 9,
@@ -33,7 +33,7 @@
         },
         "aegis": {
             "files": 2,
-            "root_hash": "b32b077f02d41bdb04fbacc575a442cbc55f7399efdd735eaefa3ac6b608aa34"
+            "root_hash": "a1b0f74b9f4cf81f11712281fde9a87cd884d46cf295c12c1237b6fe09d74289"
         },
         "airlock": {
             "files": 4,
@@ -81,7 +81,7 @@
         },
         "prometheus": {
             "files": 1,
-            "root_hash": "b04f3ce74701623c98c551d05f4ef91116a0abe8f372dd6c07e30b635c06b09a"
+            "root_hash": "f1fffced003298ff5ffae3b851cf2cf88a2478d7c1c16e00cbc0d1eed1b882ac"
         },
         "styx": {
             "files": 1,
@@ -93,11 +93,11 @@
         },
         "throneguard": {
             "files": 1,
-            "root_hash": "b21572551cc9bb8e2c19901457ac505914fcc19353c262e87090d8569de7cc72"
+            "root_hash": "b17e69a8689581d1134334dc3da1370eee9bee64b1d63dac4cc63797f5cdf90e"
         },
         "loginpager": {
             "files": 1,
-            "root_hash": "28e46e6a478d5f55dd63fca4588dcda72c4299b0f53443d2828c37e192496bfc"
+            "root_hash": "8e812ad47832ff5e15ec72bc0fc31f0c4e383616900c24a200388a488d27f539"
         },
         "trap": {
             "files": 4,
@@ -109,7 +109,7 @@
         },
         "zeus": {
             "files": 16,
-            "root_hash": "f84dbf97e836aba6e139ed7766acd622bb442d6678bd43f16256e7a3e0adcbc7"
+            "root_hash": "da5c3458a3f77798b51570daff5d8d720bebf6dcc1c8a37e8e357ee5491acd32"
         }
     }
 }

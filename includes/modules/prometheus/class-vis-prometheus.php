@@ -114,8 +114,8 @@ final class Prometheus {
         $global_config = get_option( 'vis_config', [] );
         $prom_config   = get_option( 'vis_prometheus_config', [] );
 
-        $raw_ips = $global_config['prometheus_whitelist_ips'] ?? '';
-        $this->whitelist_ips = array_filter( array_map( 'trim', explode( "\n", $raw_ips ) ) );
+        $raw_ips = (string)($global_config['prometheus_whitelist_ips'] ?? '');
+        $this->whitelist_ips = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $raw_ips) ?: [])));
 
         $this->trust_proxy_headers = (bool) ($prom_config['trust_proxy_headers'] ?? false);
         
@@ -173,8 +173,17 @@ final class Prometheus {
         if ( $ip === '127.0.0.1' || $ip === '::1' || str_starts_with($ip, 'fe80:') ) {
             return true;
         }
-        if ( ! empty( $this->whitelist_ips ) && in_array( $ip, $this->whitelist_ips, true ) ) {
-            return true;
+        if ( ! empty( $this->whitelist_ips ) ) {
+            if ( in_array( $ip, $this->whitelist_ips, true ) ) {
+                return true;
+            }
+            if ( class_exists( '\VIS_Security' ) ) {
+                foreach ( $this->whitelist_ips as $wl_entry ) {
+                    if ( str_contains( $wl_entry, '/' ) && \VIS_Security::ip_in_cidr( $ip, $wl_entry ) ) {
+                        return true;
+                    }
+                }
+            }
         }
         if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
             $server_ip = $_SERVER['SERVER_ADDR'] ?? null;

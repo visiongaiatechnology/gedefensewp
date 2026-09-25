@@ -12,6 +12,13 @@ $lock_enabled = !empty($status['lock_enabled']);
 $restricted_caps = (array)($status['restricted_caps'] ?? []);
 $available_caps = (array)($status['available_caps'] ?? []);
 $logs = (array)($status['logs'] ?? []);
+$current_ip = (string)($status['current_ip'] ?? '0.0.0.0');
+$ip_whitelisted = !empty($status['ip_whitelisted']);
+$ip_lease = $status['ip_lease'] ?? null;
+$ip_lease_remaining = (int)($status['ip_lease_remaining'] ?? 0);
+$active_ip_leases = (array)($status['active_ip_leases'] ?? []);
+$rem_hours = intdiv($ip_lease_remaining, 3600);
+$rem_mins = intdiv($ip_lease_remaining % 3600, 60);
 
 $total_available_count = 0;
 foreach ($available_caps as $grp) {
@@ -21,6 +28,8 @@ $active_restricted_count = count($restricted_caps);
 
 $claimed = isset($_GET['claimed']);
 $updated = isset($_GET['updated']);
+$whitelisted_notice = isset($_GET['whitelisted']);
+$lease_revoked = isset($_GET['lease_revoked']);
 $throne_error = isset($_GET['throne_error']) ? sanitize_key($_GET['throne_error']) : '';
 ?>
 
@@ -41,6 +50,21 @@ $throne_error = isset($_GET['throne_error']) ? sanitize_key($_GET['throne_error'
         <div class="tg-alert tg-alert-success">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             <strong><?php esc_html_e('KONFIGURATION GESPEICHERT:', 'vgt-sentinel'); ?></strong> <?php esc_html_e('ThroneGuard Privilege Boundary & Superkey-Matrix wurden erfolgreich aktualisiert.', 'vgt-sentinel'); ?>
+            <?php if ($whitelisted_notice): ?>
+                <?php echo ' — '; ?><strong><?php echo esc_html(sprintf(__('Deine IP (%s) wurde für 12 Stunden in AEGIS, Prometheus & ZEUS auf die Whitelist gesetzt.', 'vgt-sentinel'), $current_ip)); ?></strong>
+            <?php endif; ?>
+        </div>
+    <?php elseif ($whitelisted_notice): ?>
+        <div class="tg-alert tg-alert-success">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <strong><?php esc_html_e('12H MASTER-WHITELIST AKTIV:', 'vgt-sentinel'); ?></strong> <?php echo esc_html(sprintf(__('Deine IP (%s) ist für 12 Stunden in AEGIS, Prometheus & ZEUS freigeschaltet und wird danach automatisch entfernt.', 'vgt-sentinel'), $current_ip)); ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($lease_revoked): ?>
+        <div class="tg-alert tg-alert-success">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <strong><?php esc_html_e('WHITELIST-LEASE BEENDET:', 'vgt-sentinel'); ?></strong> <?php esc_html_e('Die temporäre 12h Master-IP-Freigabe wurde aus AEGIS, Prometheus und ZEUS entfernt.', 'vgt-sentinel'); ?>
         </div>
     <?php endif; ?>
 
@@ -135,17 +159,21 @@ $throne_error = isset($_GET['throne_error']) ? sanitize_key($_GET['throne_error'
             </div>
         </div>
 
-        <!-- 4. Zero-Trust Lockdown -->
+        <!-- 4. 12h Omni-Whitelist (AEGIS + Prometheus + ZEUS) -->
         <div class="tg-metric-card" style="--card-accent: #10b981;">
             <div class="tg-metric-label">
-                <span><?php esc_html_e('Zero-Trust Lockdown', 'vgt-sentinel'); ?></span>
-                <span class="tg-status-dot <?php echo $lock_enabled ? 'active' : 'inactive'; ?>"></span>
+                <span><?php esc_html_e('12h Master-Omni-Whitelist', 'vgt-sentinel'); ?></span>
+                <span class="tg-status-dot <?php echo $ip_whitelisted ? 'active' : ($lock_enabled ? 'warning' : 'inactive'); ?>"></span>
             </div>
-            <div class="tg-metric-val" style="color: <?php echo $lock_enabled ? '#10b981' : '#94a3b8'; ?>">
-                <?php echo $lock_enabled ? esc_html__('SESSION GUARD (2h)', 'vgt-sentinel') : esc_html__('DEAKTIVIERT', 'vgt-sentinel'); ?>
+            <div class="tg-metric-val" style="color: <?php echo $ip_whitelisted ? '#10b981' : '#94a3b8'; ?>">
+                <?php if ($ip_whitelisted): ?>
+                    <?php echo esc_html(sprintf('%02dh %02dm REST', $rem_hours, $rem_mins)); ?>
+                <?php else: ?>
+                    <?php echo $lock_enabled ? esc_html__('BEREIT (SUPERKEY)', 'vgt-sentinel') : esc_html__('STANDBY', 'vgt-sentinel'); ?>
+                <?php endif; ?>
             </div>
             <div class="tg-metric-sub">
-                <?php esc_html_e('Anti-Hijack:', 'vgt-sentinel'); ?> <strong style="color:#fff"><?php echo $lock_enabled ? esc_html__('Fingerprint & Cookie Lock', 'vgt-sentinel') : esc_html__('Standard Session', 'vgt-sentinel'); ?></strong>
+                <?php esc_html_e('AEGIS + Prometheus + ZEUS:', 'vgt-sentinel'); ?> <strong style="color:#fff"><?php echo $ip_whitelisted ? esc_html($current_ip) : esc_html__('Bei Superkey-Login (12h)', 'vgt-sentinel'); ?></strong>
             </div>
         </div>
     </div>
@@ -272,6 +300,44 @@ $throne_error = isset($_GET['throne_error']) ? sanitize_key($_GET['throne_error'
 
             </div>
         </form>
+
+        <!-- 12H MASTER OMNI-WHITELIST INSTANT TRIGGER & LEASE CONTROL -->
+        <div class="tg-panel" style="margin-bottom:24px; border-color:rgba(16,185,129,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+                <div>
+                    <div style="font-size:12px; font-weight:800; color:#10b981; font-family:monospace; letter-spacing:0.5px; margin-bottom:4px;">
+                        <?php esc_html_e('12H MASTER OMNI-WHITELIST (AEGIS • PROMETHEUS • ZEUS)', 'vgt-sentinel'); ?>
+                        — <?php echo $ip_whitelisted ? esc_html(sprintf(__('AKTIV (%02dh %02dm verbleibend)', 'vgt-sentinel'), $rem_hours, $rem_mins)) : esc_html__('BEREIT', 'vgt-sentinel'); ?>
+                    </div>
+                    <p style="margin:0; font-size:12px; color:#94a3b8;">
+                        <?php echo esc_html(sprintf(__('Sobald du dein ThroneGuard-Passwort (Superkey) eingibst, wird deine IP (%s) automatisch für 12 Stunden in AEGIS, Prometheus und ZEUS (inkl. Pre-Boot L0 WAF) auf die Whitelist gesetzt und nach 12 Stunden automatisch wieder entfernt.', 'vgt-sentinel'), $current_ip)); ?>
+                    </p>
+                </div>
+
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <?php if ($superkey_set): ?>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:flex; gap:8px; align-items:center; margin:0;">
+                            <?php wp_nonce_field('vis_throneguard_unlock'); ?>
+                            <input type="hidden" name="action" value="vis_throneguard_unlock">
+                            <input class="tg-input" type="password" name="superkey" required autocomplete="current-password" placeholder="<?php esc_attr_e('Superkey für 12h Whitelist...', 'vgt-sentinel'); ?>" style="width:220px; padding:8px 12px; font-size:12px;">
+                            <button type="submit" class="tg-btn-secondary" style="border-color:rgba(16,185,129,0.5); color:#6ee7b7; padding:9px 14px; white-space:nowrap;">
+                                <?php echo $ip_whitelisted ? esc_html__('12h erneuern', 'vgt-sentinel') : esc_html__('12h Omni-Whitelist aktivieren', 'vgt-sentinel'); ?>
+                            </button>
+                        </form>
+                    <?php endif; ?>
+
+                    <?php if (!empty($active_ip_leases)): ?>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin:0;">
+                            <?php wp_nonce_field('vis_throneguard_revoke_lease'); ?>
+                            <input type="hidden" name="action" value="vis_throneguard_revoke_lease">
+                            <button type="submit" class="tg-btn-secondary" style="color:#f87171; border-color:rgba(239,68,68,0.35); padding:9px 14px;">
+                                <?php esc_html_e('Aktive 12h-Whitelist sofort entfernen', 'vgt-sentinel'); ?>
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
     <?php endif; ?>
 
     <!-- AUDIT TELEMETRY STREAM (EVENT HORIZON) -->
