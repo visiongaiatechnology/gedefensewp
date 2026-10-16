@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.3.0] — 2026-10-17
+
+### Added & Enhanced
+- **VGT Glass 2100 Sovereign Design System**:
+  - Full-spectrum Glassmorphic redesign across all 34 dashboard modules, controls, Bento grids, and HUD widgets.
+  - Strict hierarchical elevation model (Z0 to Z4) featuring specular 1px top-edge highlights (`rgba(255, 255, 255, 0.16)`), deep sapphire-obsidian radial backdrops, and velvety ambient glow.
+  - Zero external third-party/CDN dependencies: 100% native system fonts (`ui-sans-serif`, `ui-monospace`) and pure, framework-free CSS.
+  - Full accessibility compliance: dedicated styles for `@media (prefers-reduced-transparency: reduce)`, `@media (prefers-reduced-motion: reduce)`, and high-contrast `@media (forced-colors: active)`.
+  - Complete elimination of all legacy, noisy grid lines and sci-fi raster backgrounds in favor of crystalline, readable telemetry surfaces.
+
+- **Full-Width Real-Time Threat Map & Global Vector Tracking (`threat-map.php`)**:
+  - Positioned prominently spanning 100% width above the Cockpit Protection Matrix & Cyber Defense Radar.
+  - High-precision SVG Mercator world map projection (`900 x 583.08`) with 176 sovereign country vectors, tactical grid lines, and interactive country choropleth fills.
+  - Dynamic quadratic Bézier curve trajectory arcs (`M x1 y1 Q cx cy x2 y2`) calculating parabolic attack vectors from origin coordinates directly into the sovereign server hub.
+  - Live animated SVG projectile packets (`<animateMotion>`) and pulsating sonar rings color-coded by severity (`#ff3366` Critical/Blocked, `#ffaa00` Scan/Tarpit, `#00f3ff` Tracked/Monitored, `#00ffaa` Server Hub).
+
+- **100% Local Autonomous BGP & GeoIP Binary-Search Engine (`class-vis-geo-resolver.php`)**:
+  - Self-contained, sub-0.4ms $O(\log N)$ binary search engine operating over a packed 70.8MB local database (`data/geoip.csv`).
+  - Zero cloud leaks: completely autonomous resolution of country code, region, latitude, longitude, ASN carrier, and autonomous system name without external API queries (no MaxMind web services, no IPInfo).
+  - High-performance dual-tier cache: in-memory request cache and 7-day persistent WordPress transients.
+
+- **Intelligent Threat Coordinate Clustering & Multi-Vector Aggregation**:
+  - Automatically merges multiple threats sharing identical geographical coordinates into a consolidated cluster marker (`.vis-threat-marker.is-cluster`) with a live vector counter badge.
+  - Eliminates overlapping SVG element hit-test collisions and hover jitter.
+  - Unified multi-vector HUD popup: displays flag, carrier, ASN, and a scrollable list of all targeted URIs, modules, and intervention actions at that coordinate.
+
+- **Universal 4-Way Dynamic Tooltip Positioning Engine**:
+  - Mathematical 4-way viewport detection (`Above`, `Below`, `Right`, `Left`):
+    - Automatically displays **Above** in lower latitudes when vertical headroom is ample.
+    - Automatically flips **Below** in high northern latitudes (e.g., Scandinavia, northern Russia, Arctic).
+    - Automatically positions **Sideways (Right or Left)** when vertical clearance is constrained (middle latitudes such as USA, Central Europe, India, China) with strict vertical clamping (`clampedY`) to prevent any clipping.
+  - Smooth cursor tracking over large territorial geometries (`mousemove`) and 14px safety boundary edge clamping.
+
+- **100% Genuine Telemetry Engine (Zero Simulation)**:
+  - Completely purged all synthetic simulation loops, fake blips, and placeholder generators.
+  - Telemetry is harvested exclusively from genuine database events (`vis_bans`, Sentinel, Prometheus, WAF intercept logs).
+  - Lightweight, non-blocking AJAX polling (`wp_ajax_vis_get_live_threats`) checks for real attack events every 25 seconds without row duplication.
+  - Authoritative "AIRSPACE SECURE · 0 THREATS" nominal state when no active threats are logged.
+
+- **Full Multilingual Localization Matrix (DE / EN / RU)**:
+  - 100% localized across all languages: comprehensive dictionary entries added to `de.php`, `en.php`, and `ru.php`.
+  - Dynamic JSON i18n payload injection for zero-delay localized frontend rendering in Threat Map tooltips, badges, and streams.
+
+- **Version Bump & Distribution Packaging**:
+  - Version updated to `8.3.0` across plugin entrypoint (`vision-integrity-sentinel.php`), WAF compiler (`class-zeus-compiler.php`), and documentation.
+  - Full deployment package `visiongaia-integrity.zip` compiled (11.79 MB including complete 70.8MB local GeoIP dataset).
+
+---
+
 ## [8.2.6] — 2026-10-16
 
 ### Security & Hardening

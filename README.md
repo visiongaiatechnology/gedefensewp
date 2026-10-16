@@ -6,7 +6,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.2.6**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.2.6)
+[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.3.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.3.0)
 
 </div>
 
@@ -21,7 +21,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.2.6_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.3.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -632,7 +632,7 @@ GeDefense WP strictly adheres to a zero-external-dependency architecture:
 
 # Performance
 
-| Metric | GeDefense WP 8.1.0 |
+| Metric | GeDefense WP 8.3.0 |
 |---|---:|
 | **L0 Pre-Boot Evaluation Latency** | `< 0.05 ms` |
 | **L0 Microbenchmark Throughput** | `150,000+ evals/sec` |
@@ -743,6 +743,32 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 # Changelog History
 
 > Complete version history is available in [`CHANGELOG.md`](CHANGELOG.md).
+
+## 8.3.0 — Glass 2100 Sovereign Threat Map, Dynamic 4-Way Tooltips & Zero-Simulation Real-Time Telemetry
+- **VGT Glass 2100 Sovereign Design System**:
+  - Full-spectrum Glassmorphic redesign across all 34 dashboard modules, Bento grids, and telemetry cards.
+  - Specular 1px top-edge highlights (`rgba(255, 255, 255, 0.16)`), deep sapphire-obsidian radial backdrops, and velvety ambient glow.
+  - Zero external CDN dependencies: 100% native system fonts (`ui-sans-serif`, `ui-monospace`) and pure framework-free CSS. Full compliance for reduced motion, reduced transparency, and forced high-contrast environments.
+- **Full-Width Real-Time Threat Map & Global Vector Tracking (`threat-map.php`)**:
+  - Positioned spanning 100% width above the Cockpit Protection Matrix & Cyber Defense Radar.
+  - High-precision SVG Mercator projection (`900 x 583.08`) with 176 sovereign country vectors, tactical grid lines, and interactive choropleth fills.
+  - Dynamic quadratic Bézier attack trajectory arcs (`M x1 y1 Q cx cy x2 y2`) calculating parabolic attack vectors from origin coordinates directly into the sovereign server hub.
+  - Live animated SVG projectile packets (`<animateMotion>`) and pulsating sonar rings color-coded by threat severity.
+- **100% Local Autonomous BGP & GeoIP Binary-Search Engine (`class-vis-geo-resolver.php`)**:
+  - Sub-0.4ms $O(\log N)$ binary search engine operating over a packed 70.8MB local database (`data/geoip.csv`).
+  - Completely autonomous resolution of country code, region, latitude, longitude, ASN, and carrier name with 0 external API queries and 0 cloud leaks.
+- **Intelligent Threat Coordinate Clustering & Multi-Vector Aggregator**:
+  - Automatically merges multiple threats sharing identical geographical coordinates into a consolidated cluster marker (`.vis-threat-marker.is-cluster`) with a live vector counter badge.
+  - Unified multi-vector HUD popup displaying flag, carrier, ASN, and a scrollable list of all targeted URIs, modules, and intervention actions at that coordinate.
+- **Universal 4-Way Dynamic Tooltip Positioning Engine**:
+  - Mathematical 4-way viewport detection (`Above`, `Below`, `Right`, `Left`) with 14px edge clamping.
+  - Middle-latitude coordinates automatically position sideways to prevent vertical clipping on complex cluster popups.
+- **100% Genuine Telemetry Engine (Zero Simulation)**:
+  - Completely purged all synthetic simulation loops, fake blips, and placeholder generators.
+  - Telemetry is harvested exclusively from genuine database events (`vis_bans`, Sentinel, Prometheus, WAF intercept logs) with non-blocking 25s polling.
+- **Full Multilingual Localization Matrix (DE / EN / RU)**:
+  - 100% localized across all languages: comprehensive dictionary entries added to `de.php`, `en.php`, and `ru.php`.
+  - Dynamic JSON i18n payload injection for zero-delay localized frontend rendering in Threat Map tooltips, badges, and streams.
 
 ## 8.2.6 — Zero-Trust Security Hardening, Add-On Isolation & Dashboard UI Integrity
 - **Add-On Uploader Capability & System Policy Barrier (Privilege Escalation Prevention)**:
@@ -909,7 +935,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.2.6 — Open Core
+## GeDefense WP 8.3.0 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

@@ -428,5 +428,21 @@ if (!defined('ABSPATH')) {
     'events'    => $threat_map_events,
     'countries' => $country_threat_counts,
     'blocked'   => $threat_blocked_count,
+    'i18n'      => [
+        'threats_bundled'        => esc_html__('BEDROHUNGEN GEBÜNDELT', 'vgt-sentinel'),
+        'vectors'                => esc_html__('VEKTOREN', 'vgt-sentinel'),
+        'attacked_paths_modules' => esc_html__('ANGEGRIFFENE PFADE & MODULE', 'vgt-sentinel'),
+        'no_active_threats'      => esc_html__('Keine aktiven Drohungen', 'vgt-sentinel'),
+        'vectors_captured'       => esc_html__('Angriffsvektoren erfasst', 'vgt-sentinel'),
+        'global_perimeter'       => esc_html__('Global Perimeter Monitoring', 'vgt-sentinel'),
+        'sovereign_geo_matrix'   => esc_html__('Sovereign Geo Matrix', 'vgt-sentinel'),
+        'events_loaded'          => esc_html__('Ereignisse geladen', 'vgt-sentinel'),
+        'stream_paused'          => esc_html__('Echtzeit-Telemetrie angehalten', 'vgt-sentinel'),
+        'stream_active'          => esc_html__('ECHTZEIT-TELEMETRIE AKTIV', 'vgt-sentinel'),
+        'airspace_secure'        => esc_html__('LUFTRAUM SICHER', 'vgt-sentinel'),
+        'threats'                => esc_html__('THREATS', 'vgt-sentinel'),
+        'secure'                 => esc_html__('SECURE', 'vgt-sentinel'),
+        'iso_alpha2'             => esc_html__('ISO Alpha-2:', 'vgt-sentinel'),
+    ],
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
 </script>

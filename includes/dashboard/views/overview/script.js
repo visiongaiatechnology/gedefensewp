@@ -223,6 +223,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.warn('GeDefense ThreatMap: Telemetry JSON parse fallback', err);
             }
         }
+        const i18n = telemetryData.i18n || {};
 
         // --- A. ZOOM & PAN STATE ENGINE ---
         let scale = 1.0;
@@ -446,9 +447,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.warn('GeDefense ThreatMap: cluster JSON parse error', err);
                     }
 
-                    if (ttIp) ttIp.textContent = `${count} BEDROHUNGEN GEBÜNDELT`;
+                    if (ttIp) ttIp.textContent = `${count} ${i18n.threats_bundled || 'BEDROHUNGEN GEBÜNDELT'}`;
                     if (ttBadge) {
-                        ttBadge.textContent = `${count} VEKTOREN`;
+                        ttBadge.textContent = `${count} ${i18n.vectors || 'VEKTOREN'}`;
                         ttBadge.style.color = (severity === 'blocked') ? '#ff6482' : ((severity === 'suspicious') ? '#ffaa00' : '#00f3ff');
                         ttBadge.style.borderColor = (severity === 'blocked') ? 'rgba(255, 51, 102, 0.4)' : ((severity === 'suspicious') ? 'rgba(255, 170, 0, 0.4)' : 'rgba(0, 243, 255, 0.4)');
                     }
@@ -457,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (ttRowModule) ttRowModule.style.display = 'none';
 
                     if (ttClusterBody) {
-                        let itemsHtml = `<div class="vis-tt-cluster-header"><span>ANGEGRIFFENE PFADE & MODULE (${count})</span></div><div class="vis-tt-cluster-items">`;
+                        let itemsHtml = `<div class="vis-tt-cluster-header"><span>${i18n.attacked_paths_modules || 'ANGEGRIFFENE PFADE & MODULE'} (${count})</span></div><div class="vis-tt-cluster-items">`;
                         clusterEvents.forEach(item => {
                             const isBl = item.severity === 'blocked';
                             const isSu = item.severity === 'suspicious';
@@ -561,14 +562,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (ttFlag) ttFlag.textContent = code;
                 if (ttIp) ttIp.textContent = name;
                 if (ttBadge) {
-                    ttBadge.textContent = threats > 0 ? `${threats} THREATS` : 'SECURE';
+                    ttBadge.textContent = threats > 0 ? `${threats} ${i18n.threats || 'THREATS'}` : (i18n.secure || 'SECURE');
                     ttBadge.style.color = threats > 0 ? '#ff6482' : '#10b981';
                     ttBadge.style.borderColor = threats > 0 ? 'rgba(255, 51, 102, 0.4)' : 'rgba(16, 185, 129, 0.4)';
                 }
-                if (ttCountry) ttCountry.textContent = `ISO Alpha-2: ${code}`;
-                if (ttAsn) ttAsn.textContent = threats > 0 ? `${threats} Angriffsvektoren erfasst` : 'Keine aktiven Drohungen';
-                if (ttPath) ttPath.textContent = 'Global Perimeter Monitoring';
-                if (ttModule) ttModule.textContent = 'Sovereign Geo Matrix';
+                if (ttCountry) ttCountry.textContent = `${i18n.iso_alpha2 || 'ISO Alpha-2:'} ${code}`;
+                if (ttAsn) ttAsn.textContent = threats > 0 ? `${threats} ${i18n.vectors_captured || 'Angriffsvektoren erfasst'}` : (i18n.no_active_threats || 'Keine aktiven Drohungen');
+                if (ttPath) ttPath.textContent = i18n.global_perimeter || 'Global Perimeter Monitoring';
+                if (ttModule) ttModule.textContent = i18n.sovereign_geo_matrix || 'Sovereign Geo Matrix';
 
                 const stageRect = stage.getBoundingClientRect();
                 const posX = e.clientX - stageRect.left;
@@ -672,11 +673,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (isStreamActive) {
                     this.classList.remove('is-paused');
                     if (streamBtnIcon) streamBtnIcon.textContent = '❚❚';
-                    if (streamStatusLabel) streamStatusLabel.textContent = (activeEvents.length > 0) ? 'ECHTZEIT-TELEMETRIE AKTIV' : 'LUFTRAUM SICHER';
+                    if (streamStatusLabel) streamStatusLabel.textContent = (activeEvents.length > 0) ? (i18n.stream_active || 'ECHTZEIT-TELEMETRIE AKTIV') : (i18n.airspace_secure || 'LUFTRAUM SICHER');
                 } else {
                     this.classList.add('is-paused');
                     if (streamBtnIcon) streamBtnIcon.textContent = '▶';
-                    if (streamStatusLabel) streamStatusLabel.textContent = 'STREAM PAUSIERT';
+                    if (streamStatusLabel) streamStatusLabel.textContent = i18n.stream_paused || 'STREAM PAUSIERT';
                 }
             });
         }

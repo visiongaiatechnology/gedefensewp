@@ -6,7 +6,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.2.6**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.2.6)
+[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.3.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.3.0)
 
 </div>
 
@@ -20,7 +20,7 @@
 
 ### 主权级 WordPress 安全架构与 Pre-Boot 引导前准入内核
 
-[![Version](https://img.shields.io/badge/version-8.2.6_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.3.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -317,7 +317,7 @@ GeDefense WP Open Core 坚持 **100% 完全自主独立** 运行，绝不引入 
 
 # 性能指标与基准测试
 
-| 评估指标 | GeDefense WP 8.2.6 |
+| 评估指标 | GeDefense WP 8.3.0 |
 |---|---:|
 | **L0 引导前准入审查延迟** | `< 0.05 ms` |
 | **L0 微基准吞吐性能** | `150,000+ 次/秒` |
@@ -349,6 +349,30 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 
 > 完整的版本演进记录请见 [`CHANGELOG.md`](CHANGELOG.md)。
 
+## 8.3.0 — Glass 2100 设计系统、全幅实时威胁态势地图、4向动态气泡定位与100%多语言支持
+- **VGT Glass 2100 设计系统**:
+  - 全控制台 34 个模块、Bento 网格与监控微件实现深度毛玻璃视觉体系改造。
+  - 1px 高光镜面顶边 (`rgba(255, 255, 255, 0.16)`)、深邃蓝宝石-黑曜石径向背景与柔和环境辉光。
+  - 100% 原生系统字体，0 外部 CDN 依赖，全面兼容减弱动效、减弱透明度及高对比度辅助功能模式。
+- **全幅实时网络威胁态势地图 (`threat-map.php`)**:
+  - 横跨整个控制台顶部，置于防护矩阵与雷达上方。
+  - 高精度 SVG 墨卡托投影 (`900 x 583.08`)，集成 176 个国家级矢量边界与交互式统计图块。
+  - 动态二次贝塞尔抛物线轨迹 (`M x1 y1 Q cx cy x2 y2`)，实时演算攻击源至服务器节点的攻击轨迹。
+  - SVG 动态发射数据包 (`<animateMotion>`) 与基于威胁等级色彩编码的脉冲声呐波纹。
+- **自主本地 BGP 与 GeoIP 二分检索内核 (`class-vis-geo-resolver.php`)**:
+  - 基于本地 70.8MB 数据库 (`data/geoip.csv`) 实现低至 0.4ms 的 $O(\log N)$ 闪电二分检索。
+  - 零外部 API 调用、零隐私泄漏，100% 本地自主解析国家代码、地区、经纬度及 ASN 运营商。
+- **智能坐标聚类与多维攻击聚合中枢**:
+  - 自动识别并合并同一地理坐标的多重攻击事件为聚类标记 (`.vis-threat-marker.is-cluster`)，附带实时攻击计数徽章。
+  - 统一多重矢量 HUD 浮层，直观展示目标路径、防御模块及干预策略清单。
+- **通用 4向动态提示气泡定位引擎**:
+  - 智能四向空间判定 (`上方`、`下方`、`右侧`、`左侧`)，配合 14px 安全边缘限制，杜绝任何视口溢出截断。
+  - 中纬度区域自动侧向浮动并纵向贴边，完美解决多目标复杂弹窗的显示遮挡问题。
+- **100% 真实遥测引擎 (零虚拟模拟)**:
+  - 彻底清除所有虚构演示数据与伪造攻击发射循环；纯粹接入数据库真实防御日志 (`vis_bans`、Sentinel、Prometheus、WAF)，以 25 秒轻量无感轮询刷新。
+- **全维度多语言本地化矩阵 (DE / EN / RU)**:
+  - 100% 完整覆盖德语、英语与俄语所有文本与指标提示，并通过 JSON 原生字典注入实现前端无缝极速渲染。
+
 ## 8.2.6 — 零信任架构加固、扩展隔离与控制台完整性修复
 - **插件上传器权限安全屏障 (防范越权提权 RCE)**:
   - 严密强化 `handle_upload_addon()` 与 `handle_uninstall_addon()`: 强制要求具备 `install_plugins` / `delete_plugins` 以及 ThroneGuard 主权特权 (`VIS_Throne_Guard::MASTER_CAP`)。
@@ -377,7 +401,7 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 
 <div align="center">
 
-## GeDefense WP 8.2.6 — Open Core
+## GeDefense WP 8.3.0 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

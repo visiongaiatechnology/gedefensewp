@@ -6,7 +6,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.2.6**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.2.6)
+[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.3.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.3.0)
 
 </div>
 
@@ -20,7 +20,7 @@
 
 ### Souveräne WordPress-Sicherheitsarchitektur & Pre-Boot-Zulassungskern
 
-[![Version](https://img.shields.io/badge/version-8.2.6_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.3.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -317,7 +317,7 @@ GeDefense WP Open Core läuft zu **100% autark**. Es werden weder Composer-Paket
 
 # Performance & Benchmarks
 
-| Metrik | GeDefense WP 8.2.6 |
+| Metrik | GeDefense WP 8.3.0 |
 |---|---:|
 | **L0 Pre-Boot Latenz** | `< 0,05 ms` |
 | **L0 Durchsatz (Microbenchmark)** | `150.000+ Evals/Sek` |
@@ -349,6 +349,25 @@ GeDefense WP Open Core steht unter der **GNU Affero General Public License v3.0 
 
 > Die vollständige Versionen-Historie befindet sich in [`CHANGELOG.md`](CHANGELOG.md).
 
+## 8.3.0 — Glass 2100 Sovereign Threat Map, 4-Wege Tooltip-Engine & Echtzeit-Telemetrie
+- **VGT Glass 2100 Design-System**:
+  - Vollständiges Glassmorphic-Redesign über alle 34 Dashboard-Module, spekulare Lichtkanten (`rgba(255, 255, 255, 0.16)`), Bento-Grids und samtene Ambient-Glows.
+  - 100% native Systemschriften ohne externe CDN-Abhängigkeiten; vollständige Barrierefreiheit für reduzierte Bewegung/Transparenz und High-Contrast.
+- **Echtzeit-Bedrohungskarte in voller Breite (`threat-map.php`)**:
+  - Hochpräzise Mercator-SVG-Weltkarte (`900 x 583.08`) mit 176 souveränen Ländergrenzen und interaktiven Choroplethen.
+  - Dynamische quadratische Bézier-Trajektorien (`M x1 y1 Q cx cy x2 y2`) berechnen parabolische Angriffsvektoren von Ursprungskoordinaten direkt zum Server-Hub.
+  - Animierte SVG-Projektilpakete (`<animateMotion>`) und farbcodierte Sonarringe nach Bedrohungsstufe.
+- **Autonome BGP- & GeoIP-Binärsuche (`class-vis-geo-resolver.php`)**:
+  - Sub-0,4ms $O(\log N)$ Suche in lokaler 70,8 MB Datenbank (`data/geoip.csv`) — 100% autark ohne Cloud-Abfragen (keine MaxMind-/IPInfo-Leaks).
+- **Intelligentes Threat-Clustering**:
+  - Automatische Zusammenführung identischer Koordinaten in Cluster-Marker (`.vis-threat-marker.is-cluster`) mit konsolidiertem Multi-Vektor-HUD.
+- **Universelle 4-Wege Tooltip-Positionierung**:
+  - Mathematische 4-Wege-Erkennung (`Oben`, `Unten`, `Rechts`, `Links`) mit horizontalem/vertikalem Clamping verhindert jedes Abschneiden an Bildschirmrändern.
+- **100% Echte Telemetrie (Zero-Simulation)**:
+  - Vollständige Entfernung aller synthetischen Simulationen; ausschließlich echte Angriffsereignisse aus der Datenbank (`vis_bans`, Sentinel, Prometheus, WAF-Logs) mit schonendem 25s AJAX-Polling.
+- **Lückenlose Mehrsprachigkeit (DE / EN / RU)**:
+  - 100% aller Texte und Anzeigen in Deutsch, Englisch und Russisch übersetzt. Dynamische JSON-Payload-Injektion für verzögerungsfreies Frontend-Rendering.
+
 ## 8.2.6 — Zero-Trust Sicherheits-Härtung, Add-On-Isolation & Dashboard-Integrität
 - **Add-On Uploader Autorisierungs-Barriere (Privilegieneskalations-Schutz)**:
   - Strikte Prüfung in `handle_upload_addon()` und `handle_uninstall_addon()`: Setzt `install_plugins` / `delete_plugins` UND ThroneGuards Master-Rolle (`VIS_Throne_Guard::MASTER_CAP`) voraus.
@@ -377,7 +396,7 @@ GeDefense WP Open Core steht unter der **GNU Affero General Public License v3.0 
 
 <div align="center">
 
-## GeDefense WP 8.2.6 — Open Core
+## GeDefense WP 8.3.0 — Open Core
 
 **SOUVERÄNE WORDPRESS SICHERHEIT**
 
