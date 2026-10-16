@@ -345,6 +345,41 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         };
 
+        // Universal Smart Dynamic Tooltip Positioning Engine
+        const positionTooltip = (posX, posY, isMarker = false) => {
+            const stageRect = stage.getBoundingClientRect();
+
+            // Ensure tooltip is visible in DOM to accurately measure height and width
+            tooltip.style.display = 'block';
+
+            const ttWidth = tooltip.offsetWidth || 280;
+            const ttHeight = tooltip.offsetHeight || 190;
+            const halfWidth = Math.ceil(ttWidth / 2);
+
+            // 1. Horizontal boundary clamping: keep tooltip at least 14px inside stage bounds
+            const clampedX = Math.max(halfWidth + 14, Math.min(stageRect.width - halfWidth - 14, posX));
+            tooltip.style.left = `${clampedX}px`;
+            tooltip.style.top = `${posY}px`;
+
+            // 2. Dynamic vertical boundary detection:
+            // Check if placing tooltip ABOVE leaves at least 14px safety margin from top of stage
+            const gapAbove = isMarker ? 14 : 12;
+            const fitsAbove = (posY - ttHeight - gapAbove) >= 14;
+
+            if (fitsAbove) {
+                // Safely sits ABOVE marker / cursor
+                tooltip.style.transform = `translate(-50%, calc(-100% - ${gapAbove}px))`;
+                tooltip.classList.remove('is-flipped-below');
+                tooltip.classList.add('is-flipped-above');
+            } else {
+                // Safely flips BELOW marker / cursor
+                const gapBelow = isMarker ? 24 : 18;
+                tooltip.style.transform = `translate(-50%, ${gapBelow}px)`;
+                tooltip.classList.remove('is-flipped-above');
+                tooltip.classList.add('is-flipped-below');
+            }
+        };
+
         // Threat Marker Mouse Events (Supports Single & Clustered Markers)
         const markerGroup = svgMap.querySelector('#visThreatMapMarkers');
         if (markerGroup && tooltip && stage) {
@@ -448,25 +483,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
 
-                // Position Tooltip relative to stage
+                // Position Tooltip relative to stage via smart dynamic boundary engine
                 const stageRect = stage.getBoundingClientRect();
                 const markerRect = marker.getBoundingClientRect();
                 const posX = markerRect.left - stageRect.left + (markerRect.width / 2);
-                const posY = markerRect.top - stageRect.top;
+                const posY = markerRect.top - stageRect.top + (markerRect.height / 2);
 
-                // Clamping to avoid viewport overflow
-                const clampedX = Math.max(140, Math.min(stageRect.width - 140, posX));
-                tooltip.style.left = `${clampedX}px`;
-                tooltip.style.top = `${posY}px`;
-
-                // If marker is close to top of stage, flip tooltip below marker
-                if (posY < 160) {
-                    tooltip.style.transform = 'translate(-50%, 20px)';
-                } else {
-                    tooltip.style.transform = 'translate(-50%, -120%)';
-                }
-
-                tooltip.style.display = 'block';
+                positionTooltip(posX, posY, true);
                 setFocus(targetIps, severity);
             });
 
@@ -482,13 +505,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Country Hover Tooltip
+        // Country Hover Tooltip (Follows mouse & flips dynamically)
         const countryGroup = svgMap.querySelector('.vis-map-countries-group');
-        if (countryGroup && tooltip && stage) {
-            countryGroup.addEventListener('mouseover', (e) => {
-                const countryPath = e.target.closest('.vis-map-country');
-                if (!countryPath) return;
+        let activeHoveredCountry = null;
 
+        if (countryGroup && tooltip && stage) {
+            const handleCountryTooltip = (e, countryPath) => {
                 const name = countryPath.dataset.name || 'Region';
                 const code = countryPath.dataset.code || '';
                 const threats = telemetryData.countries ? (telemetryData.countries[code] || 0) : 0;
@@ -525,16 +547,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const stageRect = stage.getBoundingClientRect();
                 const posX = e.clientX - stageRect.left;
-                const posY = e.clientY - stageRect.top - 12;
+                const posY = e.clientY - stageRect.top;
 
-                tooltip.style.left = `${posX}px`;
-                tooltip.style.top = `${posY}px`;
-                tooltip.style.transform = 'translate(-50%, -120%)';
-                tooltip.style.display = 'block';
+                positionTooltip(posX, posY, false);
+            };
+
+            countryGroup.addEventListener('mouseover', (e) => {
+                const countryPath = e.target.closest('.vis-map-country');
+                if (!countryPath) return;
+                activeHoveredCountry = countryPath;
+                handleCountryTooltip(e, countryPath);
+            });
+
+            countryGroup.addEventListener('mousemove', (e) => {
+                if (!activeHoveredCountry) {
+                    const countryPath = e.target.closest('.vis-map-country');
+                    if (countryPath) activeHoveredCountry = countryPath;
+                    else return;
+                }
+                handleCountryTooltip(e, activeHoveredCountry);
             });
 
             countryGroup.addEventListener('mouseout', (e) => {
                 if (e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.vis-map-country')) return;
+                activeHoveredCountry = null;
                 tooltip.style.display = 'none';
             });
         }
