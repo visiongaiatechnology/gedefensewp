@@ -300,26 +300,41 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // Escape HTML helper
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
         // --- B. INTERACTIVE MAP TOOLTIP & CROSS-HIGHLIGHTING ---
         let activeFocusedIp = null;
 
-        const setFocus = (ip, severity) => {
-            if (activeFocusedIp === ip) return;
-            activeFocusedIp = ip;
+        const setFocus = (ipOrIps, severity) => {
+            if (!ipOrIps) return;
+            const ipList = Array.isArray(ipOrIps) ? ipOrIps : String(ipOrIps).split(',').map(s => s.trim()).filter(Boolean);
+            if (!ipList.length) return;
+            const ipSet = new Set(ipList);
 
             // Highlight Marker
             document.querySelectorAll('.vis-threat-marker').forEach(m => {
-                m.classList.toggle('is-focused', m.dataset.ip === ip);
+                const mIps = (m.dataset.ips || m.dataset.ip || '').split(',').map(s => s.trim());
+                const match = mIps.some(ip => ipSet.has(ip));
+                m.classList.toggle('is-focused', match);
             });
 
             // Highlight Arc
             document.querySelectorAll('.vis-arc-item').forEach(a => {
-                a.classList.toggle('is-focused', a.dataset.ip === ip);
+                a.classList.toggle('is-focused', ipSet.has(a.dataset.ip));
             });
 
             // Highlight Row
             document.querySelectorAll('.vis-stream-row').forEach(r => {
-                r.classList.toggle('is-focused', r.dataset.ip === ip);
+                r.classList.toggle('is-focused', ipSet.has(r.dataset.ip));
             });
         };
 
@@ -330,43 +345,108 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         };
 
-        // Threat Marker Mouse Events
+        // Threat Marker Mouse Events (Supports Single & Clustered Markers)
         const markerGroup = svgMap.querySelector('#visThreatMapMarkers');
         if (markerGroup && tooltip && stage) {
             markerGroup.addEventListener('mouseover', (e) => {
                 const marker = e.target.closest('.vis-threat-marker');
                 if (!marker) return;
 
-                const ip = marker.dataset.ip || '0.0.0.0';
+                const isCluster = marker.classList.contains('is-cluster') || parseInt(marker.dataset.count || '1', 10) > 1;
+                const count = parseInt(marker.dataset.count || '1', 10);
                 const country = marker.dataset.country || 'UN';
                 const countryName = marker.dataset.countryName || 'Unknown Region';
                 const asn = marker.dataset.asn || 'AS-UNKNOWN';
                 const asName = marker.dataset.asName || 'Carrier';
-                const path = marker.dataset.path || '/wp-login.php';
-                const moduleName = marker.dataset.module || 'Kernel Security';
-                const action = marker.dataset.action || 'INTERCEPT';
                 const severity = marker.dataset.severity || 'blocked';
+                const targetIps = marker.dataset.ips || marker.dataset.ip || '';
 
-                // Populate Tooltip
+                // Elements
                 const ttFlag = document.getElementById('visTtFlag');
                 const ttIp = document.getElementById('visTtIp');
                 const ttBadge = document.getElementById('visTtBadge');
                 const ttCountry = document.getElementById('visTtCountry');
                 const ttAsn = document.getElementById('visTtAsn');
+                const ttRowPath = document.getElementById('visTtRowPath');
+                const ttRowModule = document.getElementById('visTtRowModule');
                 const ttPath = document.getElementById('visTtPath');
                 const ttModule = document.getElementById('visTtModule');
+                const ttClusterBody = document.getElementById('visTtClusterBody');
 
                 if (ttFlag) ttFlag.textContent = country;
-                if (ttIp) ttIp.textContent = ip;
-                if (ttBadge) {
-                    ttBadge.textContent = action.split(' ')[0] || 'BLOCKED';
-                    ttBadge.style.color = (severity === 'blocked') ? '#ff6482' : ((severity === 'suspicious') ? '#ffaa00' : '#00f3ff');
-                    ttBadge.style.borderColor = (severity === 'blocked') ? 'rgba(255, 51, 102, 0.4)' : ((severity === 'suspicious') ? 'rgba(255, 170, 0, 0.4)' : 'rgba(0, 243, 255, 0.4)');
-                }
                 if (ttCountry) ttCountry.textContent = `${countryName} (${country})`;
                 if (ttAsn) ttAsn.textContent = `${asn} · ${asName}`;
-                if (ttPath) ttPath.textContent = path;
-                if (ttModule) ttModule.textContent = `${moduleName} → ${action}`;
+
+                if (isCluster) {
+                    // Merged cluster of multiple threats
+                    let clusterEvents = [];
+                    try {
+                        clusterEvents = JSON.parse(marker.dataset.cluster || '[]');
+                    } catch (err) {
+                        console.warn('GeDefense ThreatMap: cluster JSON parse error', err);
+                    }
+
+                    if (ttIp) ttIp.textContent = `${count} BEDROHUNGEN GEBÜNDELT`;
+                    if (ttBadge) {
+                        ttBadge.textContent = `${count} VEKTOREN`;
+                        ttBadge.style.color = (severity === 'blocked') ? '#ff6482' : ((severity === 'suspicious') ? '#ffaa00' : '#00f3ff');
+                        ttBadge.style.borderColor = (severity === 'blocked') ? 'rgba(255, 51, 102, 0.4)' : ((severity === 'suspicious') ? 'rgba(255, 170, 0, 0.4)' : 'rgba(0, 243, 255, 0.4)');
+                    }
+
+                    if (ttRowPath) ttRowPath.style.display = 'none';
+                    if (ttRowModule) ttRowModule.style.display = 'none';
+
+                    if (ttClusterBody) {
+                        let itemsHtml = `<div class="vis-tt-cluster-header"><span>ANGEGRIFFENE PFADE & MODULE (${count})</span></div><div class="vis-tt-cluster-items">`;
+                        clusterEvents.forEach(item => {
+                            const isBl = item.severity === 'blocked';
+                            const isSu = item.severity === 'suspicious';
+                            const badgeColorClass = isBl ? 'is-blocked' : (isSu ? 'is-suspicious' : 'is-tracked');
+                            const actText = (item.action || 'INTERCEPT').split(' ')[0];
+                            itemsHtml += `
+                                <div class="vis-tt-cluster-row">
+                                    <div class="vis-tt-cr-left">
+                                        <span class="vis-tt-cr-path" title="${escapeHtml(item.path || '/wp-login.php')}">${escapeHtml(item.path || '/wp-login.php')}</span>
+                                        <span style="font-size: 9px; color: #64748b; font-family: monospace;">IP: ${escapeHtml(item.ip || '')}</span>
+                                    </div>
+                                    <div class="vis-tt-cr-right">
+                                        <span class="vis-module-chip" style="font-size: 8.5px; padding: 2px 5px;">${escapeHtml(item.module || 'Kernel')}</span>
+                                        <span class="vis-badge ${badgeColorClass}" style="font-size: 8px; padding: 1px 4px;">${escapeHtml(actText)}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        itemsHtml += '</div>';
+                        ttClusterBody.innerHTML = itemsHtml;
+                        ttClusterBody.style.display = 'flex';
+                    }
+                } else {
+                    // Single threat node
+                    const ip = marker.dataset.ip || '0.0.0.0';
+                    const path = marker.dataset.path || '/wp-login.php';
+                    const moduleName = marker.dataset.module || 'Kernel Security';
+                    const action = marker.dataset.action || 'INTERCEPT';
+
+                    if (ttIp) ttIp.textContent = ip;
+                    if (ttBadge) {
+                        ttBadge.textContent = action.split(' ')[0] || 'BLOCKED';
+                        ttBadge.style.color = (severity === 'blocked') ? '#ff6482' : ((severity === 'suspicious') ? '#ffaa00' : '#00f3ff');
+                        ttBadge.style.borderColor = (severity === 'blocked') ? 'rgba(255, 51, 102, 0.4)' : ((severity === 'suspicious') ? 'rgba(255, 170, 0, 0.4)' : 'rgba(0, 243, 255, 0.4)');
+                    }
+
+                    if (ttRowPath) {
+                        ttRowPath.style.display = 'flex';
+                        if (ttPath) ttPath.textContent = path;
+                    }
+                    if (ttRowModule) {
+                        ttRowModule.style.display = 'flex';
+                        if (ttModule) ttModule.textContent = `${moduleName} → ${action}`;
+                    }
+                    if (ttClusterBody) {
+                        ttClusterBody.style.display = 'none';
+                        ttClusterBody.innerHTML = '';
+                    }
+                }
 
                 // Position Tooltip relative to stage
                 const stageRect = stage.getBoundingClientRect();
@@ -374,15 +454,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 const posX = markerRect.left - stageRect.left + (markerRect.width / 2);
                 const posY = markerRect.top - stageRect.top;
 
-                tooltip.style.left = `${posX}px`;
+                // Clamping to avoid viewport overflow
+                const clampedX = Math.max(140, Math.min(stageRect.width - 140, posX));
+                tooltip.style.left = `${clampedX}px`;
                 tooltip.style.top = `${posY}px`;
-                tooltip.style.display = 'block';
 
-                setFocus(ip, severity);
+                // If marker is close to top of stage, flip tooltip below marker
+                if (posY < 160) {
+                    tooltip.style.transform = 'translate(-50%, 20px)';
+                } else {
+                    tooltip.style.transform = 'translate(-50%, -120%)';
+                }
+
+                tooltip.style.display = 'block';
+                setFocus(targetIps, severity);
             });
 
             markerGroup.addEventListener('mouseout', (e) => {
-                if (e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.vis-threat-marker')) return;
+                const fromMarker = e.target.closest('.vis-threat-marker');
+                const toMarker = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget.closest('.vis-threat-marker') : null;
+
+                if (fromMarker && toMarker && fromMarker === toMarker) return;
+                if (toMarker) return;
+
                 tooltip.style.display = 'none';
                 clearFocus();
             });
@@ -406,6 +500,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const ttAsn = document.getElementById('visTtAsn');
                 const ttPath = document.getElementById('visTtPath');
                 const ttModule = document.getElementById('visTtModule');
+                const ttRowPath = document.getElementById('visTtRowPath');
+                const ttRowModule = document.getElementById('visTtRowModule');
+                const ttClusterBody = document.getElementById('visTtClusterBody');
+
+                if (ttRowPath) ttRowPath.style.display = 'flex';
+                if (ttRowModule) ttRowModule.style.display = 'flex';
+                if (ttClusterBody) {
+                    ttClusterBody.style.display = 'none';
+                    ttClusterBody.innerHTML = '';
+                }
 
                 if (ttFlag) ttFlag.textContent = code;
                 if (ttIp) ttIp.textContent = name;
@@ -425,6 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 tooltip.style.left = `${posX}px`;
                 tooltip.style.top = `${posY}px`;
+                tooltip.style.transform = 'translate(-50%, -120%)';
                 tooltip.style.display = 'block';
             });
 
@@ -664,25 +769,62 @@ document.addEventListener('DOMContentLoaded', function() {
                             `;
                             arcsGroup.appendChild(arcG);
 
-                            // Marker element
-                            const markerG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                            markerG.setAttribute('class', `vis-threat-marker ${isBl ? 'is-blocked' : (isSu ? 'is-suspicious' : 'is-tracked')}`);
-                            markerG.dataset.ip = ev.ip;
-                            markerG.dataset.country = ev.country;
-                            markerG.dataset.countryName = ev.country_name;
-                            markerG.dataset.asn = ev.asn;
-                            markerG.dataset.asName = ev.as_name;
-                            markerG.dataset.path = ev.path;
-                            markerG.dataset.module = ev.module;
-                            markerG.dataset.action = ev.action;
-                            markerG.dataset.severity = ev.severity;
-                            markerG.setAttribute('transform', `translate(${x1.toFixed(2)}, ${y1.toFixed(2)})`);
-                            markerG.innerHTML = `
-                                <circle class="vis-sonar-pulse" r="9" fill="${coreColor}" opacity="0.3"></circle>
-                                <circle class="vis-marker-ring" r="5" fill="none" stroke="${coreColor}" stroke-width="1.2"></circle>
-                                <circle class="vis-marker-core" r="3.2" fill="${coreColor}" filter="${glowFilter}"></circle>
-                            `;
-                            markersGroup.appendChild(markerG);
+                            // Marker element (supports dynamic clustering)
+                            const coordKey = `${x1.toFixed(1)},${y1.toFixed(1)}`;
+                            let existingMarker = markersGroup.querySelector(`[data-coords="${coordKey}"]`);
+
+                            if (existingMarker) {
+                                let clusterEvents = [];
+                                try {
+                                    clusterEvents = JSON.parse(existingMarker.dataset.cluster || '[]');
+                                } catch (e) {
+                                    clusterEvents = [];
+                                }
+                                clusterEvents.unshift(ev);
+                                const newCount = clusterEvents.length;
+                                const allIps = clusterEvents.map(it => it.ip).join(',');
+                                existingMarker.dataset.count = newCount;
+                                existingMarker.dataset.ips = allIps;
+                                existingMarker.dataset.cluster = JSON.stringify(clusterEvents);
+
+                                const hasBlocked = clusterEvents.some(it => it.severity === 'blocked');
+                                const hasSuspicious = clusterEvents.some(it => it.severity === 'suspicious');
+                                const clusterSev = hasBlocked ? 'blocked' : (hasSuspicious ? 'suspicious' : 'tracked');
+                                const cColor = (clusterSev === 'blocked') ? '#ff3366' : ((clusterSev === 'suspicious') ? '#ffaa00' : '#00f3ff');
+                                const gFilter = (clusterSev === 'blocked') ? 'url(#visGlowRose)' : 'url(#visGlowCyan)';
+
+                                existingMarker.setAttribute('class', `vis-threat-marker is-cluster is-${clusterSev}`);
+                                existingMarker.dataset.severity = clusterSev;
+                                existingMarker.innerHTML = `
+                                    <circle class="vis-sonar-pulse" r="13" fill="${cColor}" opacity="0.3"></circle>
+                                    <circle class="vis-cluster-ring-outer" r="8.5" fill="rgba(6, 14, 26, 0.9)" stroke="${cColor}" stroke-width="1.4"></circle>
+                                    <circle class="vis-marker-core" r="4.2" fill="${cColor}" filter="${gFilter}"></circle>
+                                    <text class="vis-cluster-badge-text" x="0" y="2.8" text-anchor="middle">${newCount}</text>
+                                `;
+                            } else {
+                                const markerG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                                markerG.setAttribute('class', `vis-threat-marker ${isBl ? 'is-blocked' : (isSu ? 'is-suspicious' : 'is-tracked')}`);
+                                markerG.dataset.count = '1';
+                                markerG.dataset.coords = coordKey;
+                                markerG.dataset.ips = ev.ip;
+                                markerG.dataset.ip = ev.ip;
+                                markerG.dataset.country = ev.country;
+                                markerG.dataset.countryName = ev.country_name;
+                                markerG.dataset.asn = ev.asn;
+                                markerG.dataset.asName = ev.as_name;
+                                markerG.dataset.path = ev.path;
+                                markerG.dataset.module = ev.module;
+                                markerG.dataset.action = ev.action;
+                                markerG.dataset.severity = ev.severity;
+                                markerG.dataset.cluster = JSON.stringify([ev]);
+                                markerG.setAttribute('transform', `translate(${x1.toFixed(2)}, ${y1.toFixed(2)})`);
+                                markerG.innerHTML = `
+                                    <circle class="vis-sonar-pulse" r="9" fill="${coreColor}" opacity="0.3"></circle>
+                                    <circle class="vis-marker-ring" r="5" fill="none" stroke="${coreColor}" stroke-width="1.2"></circle>
+                                    <circle class="vis-marker-core" r="3.2" fill="${coreColor}" filter="${glowFilter}"></circle>
+                                `;
+                                markersGroup.appendChild(markerG);
+                            }
                         }
                     }
 

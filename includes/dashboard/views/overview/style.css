@@ -1801,12 +1801,26 @@
 /* THREAT NODES & SONAR PULSES */
 .vis-threat-marker {
     cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.vis-threat-marker:hover,
-.vis-threat-marker.is-focused {
-    transform: scale(1.4);
+.vis-threat-marker .vis-marker-core {
+    transition: r 0.2s ease, filter 0.2s ease;
+}
+
+.vis-threat-marker .vis-marker-ring {
+    transition: r 0.2s ease, stroke-width 0.2s ease;
+}
+
+.vis-threat-marker:hover .vis-marker-core,
+.vis-threat-marker.is-focused .vis-marker-core {
+    r: 4.8px;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+.vis-threat-marker:hover .vis-marker-ring,
+.vis-threat-marker.is-focused .vis-marker-ring {
+    r: 6.8px;
+    stroke-width: 1.8px;
 }
 
 .vis-sonar-pulse {
@@ -1823,6 +1837,32 @@
 .vis-threat-marker.is-blocked .vis-marker-core { fill: #ff3366; }
 .vis-threat-marker.is-suspicious .vis-marker-core { fill: #ffaa00; }
 .vis-threat-marker.is-tracked .vis-marker-core { fill: #00f3ff; }
+
+/* CLUSTER MARKER STYLES */
+.vis-threat-marker.is-cluster {
+    cursor: pointer;
+}
+.vis-threat-marker.is-cluster .vis-cluster-ring-outer {
+    transition: r 0.2s ease, stroke-width 0.2s ease;
+}
+.vis-threat-marker.is-cluster:hover .vis-cluster-ring-outer,
+.vis-threat-marker.is-cluster.is-focused .vis-cluster-ring-outer {
+    stroke-width: 2.2px;
+    r: 10px;
+}
+.vis-threat-marker.is-cluster:hover .vis-marker-core,
+.vis-threat-marker.is-cluster.is-focused .vis-marker-core {
+    r: 5px;
+}
+.vis-cluster-badge-text {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 7.5px;
+    font-weight: 800;
+    fill: #ffffff;
+    pointer-events: none;
+    user-select: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
 
 /* ORIGIN HUB (SOVEREIGN SERVER LOCATION) */
 .vis-origin-marker {
@@ -1931,6 +1971,78 @@
     color: #00f3ff;
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     font-size: 11px;
+}
+
+/* CLUSTER TOOLTIP BODY */
+.vis-tooltip-cluster-body {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.vis-tooltip-cluster-body::-webkit-scrollbar {
+    width: 4px;
+}
+.vis-tooltip-cluster-body::-webkit-scrollbar-thumb {
+    background: rgba(0, 242, 255, 0.35);
+    border-radius: 4px;
+}
+.vis-tt-cluster-header {
+    font-size: 9.5px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 0.6px;
+    font-family: ui-monospace, monospace;
+    margin-bottom: 2px;
+}
+.vis-tt-cluster-items {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.vis-tt-cluster-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 5px 8px;
+    gap: 8px;
+}
+.vis-tt-cr-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.vis-tt-cr-path {
+    font-size: 10.5px;
+    color: #94a3b8;
+    font-family: ui-monospace, monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+.vis-tt-cr-right {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+.vis-tt-cr-right .vis-module-chip {
+    font-size: 9px;
+    padding: 2px 6px;
+}
+.vis-tt-cr-right .vis-badge {
+    font-size: 9px;
+    padding: 2px 6px;
 }
 
 /* MAP LEGEND */

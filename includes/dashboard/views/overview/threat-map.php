@@ -83,17 +83,34 @@ if (!defined('ABSPATH')) {
             include VIS_PATH . 'includes/dashboard/views/overview/world-map.svg.php';
             $map_svg = ob_get_clean();
 
-            // 1. Build Trajectory Arcs SVG
+            // 1. Build Trajectory Arcs SVG and Cluster Threat Markers
             $arcs_html = '';
             $markers_html = '';
             $origin_x = $host_point['x'] ?? 471.49;
             $origin_y = $host_point['y'] ?? 269.36;
+
+            $clusters = [];
 
             foreach ($threat_map_events as $idx => $ev) {
                 $x1 = (float)$ev['x'];
                 $y1 = (float)$ev['y'];
                 $x2 = (float)$origin_x;
                 $y2 = (float)$origin_y;
+
+                // Group threats sharing the same point into cluster
+                $cluster_key = round($x1, 1) . '_' . round($y1, 1);
+                if (!isset($clusters[$cluster_key])) {
+                    $clusters[$cluster_key] = [
+                        'x'            => $x1,
+                        'y'            => $y1,
+                        'country'      => $ev['country'],
+                        'country_name' => $ev['country_name'],
+                        'asn'          => $ev['asn'],
+                        'as_name'      => $ev['as_name'],
+                        'events'       => [],
+                    ];
+                }
+                $clusters[$cluster_key]['events'][] = $ev;
 
                 $dx = $x2 - $x1;
                 $dy = $y2 - $y1;
@@ -143,31 +160,82 @@ if (!defined('ABSPATH')) {
                     $duration,
                     $anim_delay
                 );
+            }
 
-                // Threat Marker with Sonar Ripple
-                $markers_html .= sprintf(
-                    '<g class="vis-threat-marker %s" data-ip="%s" data-country="%s" data-country-name="%s" data-asn="%s" data-as-name="%s" data-path="%s" data-module="%s" data-action="%s" data-severity="%s" transform="translate(%.2f, %.2f)">
-                        <circle class="vis-sonar-pulse" r="9" fill="%s" opacity="0.3"></circle>
-                        <circle class="vis-marker-ring" r="5" fill="none" stroke="%s" stroke-width="1.2"></circle>
-                        <circle class="vis-marker-core" r="3.2" fill="%s" filter="%s"></circle>
-                    </g>',
-                    esc_attr($is_blocked ? 'is-blocked' : ($is_suspicious ? 'is-suspicious' : 'is-tracked')),
-                    esc_attr($ev['ip']),
-                    esc_attr($ev['country']),
-                    esc_attr($ev['country_name']),
-                    esc_attr($ev['asn']),
-                    esc_attr($ev['as_name']),
-                    esc_attr($ev['path']),
-                    esc_attr($ev['module']),
-                    esc_attr($ev['action']),
-                    esc_attr($ev['severity']),
-                    $x1,
-                    $y1,
-                    esc_attr($core_color),
-                    esc_attr($core_color),
-                    esc_attr($core_color),
-                    esc_attr($glow_filter)
-                );
+            // Build Cluster Markers: eliminates multiple overlapping nodes and tooltip flicker
+            foreach ($clusters as $c) {
+                $count = count($c['events']);
+                $has_blocked = false;
+                $has_suspicious = false;
+                foreach ($c['events'] as $c_ev) {
+                    if ($c_ev['severity'] === 'blocked') $has_blocked = true;
+                    elseif ($c_ev['severity'] === 'suspicious') $has_suspicious = true;
+                }
+                $severity = $has_blocked ? 'blocked' : ($has_suspicious ? 'suspicious' : 'tracked');
+                $core_color  = ($severity === 'blocked') ? '#ff3366' : (($severity === 'suspicious') ? '#ffaa00' : '#00f3ff');
+                $glow_filter = ($severity === 'blocked') ? 'url(#visGlowRose)' : 'url(#visGlowCyan)';
+                $cluster_json = wp_json_encode($c['events'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+                $cluster_ips = implode(',', array_column($c['events'], 'ip'));
+
+                if ($count > 1) {
+                    // Merged Cluster Marker: shows threat count badge and eliminates collision
+                    $markers_html .= sprintf(
+                        '<g class="vis-threat-marker is-cluster %s" data-count="%d" data-coords="%.1f,%.1f" data-ips="%s" data-ip="%s" data-country="%s" data-country-name="%s" data-asn="%s" data-as-name="%s" data-severity="%s" data-cluster="%s" transform="translate(%.2f, %.2f)">
+                            <circle class="vis-sonar-pulse" r="13" fill="%s" opacity="0.3"></circle>
+                            <circle class="vis-cluster-ring-outer" r="8.5" fill="rgba(6, 14, 26, 0.9)" stroke="%s" stroke-width="1.4"></circle>
+                            <circle class="vis-marker-core" r="4.2" fill="%s" filter="%s"></circle>
+                            <text class="vis-cluster-badge-text" x="0" y="2.8" text-anchor="middle">%d</text>
+                        </g>',
+                        esc_attr($severity === 'blocked' ? 'is-blocked' : ($severity === 'suspicious' ? 'is-suspicious' : 'is-tracked')),
+                        $count,
+                        $c['x'],
+                        $c['y'],
+                        esc_attr($cluster_ips),
+                        esc_attr($c['events'][0]['ip']),
+                        esc_attr($c['country']),
+                        esc_attr($c['country_name']),
+                        esc_attr($c['asn']),
+                        esc_attr($c['as_name']),
+                        esc_attr($severity),
+                        esc_attr($cluster_json),
+                        $c['x'],
+                        $c['y'],
+                        esc_attr($core_color),
+                        esc_attr($core_color),
+                        esc_attr($core_color),
+                        esc_attr($glow_filter),
+                        $count
+                    );
+                } else {
+                    $ev = $c['events'][0];
+                    $markers_html .= sprintf(
+                        '<g class="vis-threat-marker %s" data-count="1" data-coords="%.1f,%.1f" data-ips="%s" data-ip="%s" data-country="%s" data-country-name="%s" data-asn="%s" data-as-name="%s" data-path="%s" data-module="%s" data-action="%s" data-severity="%s" data-cluster="%s" transform="translate(%.2f, %.2f)">
+                            <circle class="vis-sonar-pulse" r="9" fill="%s" opacity="0.3"></circle>
+                            <circle class="vis-marker-ring" r="5" fill="none" stroke="%s" stroke-width="1.2"></circle>
+                            <circle class="vis-marker-core" r="3.2" fill="%s" filter="%s"></circle>
+                        </g>',
+                        esc_attr($severity === 'blocked' ? 'is-blocked' : ($severity === 'suspicious' ? 'is-suspicious' : 'is-tracked')),
+                        $c['x'],
+                        $c['y'],
+                        esc_attr($ev['ip']),
+                        esc_attr($ev['ip']),
+                        esc_attr($ev['country']),
+                        esc_attr($ev['country_name']),
+                        esc_attr($ev['asn']),
+                        esc_attr($ev['as_name']),
+                        esc_attr($ev['path']),
+                        esc_attr($ev['module']),
+                        esc_attr($ev['action']),
+                        esc_attr($ev['severity']),
+                        esc_attr($cluster_json),
+                        $c['x'],
+                        $c['y'],
+                        esc_attr($core_color),
+                        esc_attr($core_color),
+                        esc_attr($core_color),
+                        esc_attr($glow_filter)
+                    );
+                }
             }
 
             // 2. Build Sovereign Host Hub Marker
@@ -220,31 +288,32 @@ if (!defined('ABSPATH')) {
             </div>
         <?php endif; ?>
 
-        <!-- Floating Interactive Tooltip -->
+        <!-- Floating Interactive Tooltip (Supports Single & Cluster Aggregation) -->
         <div class="vis-threat-map-tooltip" id="visThreatMapTooltip" style="display: none;" role="tooltip">
             <div class="vis-tooltip-header">
                 <span class="vis-tt-flag" id="visTtFlag">🌐</span>
                 <strong class="vis-tt-ip" id="visTtIp">0.0.0.0</strong>
                 <span class="vis-tt-status-badge" id="visTtBadge">BLOCKED</span>
             </div>
-            <div class="vis-tooltip-body">
-                <div class="vis-tt-row">
+            <div class="vis-tooltip-body" id="visTtBody">
+                <div class="vis-tt-row" id="visTtRowCountry">
                     <span><?php esc_html_e('Land & Region:', 'vgt-sentinel'); ?></span>
                     <strong id="visTtCountry">-</strong>
                 </div>
-                <div class="vis-tt-row">
+                <div class="vis-tt-row" id="visTtRowAsn">
                     <span><?php esc_html_e('ASN & Carrier:', 'vgt-sentinel'); ?></span>
                     <strong id="visTtAsn">-</strong>
                 </div>
-                <div class="vis-tt-row">
+                <div class="vis-tt-row" id="visTtRowPath">
                     <span><?php esc_html_e('Zielpfad (URI):', 'vgt-sentinel'); ?></span>
                     <strong class="vis-tt-path" id="visTtPath">-</strong>
                 </div>
-                <div class="vis-tt-row">
+                <div class="vis-tt-row" id="visTtRowModule">
                     <span><?php esc_html_e('Modul & Intervention:', 'vgt-sentinel'); ?></span>
                     <strong id="visTtModule">-</strong>
                 </div>
             </div>
+            <div class="vis-tooltip-cluster-body" id="visTtClusterBody" style="display: none;"></div>
         </div>
 
         <!-- Map Quick Legend -->
