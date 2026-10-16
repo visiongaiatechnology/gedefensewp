@@ -34,7 +34,7 @@ $threat_intel = class_exists($threat_intel_class) ? $threat_intel_class::instanc
 $intel_saved = false;
 $sync_result = null;
 
-if (current_user_can('manage_options') && isset($_POST['vis_threat_intel_save']) && check_admin_referer('vis_threat_intel_save_action')) {
+if (current_user_can('manage_options') && isset($_POST['vis_threat_intel_save']) && check_admin_referer('vis_threat_intel_save_action', '_vis_threat_intel_save_nonce')) {
     if ($threat_intel) {
         $raw = isset($_POST['vis_threat_intel']) && is_array($_POST['vis_threat_intel']) ? wp_unslash($_POST['vis_threat_intel']) : [];
         $active_feeds = [];
@@ -58,7 +58,7 @@ if (current_user_can('manage_options') && isset($_POST['vis_threat_intel_save'])
     }
 }
 
-if (current_user_can('manage_options') && isset($_POST['vis_threat_intel_sync']) && check_admin_referer('vis_threat_intel_sync_action')) {
+if (current_user_can('manage_options') && isset($_POST['vis_threat_intel_sync']) && check_admin_referer('vis_threat_intel_sync_action', '_vis_threat_intel_sync_nonce')) {
     if ($threat_intel) {
         $sync_result = $threat_intel->sync_all_feeds();
     }
@@ -135,31 +135,24 @@ $styxToggle = static function(string $name, bool $enabled, string $label): void 
     <div id="pane-styx-outbound" class="vgt-tab-pane <?php echo $styx_section === 'outbound' ? 'is-active' : ''; ?>" style="<?php echo $styx_section === 'outbound' ? 'display: block;' : 'display: none;'; ?>">
         <!-- SECTION 1: OUTBOUND CONTROLS -->
         <section class="vgt-titan-panel">
-            <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=vgt-suite&tab=styx&styx_section=outbound')); ?>">
-                <?php wp_nonce_field('vis_save_config'); ?>
-                <input type="hidden" name="vis_save_config" value="1">
-                <input type="hidden" name="vis_context" value="styx">
-                <input type="hidden" name="styx_section" value="outbound">
-
-                <div class="vgt-titan-panel-head">
-                    <div>
-                        <small><?php esc_html_e('01 / POLICY CONTROLS', 'vgt-sentinel'); ?></small>
-                        <h3><?php esc_html_e('Outbound HTTP Security & Telemetry Controls', 'vgt-sentinel'); ?></h3>
-                    </div>
+            <div class="vgt-titan-panel-head">
+                <div>
+                    <small><?php esc_html_e('01 / POLICY CONTROLS', 'vgt-sentinel'); ?></small>
+                    <h3><?php esc_html_e('Outbound HTTP Security & Telemetry Controls', 'vgt-sentinel'); ?></h3>
                 </div>
-                <div class="vgt-titan-toggle-grid">
-                    <?php $styxToggle('styx_enabled', !empty($opt['styx_enabled']), 'STYX Executioner Master'); ?>
-                    <?php $styxToggle('styx_audit_mode', !empty($opt['styx_audit_mode']), 'Audit Mode (Logging Only)'); ?>
-                    <?php $styxToggle('styx_block_wp_telemetry', !empty($opt['styx_block_wp_telemetry']), 'Block WP Core Telemetry'); ?>
-                </div>
-                <label class="vgt-titan-wide-field" style="margin-top: 16px;">
-                    <span><?php esc_html_e('Outbound Domain Whitelist (Eine pro Zeile)', 'vgt-sentinel'); ?></span>
-                    <textarea name="vis_config[styx_whitelist]" rows="4" placeholder="api.stripe.com&#10;api.paypal.com"><?php echo esc_textarea($whitelist); ?></textarea>
-                </label>
-                <div class="vgt-titan-actions">
-                    <button type="submit"><?php esc_html_e('STYX EINSTELLUNGEN SPEICHERN', 'vgt-sentinel'); ?></button>
-                </div>
-            </form>
+            </div>
+            <div class="vgt-titan-toggle-grid">
+                <?php $styxToggle('styx_enabled', !empty($opt['styx_enabled']), 'STYX Executioner Master'); ?>
+                <?php $styxToggle('styx_audit_mode', !empty($opt['styx_audit_mode']), 'Audit Mode (Logging Only)'); ?>
+                <?php $styxToggle('styx_block_wp_telemetry', !empty($opt['styx_block_wp_telemetry']), 'Block WP Core Telemetry'); ?>
+            </div>
+            <label class="vgt-titan-wide-field" style="margin-top: 16px;">
+                <span><?php esc_html_e('Outbound Domain Whitelist (Eine pro Zeile)', 'vgt-sentinel'); ?></span>
+                <textarea name="vis_config[styx_whitelist]" rows="4" placeholder="api.stripe.com&#10;api.paypal.com"><?php echo esc_textarea($whitelist); ?></textarea>
+            </label>
+            <div class="vgt-titan-actions">
+                <button type="submit" name="vis_save_config" value="1"><?php esc_html_e('STYX EINSTELLUNGEN SPEICHERN', 'vgt-sentinel'); ?></button>
+            </div>
         </section>
 
         <!-- SECTION 2: TRAFFIC LEDGER -->
@@ -234,13 +227,10 @@ $styxToggle = static function(string $name, bool $enabled, string $label): void 
                     <h3><?php esc_html_e('Threat Intelligence Feeds & C2-Abwehrnetzwerk (Opt-In)', 'vgt-sentinel'); ?></h3>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=vgt-suite&tab=styx&styx_section=threat_intel')); ?>" style="display: inline;">
-                        <?php wp_nonce_field('vis_threat_intel_sync_action'); ?>
-                        <input type="hidden" name="styx_section" value="threat_intel">
-                        <button type="submit" name="vis_threat_intel_sync" value="1" style="background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff; font-weight: 700; font-size: 11px; padding: 6px 14px; border-radius: 6px; cursor: pointer;">
-                            ⚡ <?php esc_html_e('JETZT SYNCHRONISIEREN (12H CRON)', 'vgt-sentinel'); ?>
-                        </button>
-                    </form>
+                    <?php wp_nonce_field('vis_threat_intel_sync_action', '_vis_threat_intel_sync_nonce'); ?>
+                    <button type="submit" name="vis_threat_intel_sync" value="1" style="background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff; font-weight: 700; font-size: 11px; padding: 6px 14px; border-radius: 6px; cursor: pointer;">
+                        ⚡ <?php esc_html_e('JETZT SYNCHRONISIEREN (12H CRON)', 'vgt-sentinel'); ?>
+                    </button>
                     <span class="vgt-titan-badge" style="background: <?php echo !empty($intel_stats['is_enabled']) ? 'rgba(94, 234, 212, 0.15)' : 'rgba(148, 163, 184, 0.15)'; ?>; color: <?php echo !empty($intel_stats['is_enabled']) ? '#5eead4' : '#94a3b8'; ?>;">
                         <?php echo !empty($intel_stats['is_enabled']) ? esc_html__('AKTIV (12H AUTO-SYNC)', 'vgt-sentinel') : esc_html__('OPT-IN (DEAKTIVIERT)', 'vgt-sentinel'); ?>
                     </span>
@@ -275,184 +265,104 @@ $styxToggle = static function(string $name, bool $enabled, string $label): void 
                 </div>
             </div>
 
-            <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=vgt-suite&tab=styx&styx_section=threat_intel')); ?>">
-                <?php wp_nonce_field('vis_threat_intel_save_action'); ?>
-                <input type="hidden" name="styx_section" value="threat_intel">
+            <?php wp_nonce_field('vis_threat_intel_save_action', '_vis_threat_intel_save_nonce'); ?>
 
-                <!-- MASTER OPT-IN TOGGLE -->
-                <div style="margin-bottom: 20px; padding: 18px; background: rgba(0, 229, 255, 0.04); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 8px;">
-                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                        <input type="checkbox" name="vis_threat_intel[enabled]" value="1" <?php checked(!empty($intel_cfg['enabled'])); ?>>
-                        <strong style="color: #f0f3f8; font-size: 14px;"><?php esc_html_e('Automatisierte Threat-Intelligence-Feeds aktivieren (Opt-In)', 'vgt-sentinel'); ?></strong>
+            <!-- MASTER OPT-IN TOGGLE -->
+            <div style="margin-bottom: 20px; padding: 18px; background: rgba(0, 229, 255, 0.04); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 8px;">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="checkbox" name="vis_threat_intel[enabled]" value="1" <?php checked(!empty($intel_cfg['enabled'])); ?>>
+                    <strong style="color: #f0f3f8; font-size: 14px;"><?php esc_html_e('Automatisierte Threat-Intelligence-Feeds aktivieren (Opt-In)', 'vgt-sentinel'); ?></strong>
+                </label>
+                <small style="display:block; color:#94a3b8; margin-top:4px; margin-left: 28px;">
+                    <?php esc_html_e('Datensouveränität: Erst durch Ihre explizite Aktivierung verbindet sich Ihr System alle 12 Stunden im Hintergrund mit den ausgewählten Sicherheitslisten.', 'vgt-sentinel'); ?>
+                </small>
+            </div>
+
+            <!-- ENFORCEMENT TARGETS -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 24px;">
+                <div style="padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" name="vis_threat_intel[block_outbound]" value="1" <?php checked(!empty($intel_cfg['block_outbound'])); ?>>
+                        <strong style="color: #38bdf8; font-size: 13px;"><?php esc_html_e('Styx Egress Shield: Outbound C2-Block', 'vgt-sentinel'); ?></strong>
                     </label>
-                    <small style="display:block; color:#94a3b8; margin-top:4px; margin-left: 28px;">
-                        <?php esc_html_e('Datensouveränität: Erst durch Ihre explizite Aktivierung verbindet sich Ihr System alle 12 Stunden im Hintergrund mit den ausgewählten Sicherheitslisten.', 'vgt-sentinel'); ?>
+                    <small style="display:block; color:#94a3b8; margin-top:6px; margin-left: 24px;">
+                        <?php esc_html_e('Verhindert, dass kompromittierte Plugins oder Themes ausgehende HTTP-Verbindungen zu bekannten Botnet-C2-Servern aufbauen.', 'vgt-sentinel'); ?>
                     </small>
                 </div>
 
-                <!-- ENFORCEMENT TARGETS -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 24px;">
-                    <div style="padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="checkbox" name="vis_threat_intel[block_outbound]" value="1" <?php checked(!empty($intel_cfg['block_outbound'])); ?>>
-                            <strong style="color: #38bdf8; font-size: 13px;"><?php esc_html_e('Styx Egress Shield: Outbound C2-Block', 'vgt-sentinel'); ?></strong>
-                        </label>
-                        <small style="display:block; color:#94a3b8; margin-top:6px; margin-left: 24px;">
-                            <?php esc_html_e('Verhindert, dass kompromittierte Plugins oder Themes ausgehende HTTP-Verbindungen zu bekannten Botnet-C2-Servern aufbauen.', 'vgt-sentinel'); ?>
-                        </small>
-                    </div>
-
-                    <div style="padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
-                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="checkbox" name="vis_threat_intel[block_inbound]" value="1" <?php checked(!empty($intel_cfg['block_inbound'])); ?>>
-                            <strong style="color: #fb7185; font-size: 13px;"><?php esc_html_e('Cerberus Perimeter: Inbound Threat Block', 'vgt-sentinel'); ?></strong>
-                        </label>
-                        <small style="display:block; color:#94a3b8; margin-top:6px; margin-left: 24px;">
-                            <?php esc_html_e('Schmettert eingehende Anfragen von dokumentierten Angreifern, Scannern und Tor-Exit-Nodes bereits an den Toren ab.', 'vgt-sentinel'); ?>
-                        </small>
-                    </div>
+                <div style="padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" name="vis_threat_intel[block_inbound]" value="1" <?php checked(!empty($intel_cfg['block_inbound'])); ?>>
+                        <strong style="color: #fb7185; font-size: 13px;"><?php esc_html_e('Cerberus Perimeter: Inbound Threat Block', 'vgt-sentinel'); ?></strong>
+                    </label>
+                    <small style="display:block; color:#94a3b8; margin-top:6px; margin-left: 24px;">
+                        <?php esc_html_e('Schmettert eingehende Anfragen von dokumentierten Angreifern, Scannern und Tor-Exit-Nodes bereits an den Toren ab.', 'vgt-sentinel'); ?>
+                    </small>
                 </div>
+            </div>
 
-                <!-- FEED SELECTION TABLE -->
-                <h4 style="margin: 0 0 12px 0; color: #5eead4; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">
-                    <?php esc_html_e('Abonnierte Sicherheits-Feeds (12-Stunden Intervall)', 'vgt-sentinel'); ?>
-                </h4>
+            <!-- FEED SELECTION TABLE -->
+            <h4 style="margin: 0 0 12px 0; color: #5eead4; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">
+                <?php esc_html_e('Abonnierte Sicherheits-Feeds (12-Stunden Intervall)', 'vgt-sentinel'); ?>
+            </h4>
 
-                <div class="vgt-titan-table-wrap" style="margin-bottom: 24px;">
-                    <table class="vgt-titan-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 40px; text-align: center;"><?php esc_html_e('Aktiv', 'vgt-sentinel'); ?></th>
-                                <th><?php esc_html_e('Sicherheits-Feed', 'vgt-sentinel'); ?></th>
-                                <th><?php esc_html_e('Typ / Format', 'vgt-sentinel'); ?></th>
-                                <th><?php esc_html_e('Sync-Status & Einträge', 'vgt-sentinel'); ?></th>
-                                <th style="text-align: right;"><?php esc_html_e('Offizielle Quelle', 'vgt-sentinel'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $feed_stats = $intel_stats['feed_stats'] ?? [];
-                            if ($threat_intel_class && class_exists($threat_intel_class)):
-                                foreach ($threat_intel_class::FEEDS as $fkey => $fmeta): 
-                                    $is_feed_active = isset($intel_cfg['active_feeds'][$fkey]) ? !empty($intel_cfg['active_feeds'][$fkey]) : true;
-                                    $fstat = $feed_stats[$fkey] ?? null;
-                                    $count = isset($fstat['count']) ? (int)$fstat['count'] : null;
-                            ?>
-                            <tr>
-                                <td style="text-align: center;">
-                                    <input type="checkbox" name="vis_threat_intel[active_feeds][<?php echo esc_attr($fkey); ?>]" value="1" <?php checked($is_feed_active); ?>>
-                                </td>
-                                <td>
-                                    <strong style="color:#ffffff;"><?php echo esc_html((string)$fmeta['name']); ?></strong>
-                                    <small style="display:block; color:#64748b; font-size:11px;"><?php echo esc_html((string)$fmeta['desc']); ?></small>
-                                </td>
-                                <td>
-                                    <code><?php echo esc_html((string)$fmeta['format']); ?></code>
-                                </td>
-                                <td>
-                                    <?php if ($count !== null): ?>
-                                        <span style="color:#5eead4; font-weight:700; font-family:monospace;"><?php echo esc_html(number_format_i18n($count)); ?> <?php esc_html_e('Einträge', 'vgt-sentinel'); ?></span>
-                                    <?php else: ?>
-                                        <span style="color:#94a3b8; font-size:11px;"><?php esc_html_e('Bereit zur Synchronisation', 'vgt-sentinel'); ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td style="text-align: right;">
-                                    <a href="<?php echo esc_url((string)$fmeta['url']); ?>" target="_blank" rel="noopener noreferrer" style="color:#00e5ff; font-size:11px; text-decoration:none;">
-                                        ↗ <?php esc_html_e('Feed-Link', 'vgt-sentinel'); ?>
-                                    </a>
-                                </td>
-                            </tr>
-                            <?php 
-                                endforeach; 
-                            endif;
-                            ?>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="vgt-titan-table-wrap" style="margin-bottom: 24px;">
+                <table class="vgt-titan-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;"><?php esc_html_e('Aktiv', 'vgt-sentinel'); ?></th>
+                            <th><?php esc_html_e('Sicherheits-Feed', 'vgt-sentinel'); ?></th>
+                            <th><?php esc_html_e('Typ / Format', 'vgt-sentinel'); ?></th>
+                            <th><?php esc_html_e('Sync-Status & Einträge', 'vgt-sentinel'); ?></th>
+                            <th style="text-align: right;"><?php esc_html_e('Offizielle Quelle', 'vgt-sentinel'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $feed_stats = $intel_stats['feed_stats'] ?? [];
+                        if ($threat_intel_class && class_exists($threat_intel_class)):
+                            foreach ($threat_intel_class::FEEDS as $fkey => $fmeta): 
+                                $is_feed_active = isset($intel_cfg['active_feeds'][$fkey]) ? !empty($intel_cfg['active_feeds'][$fkey]) : true;
+                                $fstat = $feed_stats[$fkey] ?? null;
+                                $count = isset($fstat['count']) ? (int)$fstat['count'] : null;
+                        ?>
+                        <tr>
+                            <td style="text-align: center;">
+                                <input type="checkbox" name="vis_threat_intel[active_feeds][<?php echo esc_attr($fkey); ?>]" value="1" <?php checked($is_feed_active); ?>>
+                            </td>
+                            <td>
+                                <strong style="color:#ffffff;"><?php echo esc_html((string)$fmeta['name']); ?></strong>
+                                <small style="display:block; color:#64748b; font-size:11px;"><?php echo esc_html((string)$fmeta['desc']); ?></small>
+                            </td>
+                            <td>
+                                <code><?php echo esc_html((string)$fmeta['format']); ?></code>
+                            </td>
+                            <td>
+                                <?php if ($count !== null): ?>
+                                    <span style="color:#5eead4; font-weight:700; font-family:monospace;"><?php echo esc_html(number_format_i18n($count)); ?> <?php esc_html_e('Einträge', 'vgt-sentinel'); ?></span>
+                                <?php else: ?>
+                                    <span style="color:#94a3b8; font-size:11px;"><?php esc_html_e('Bereit zur Synchronisation', 'vgt-sentinel'); ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="<?php echo esc_url((string)$fmeta['url']); ?>" target="_blank" rel="noopener noreferrer" style="color:#00e5ff; font-size:11px; text-decoration:none;">
+                                    ↗ <?php esc_html_e('Feed-Link', 'vgt-sentinel'); ?>
+                                </a>
+                            </td>
+                        </tr>
+                        <?php 
+                            endforeach; 
+                        endif;
+                        ?>
+                    </tbody>
+                </table>
+            </div>
 
-                <div class="vgt-titan-actions">
-                    <button type="submit" name="vis_threat_intel_save" value="1" style="background: linear-gradient(135deg, #00e5ff 0%, #0077b6 100%); color: #06070a; font-weight: 800; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; letter-spacing: 1px; font-size: 13px;">
-                        <?php esc_html_e('THREAT-INTEL EINSTELLUNGEN SPEICHERN', 'vgt-sentinel'); ?>
-                    </button>
-                </div>
-            </form>
+            <div class="vgt-titan-actions">
+                <button type="submit" name="vis_threat_intel_save" value="1" style="background: linear-gradient(135deg, #00e5ff 0%, #0077b6 100%); color: #06070a; font-weight: 800; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; letter-spacing: 1px; font-size: 13px;">
+                    <?php esc_html_e('THREAT-INTEL EINSTELLUNGEN SPEICHERN', 'vgt-sentinel'); ?>
+                </button>
+            </div>
         </section>
     </div>
 </section>
-
-<style>
-.vgt-titan-nav a.is-active,
-.vgt-titan-nav a.active {
-    color: #00e5ff !important;
-    border-color: rgba(0, 229, 255, 0.5) !important;
-    background: rgba(0, 229, 255, 0.14) !important;
-    box-shadow: 0 0 16px rgba(0, 229, 255, 0.2) !important;
-}
-.vgt-tab-pane {
-    display: none;
-}
-.vgt-tab-pane.is-active {
-    display: block;
-    animation: vgt-tab-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@keyframes vgt-tab-fade-in {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-</style>
-
-<script>
-(function() {
-    function initStyxTabs() {
-        var navLinks = document.querySelectorAll('#styx-nav-tabs a[data-tab]');
-        var panes = {
-            'styx-outbound': document.getElementById('pane-styx-outbound'),
-            'styx-threat-intel': document.getElementById('pane-styx-threat-intel')
-        };
-        if (!navLinks.length) return;
-
-        function activateTab(tabId, updateUrl) {
-            navLinks.forEach(function(l) {
-                var match = l.getAttribute('data-tab') === tabId;
-                l.classList.toggle('is-active', match);
-                l.classList.toggle('active', match);
-            });
-            Object.keys(panes).forEach(function(key) {
-                var pane = panes[key];
-                if (pane) {
-                    if (key === tabId) {
-                        pane.classList.add('is-active');
-                        pane.style.display = 'block';
-                    } else {
-                        pane.classList.remove('is-active');
-                        pane.style.display = 'none';
-                    }
-                }
-            });
-            if (updateUrl && window.history && window.history.replaceState) {
-                var sec = tabId === 'styx-threat-intel' ? 'threat_intel' : 'outbound';
-                var u = new URL(window.location.href);
-                u.searchParams.set('styx_section', sec);
-                window.history.replaceState({}, '', u.toString());
-            }
-        }
-
-        navLinks.forEach(function(link) {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                activateTab(this.getAttribute('data-tab'), true);
-            });
-        });
-
-        if (window.location.hash === '#styx-threat-intel') {
-            activateTab('styx-threat-intel', false);
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initStyxTabs);
-    } else {
-        initStyxTabs();
-    }
-})();
-</script>

@@ -524,6 +524,14 @@ final class VIS_Dashboard_Ajax {
     public static function handle_upload_addon(): void {
         self::verify_privileges('vis_nonce');
 
+        if (!current_user_can('install_plugins') || (class_exists('VIS_Throne_Guard') && !current_user_can(VIS_Throne_Guard::MASTER_CAP))) {
+            wp_send_json_error(['message' => __('VGT_UNAUTHORIZED_ACCESS: Installation von Add-Ons erfordert Plugin- und Master-Rechte.', 'vgt-sentinel')], 403);
+        }
+
+        if (defined('DISALLOW_FILE_MODS') && DISALLOW_FILE_MODS) {
+            wp_send_json_error(['message' => __('VGT_SECURITY_VIOLATION: Dateiänderungen sind durch Systemrichtlinie deaktiviert.', 'vgt-sentinel')], 403);
+        }
+
         if (empty($_FILES['addon_zip']) || empty($_FILES['addon_zip']['tmp_name'])) {
             wp_send_json_error(['message' => __('Keine Datei hochgeladen.', 'vgt-sentinel')]);
         }
@@ -551,6 +559,7 @@ final class VIS_Dashboard_Ajax {
         $max_uncompressed = 52428800; // 50MB
         $max_files = 500;
         $total_uncompressed = 0;
+        $allowed_addon_roots = ['vlp', 'builder', 'visiongaiaseo', 'seo'];
 
         if ($zip->numFiles > $max_files) {
             $zip->close();
@@ -560,10 +569,19 @@ final class VIS_Dashboard_Ajax {
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $stat = $zip->statIndex($i);
             if (!$stat) continue;
-            $entry_name = $stat['name'];
-            if (str_contains($entry_name, '..') || str_starts_with($entry_name, '/') || str_starts_with($entry_name, '\\') || str_contains($entry_name, "\0")) {
+            $entry_name = str_replace('\\', '/', $stat['name']);
+            if (str_contains($entry_name, '..') || str_starts_with($entry_name, '/') || str_contains($entry_name, "\0")) {
                 $zip->close();
                 wp_send_json_error(['message' => __('Sicherheitsalarm: Unzulässige Pfadstruktur im ZIP-Archiv erkannt.', 'vgt-sentinel')], 403);
+            }
+
+            // Whitelist root directory of entries to registered add-on namespaces
+            $trimmed_entry = trim($entry_name, '/');
+            $entry_segments = explode('/', $trimmed_entry);
+            $entry_root = strtolower($entry_segments[0] ?? '');
+            if ($entry_root !== '' && !in_array($entry_root, $allowed_addon_roots, true)) {
+                $zip->close();
+                wp_send_json_error(['message' => sprintf(__('Sicherheitsalarm: Unzulässige Add-On-Struktur "%s" im Archiv.', 'vgt-sentinel'), esc_html($entry_root))], 403);
             }
 
             $total_uncompressed += (int)($stat['size'] ?? 0);
@@ -594,6 +612,14 @@ final class VIS_Dashboard_Ajax {
 
     public static function handle_uninstall_addon(): void {
         self::verify_privileges('vis_nonce');
+
+        if (!current_user_can('delete_plugins') || (class_exists('VIS_Throne_Guard') && !current_user_can(VIS_Throne_Guard::MASTER_CAP))) {
+            wp_send_json_error(['message' => __('VGT_UNAUTHORIZED_ACCESS: Deinstallation von Add-Ons erfordert Plugin- und Master-Rechte.', 'vgt-sentinel')], 403);
+        }
+
+        if (defined('DISALLOW_FILE_MODS') && DISALLOW_FILE_MODS) {
+            wp_send_json_error(['message' => __('VGT_SECURITY_VIOLATION: Dateiänderungen sind durch Systemrichtlinie deaktiviert.', 'vgt-sentinel')], 403);
+        }
 
         $addon_id = sanitize_key($_POST['addon_id'] ?? '');
         if (empty($addon_id) || !in_array($addon_id, ['vlp', 'builder', 'seo'], true)) {

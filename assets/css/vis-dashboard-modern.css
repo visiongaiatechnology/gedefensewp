@@ -337,3 +337,22 @@ body[class*="vgt-suite"] { background: var(--vis-shell); }
 @media (prefers-reduced-motion: reduce) {
     .vis-omega-wrapper *, .vis-omega-wrapper *::before, .vis-omega-wrapper *::after { scroll-behavior: auto; transition-duration: .01ms; animation-duration: .01ms; animation-iteration-count: 1; }
 }
+
+.vgt-titan-nav a.is-active,
+.vgt-titan-nav a.active {
+    color: #00e5ff !important;
+    border-color: rgba(0, 229, 255, 0.5) !important;
+    background: rgba(0, 229, 255, 0.14) !important;
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.2) !important;
+}
+.vgt-tab-pane {
+    display: none;
+}
+.vgt-tab-pane.is-active {
+    display: block;
+    animation: vgt-tab-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes vgt-tab-fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -12,7 +12,7 @@ if (!defined('ABSPATH') && !defined('VGT_ZEUS_PREBOOT')) exit('VGT_ACCESS_DENIED
  */
 class VIS_Zeus_Compiler {
 
-    public const COMPILER_VERSION = '8.2.5';
+    public const COMPILER_VERSION = '8.2.6';
 
     private string $vault_dir;
     private string $waf_file;

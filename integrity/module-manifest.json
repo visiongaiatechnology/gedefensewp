@@ -9,7 +9,7 @@
         },
         "assets": {
             "files": 12,
-            "root_hash": "eac24a6abd533fda2ca0fe02b219a291b20dbe02b12404f053f827d21c0de3dc"
+            "root_hash": "a344570ae6c8634e5e2a9b68c82a2dc2c01799e3aa73fb016dffaae20e5b44b3"
         },
         "compatibility": {
             "files": 4,
@@ -21,7 +21,7 @@
         },
         "dashboard": {
             "files": 85,
-            "root_hash": "18b4185dad9fd6e49611d6aa7f5c44af6ff596e54ce92a86b851fa80ab92d120"
+            "root_hash": "860197d81b61f854031d0161399871c11d6963596463249ab699b07f392afe8d"
         },
         "xdr": {
             "files": 9,
@@ -109,7 +109,7 @@
         },
         "zeus": {
             "files": 16,
-            "root_hash": "da5c3458a3f77798b51570daff5d8d720bebf6dcc1c8a37e8e357ee5491acd32"
+            "root_hash": "3b6fa35f78dbf881ad762cc1ba69f4f63e35773ae554cbd2fe10c6cc0b0acd5e"
         }
     }
 }
