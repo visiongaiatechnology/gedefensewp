@@ -1911,8 +1911,8 @@
     border-radius: 10px;
     padding: 12px 16px;
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 242, 255, 0.15);
-    transform: translate(-50%, -120%);
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    transition: opacity 0.12s ease;
+    will-change: transform, left, top;
 }
 
 .vis-tooltip-header {

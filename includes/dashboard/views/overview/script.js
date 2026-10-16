@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         };
 
-        // Universal Smart Dynamic Tooltip Positioning Engine
+        // Universal Smart 4-Way Dynamic Tooltip Positioning Engine (Above, Below, Right, Left)
         const positionTooltip = (posX, posY, isMarker = false) => {
             const stageRect = stage.getBoundingClientRect();
 
@@ -355,28 +355,53 @@ document.addEventListener('DOMContentLoaded', function() {
             const ttWidth = tooltip.offsetWidth || 280;
             const ttHeight = tooltip.offsetHeight || 190;
             const halfWidth = Math.ceil(ttWidth / 2);
+            const halfHeight = Math.ceil(ttHeight / 2);
+            const gap = isMarker ? 18 : 14;
 
-            // 1. Horizontal boundary clamping: keep tooltip at least 14px inside stage bounds
-            const clampedX = Math.max(halfWidth + 14, Math.min(stageRect.width - halfWidth - 14, posX));
-            tooltip.style.left = `${clampedX}px`;
-            tooltip.style.top = `${posY}px`;
+            // Space available in all 4 directions inside stage boundaries
+            const spaceAbove = posY - 14;
+            const spaceBelow = stageRect.height - posY - 14;
+            const spaceRight = stageRect.width - posX - 14;
+            const spaceLeft = posX - 14;
 
-            // 2. Dynamic vertical boundary detection:
-            // Check if placing tooltip ABOVE leaves at least 14px safety margin from top of stage
-            const gapAbove = isMarker ? 14 : 12;
-            const fitsAbove = (posY - ttHeight - gapAbove) >= 14;
+            const fitsAbove = spaceAbove >= (ttHeight + gap);
+            const fitsBelow = spaceBelow >= (ttHeight + gap);
 
-            if (fitsAbove) {
-                // Safely sits ABOVE marker / cursor
-                tooltip.style.transform = `translate(-50%, calc(-100% - ${gapAbove}px))`;
-                tooltip.classList.remove('is-flipped-below');
-                tooltip.classList.add('is-flipped-above');
+            // Determine optimal placement:
+            // 1. If distinctly in the lower portion and comfortably fits above -> ABOVE
+            // 2. If distinctly in the upper portion and comfortably fits below -> BELOW
+            // 3. Otherwise (middle latitudes or constrained height) -> SIDEWAYS (RIGHT or LEFT)
+            if (fitsAbove && posY >= stageRect.height * 0.52) {
+                // Place ABOVE
+                const clampedX = Math.max(halfWidth + 14, Math.min(stageRect.width - halfWidth - 14, posX));
+                tooltip.style.left = `${clampedX}px`;
+                tooltip.style.top = `${posY}px`;
+                tooltip.style.transform = `translate(-50%, calc(-100% - ${gap}px))`;
+                tooltip.className = 'vis-threat-map-tooltip is-pos-above';
+            } else if (fitsBelow && posY <= stageRect.height * 0.32) {
+                // Place BELOW
+                const clampedX = Math.max(halfWidth + 14, Math.min(stageRect.width - halfWidth - 14, posX));
+                tooltip.style.left = `${clampedX}px`;
+                tooltip.style.top = `${posY}px`;
+                tooltip.style.transform = `translate(-50%, ${gap}px)`;
+                tooltip.className = 'vis-threat-map-tooltip is-pos-below';
             } else {
-                // Safely flips BELOW marker / cursor
-                const gapBelow = isMarker ? 24 : 18;
-                tooltip.style.transform = `translate(-50%, ${gapBelow}px)`;
-                tooltip.classList.remove('is-flipped-above');
-                tooltip.classList.add('is-flipped-below');
+                // Place SIDEWAYS (RIGHT or LEFT):
+                // Clamp Y coordinate so the tooltip stays completely within top/bottom boundaries
+                const clampedY = Math.max(halfHeight + 14, Math.min(stageRect.height - halfHeight - 14, posY));
+                tooltip.style.top = `${clampedY}px`;
+
+                if (spaceRight >= (ttWidth + gap) || spaceRight >= spaceLeft) {
+                    // Place to the RIGHT
+                    tooltip.style.left = `${posX + gap}px`;
+                    tooltip.style.transform = 'translate(0, -50%)';
+                    tooltip.className = 'vis-threat-map-tooltip is-pos-right';
+                } else {
+                    // Place to the LEFT
+                    tooltip.style.left = `${posX - gap}px`;
+                    tooltip.style.transform = 'translate(-100%, -50%)';
+                    tooltip.className = 'vis-threat-map-tooltip is-pos-left';
+                }
             }
         };
 
