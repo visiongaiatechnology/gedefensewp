@@ -25,7 +25,7 @@ if ( isset( $_POST['vis_action'] ) && check_admin_referer( 'vis_action_nonce' ) 
         wp_die( 'ZUGRIFF VERWEIGERT: Insufficient Permissions.' );
     }
 
-    $did = sanitize_text_field( $_POST['device_id'] );
+    $did = isset( $_POST['device_id'] ) && is_string( $_POST['device_id'] ) ? sanitize_text_field( wp_unslash( $_POST['device_id'] ) ) : '';
     
     switch ( $_POST['vis_action'] ) {
         case 'approve':

@@ -165,6 +165,37 @@ if (!function_exists('vgt_format_time_ago')) {
 <!-- DECENTRALIZED ASSET INJECTION (CSS) -->
 <div class="vgt-apex-ui">
 
+    <!-- MASTER THREAT MATRIX HERO (VGT GLASS 2100) -->
+    <div class="vsc-hero" id="vis-threat-hero">
+        <div class="vsc-hero-copy">
+            <span class="vsc-eyebrow"><span class="vsc-live-dot" aria-hidden="true"></span><?php esc_html_e('XDR MULTI-SENSOR FUSION', 'vgt-sentinel'); ?></span>
+            <h2 id="vgt-thread-title"><?php esc_html_e('Bedrohungsmatrix & Korrelation', 'vgt-sentinel'); ?></h2>
+            <p><?php esc_html_e('Echtzeit-Korrelation aller internen Sensoren (AEGIS · PROMETHEUS · MORPHEUS · CERBERUS · NEMESIS · STYX) mit automatisierter Angreifer-Kapselung und Tarpit-Deception.', 'vgt-sentinel'); ?></p>
+            <div class="vsc-actions">
+                <button type="button" class="vsc-button vsc-button-primary" data-reset-filters>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    <span><?php esc_html_e('FILTER ZURÜCKSETZEN', 'vgt-sentinel'); ?></span>
+                </button>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=vgt-suite&tab=security_center')); ?>" class="vsc-button vsc-button-secondary">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span><?php esc_html_e('SICHERHEITSZENTRALE', 'vgt-sentinel'); ?></span>
+                </a>
+                <span class="vsc-last-run">
+                    <?php echo esc_html(sprintf(__('%d Profile · %d Signale verarbeitet', 'vgt-sentinel'), count($top_actors), $total_xdr_events)); ?>
+                </span>
+            </div>
+        </div>
+        <div class="vsc-score-panel">
+            <div class="vsc-score-ring" id="vgt-thread-ring" role="img" aria-label="<?php echo esc_attr__('Bedrohungs-Status', 'vgt-sentinel'); ?>" style="--vsc-score: <?php echo esc_attr((string)min(360, max(24, (int)($total_incidents * 36)))); ?>deg;">
+                <div><strong><?php echo esc_html((string)$total_incidents); ?></strong><span><?php esc_html_e('INC', 'vgt-sentinel'); ?></span></div>
+            </div>
+            <div class="vsc-score-meta">
+                <span class="vsc-posture" style="color: <?php echo $total_incidents > 0 ? 'var(--vis-amber)' : 'var(--vis-green)'; ?>;"><?php echo $total_incidents > 0 ? esc_html__('GEFÄHRDUNG ERFASST', 'vgt-sentinel') : esc_html__('AIRSPACE NOMINAL', 'vgt-sentinel'); ?></span>
+                <small><?php echo esc_html(sprintf(__('%d Vektoren isoliert', 'vgt-sentinel'), $total_contained_xdr)); ?></small>
+            </div>
+        </div>
+    </div>
+
     <!-- KPI COMMAND STRIP -->
     <div class="vgt-kpi-grid">
         <div class="vgt-glass-panel vgt-kpi-card" style="border-left: 3px solid var(--vgt-neon-blue); border-top: none;">
@@ -237,13 +268,13 @@ if (!function_exists('vgt_format_time_ago')) {
                 ?>
                 <div class="vgt-actor-card">
                     <div class="vgt-actor-header">
+                        <span class="vgt-badge" style="background: <?php echo $actor['contained'] ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0, 242, 255, 0.15)'; ?>; color: <?php echo $actor['contained'] ? 'var(--vgt-neon-red)' : 'var(--vgt-neon-blue)'; ?>; border-color: currentColor;">
+                            <?php echo esc_html($actor['status']); ?>
+                        </span>
                         <div class="vgt-actor-ip">
                             <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:<?php echo esc_attr($severity_color); ?>; box-shadow:0 0 8px <?php echo esc_attr($severity_color); ?>;"></span>
                             <?php echo esc_html($actor['ip']); ?>
                         </div>
-                        <span class="vgt-badge" style="background: <?php echo $actor['contained'] ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0, 242, 255, 0.15)'; ?>; color: <?php echo $actor['contained'] ? 'var(--vgt-neon-red)' : 'var(--vgt-neon-blue)'; ?>; border-color: currentColor;">
-                            <?php echo esc_html($actor['status']); ?>
-                        </span>
                     </div>
                     <div class="vgt-actor-meta">
                         <div class="vgt-actor-row">
@@ -263,8 +294,8 @@ if (!function_exists('vgt_format_time_ago')) {
                             <span class="vgt-mono"><?php echo esc_html(vgt_format_time_ago($actor['latest'])); ?></span>
                         </div>
                     </div>
-                    <div style="margin-top:4px; display:flex; justify-content:flex-end;">
-                        <button type="button" class="vgt-btn-filter-ip" data-filter-ip="<?php echo esc_attr((string)$actor['ip']); ?>">
+                    <div style="margin-top:auto; padding-top:8px; display:flex; justify-content:center; width:100%;">
+                        <button type="button" class="vgt-btn-filter-ip" style="width:100%; justify-content:center; padding:7px 12px;" data-filter-ip="<?php echo esc_attr((string)$actor['ip']); ?>">
                             <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             <?php echo esc_html__('Filter Events', 'vgt-sentinel'); ?>
                         </button>
@@ -354,7 +385,7 @@ if (!function_exists('vgt_format_time_ago')) {
                                 </td>
                                 <td>
                                     <span class="vgt-badge" style="background: <?php echo esc_attr($theme['bg']); ?>; color: <?php echo esc_attr($theme['color']); ?>; box-shadow: 0 0 8px <?php echo esc_attr($theme['bg']); ?>;">
-                                        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><?php echo wp_kses_post($theme['icon']); ?></svg>
+                                        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><?php echo $theme['icon']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></svg>
                                         <?php echo esc_html($sensorName); ?>
                                     </span>
                                 </td>
@@ -460,4 +491,3 @@ if (!function_exists('vgt_format_time_ago')) {
     </div>
 
 </div>
-

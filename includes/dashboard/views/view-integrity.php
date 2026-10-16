@@ -68,48 +68,90 @@ if ($status === 'clean' || $status === 'init') {
      ========================================================================================= -->
 <div class="vgt-apex-ui" id="vgt-integrity-view" data-inspect-nonce="<?php echo esc_attr(wp_create_nonce('vis_nonce')); ?>">
 
-    <!-- MODULE HEADER -->
-    <div class="vgt-glass-panel vgt-module-header" style="border-left: 4px solid <?php echo esc_attr($status_color); ?>;">
-        <div class="vgt-module-title">
-            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); display: flex;">
-                <svg class="vgt-icon" style="color:<?php echo esc_attr($status_color); ?>; width:24px; height:24px;" viewBox="0 0 24 24">
-                    <?php echo wp_kses_post($status_icon_svg); // Dynamic Icon but internal logic 1:1 ?>
-                </svg>
-            </div>
-            <div>
-                <h2>
-                    <?php esc_html_e('SYSTEM INTEGRITY MONITOR', 'vgt-sentinel'); ?>
-                    <?php if($status === 'warning'): ?>
-                        <span class="vgt-badge vgt-badge-alert" style="border-radius:4px;"><?php esc_html_e('BREACH DETECTED', 'vgt-sentinel'); ?></span>
-                    <?php else: ?>
-                        <span class="vgt-badge vgt-badge-neutral" style="border-radius:4px;"><?php esc_html_e('FILE HASHING ENGINE', 'vgt-sentinel'); ?></span>
-                    <?php endif; ?>
-                </h2>
-                <div style="font-size:12px; color:var(--vgt-text-dim); margin-top:4px; font-family:monospace;">
-                    <?php esc_html_e('Last Deep Scan:', 'vgt-sentinel'); ?> 
-                    <span style="color:#fff;"><?php echo esc_html($last_scan); ?></span>
-                    <span style="margin: 0 8px; color:var(--vgt-text-muted);">|</span>
-                    <span class="<?php echo esc_attr($status_pulse_class); ?>" style="display:inline-flex; align-items:center; gap:6px;">
-                        <span class="vgt-status-pulse"></span>
-                        <span style="color:<?php echo esc_attr($status_color); ?>;"><?php echo esc_html(strtoupper($status)); ?></span>
-                    </span>
-                </div>
+    <!-- MASTER SYSTEM INTEGRITY HERO (VGT GLASS 2100) -->
+    <div class="vsc-hero" id="vis-integrity-hero" style="border-left: 4px solid <?php echo esc_attr($status_color); ?>;">
+        <div class="vsc-hero-copy">
+            <span class="vsc-eyebrow"><span class="vsc-live-dot" aria-hidden="true" style="background:<?php echo esc_attr($status_color); ?>; box-shadow: 0 0 14px <?php echo esc_attr($status_color); ?>;"></span><?php esc_html_e('FILE HASHING ENGINE // REAL-TIME BASELINE', 'vgt-sentinel'); ?></span>
+            <h2><?php esc_html_e('System Integritäts-Monitor', 'vgt-sentinel'); ?></h2>
+            <p><?php esc_html_e('Kryptographische Dateisystem-Überwachung gegen unautorisierte Manipulationen, Zero-Day-Webshells und PHP-Injektionen durch kontinuierliche SHA-256 Hash-Validierung.', 'vgt-sentinel'); ?></p>
+            <div class="vsc-actions">
+                <button type="button" id="vis-btn-scan" class="vsc-button vsc-button-primary vis-btn-scan" data-mode="scan">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <span><?php esc_html_e('RUN DEEP SCAN', 'vgt-sentinel'); ?></span>
+                </button>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline-flex; margin:0;">
+                    <input type="hidden" name="action" value="<?php echo esc_attr(VIS_Sentinel_Export::action()); ?>">
+                    <?php wp_nonce_field(VIS_Sentinel_Export::nonce_action()); ?>
+                    <button type="submit" class="vsc-button vsc-button-secondary">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 3v12"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <path d="M5 21h14"></path>
+                        </svg>
+                        <span><?php esc_html_e('EXPORT ANALYSE-DATEN', 'vgt-sentinel'); ?></span>
+                    </button>
+                </form>
+                <span class="vsc-last-run">
+                    <?php esc_html_e('Letzter Deep Scan:', 'vgt-sentinel'); ?> <strong><?php echo esc_html($last_scan); ?></strong>
+                </span>
             </div>
         </div>
-        
-        <div class="vgt-integrity-actions">
-            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                <input type="hidden" name="action" value="<?php echo esc_attr(VIS_Sentinel_Export::action()); ?>">
-                <?php wp_nonce_field(VIS_Sentinel_Export::nonce_action()); ?>
-                <button type="submit" class="vgt-btn vgt-btn-ghost">
-                    <svg class="vgt-icon" viewBox="0 0 24 24"><path d="M12 3v12"></path><polyline points="7 10 12 15 17 10"></polyline><path d="M5 21h14"></path></svg>
-                    <?php esc_html_e('EXPORT ANALYSE-DATEN', 'vgt-sentinel'); ?>
-                </button>
-            </form>
-            <button type="button" id="vis-btn-scan" class="vgt-btn vgt-btn-neon vis-btn-scan" data-mode="scan">
-                <svg class="vgt-icon" style="width:16px; height:16px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <?php esc_html_e('RUN DEEP SCAN', 'vgt-sentinel'); ?>
-            </button>
+        <div class="vsc-score-panel">
+            <?php
+            $ring_score = ($status === 'clean' || $status === 'init') ? 360 : ($status === 'warning' ? 120 : 0);
+            $ring_val = ($status === 'clean' || $status === 'init') ? '100' : ($status === 'warning' ? (string)count($changes) : '0');
+            $ring_unit = ($status === 'clean' || $status === 'init') ? '%' : __('ANOM', 'vgt-sentinel');
+            ?>
+            <div class="vsc-score-ring" id="vis-integrity-score-ring" role="img" aria-label="<?php echo esc_attr__('Integritäts-Status', 'vgt-sentinel'); ?>" style="--vsc-score: <?php echo esc_attr((string)$ring_score); ?>deg; background: conic-gradient(<?php echo esc_attr($status_color); ?> var(--vsc-score), rgba(148, 184, 224, 0.12) 0); filter: drop-shadow(0 0 24px <?php echo esc_attr($status_color); ?>40);">
+                <div><strong><?php echo esc_html($ring_val); ?></strong><span><?php echo esc_html($ring_unit); ?></span></div>
+            </div>
+            <div class="vsc-score-meta">
+                <span class="vsc-posture" style="color: <?php echo esc_attr($status_color); ?>;"><?php echo esc_html(strtoupper($status)); ?></span>
+                <small><?php echo ($status === 'clean' || $status === 'init') ? esc_html__('BASELINE VERIFIZIERT', 'vgt-sentinel') : esc_html__('ABWEICHUNG ERKANNT', 'vgt-sentinel'); ?></small>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI COMMAND STRIP (4 TELEMETRY TILES) -->
+    <div class="vgt-kpi-grid" style="margin-bottom: 24px;">
+        <div class="vgt-glass-panel vgt-kpi-card" style="border-left: 3px solid <?php echo esc_attr($status_color); ?>; border-top: none;">
+            <div>
+                <div class="vgt-kpi-val" style="color: <?php echo esc_attr($status_color); ?>;"><?php echo esc_html(strtoupper($status)); ?></div>
+                <div class="vgt-kpi-label"><?php esc_html_e('BASELINE STATUS', 'vgt-sentinel'); ?></div>
+            </div>
+            <div class="vgt-kpi-desc">
+                <?php echo ($status === 'clean' || $status === 'init') ? esc_html__('Systemdateien stimmen exakt mit dem kryptographischen Manifest überein.', 'vgt-sentinel') : esc_html__('Abweichungen oder unautorisierte Datei-Modifikationen erkannt.', 'vgt-sentinel'); ?>
+            </div>
+        </div>
+        <div class="vgt-glass-panel vgt-kpi-card" style="border-left: 3px solid <?php echo count($changes) > 0 ? 'var(--vgt-neon-red)' : 'var(--vgt-neon-green)'; ?>; border-top: none;">
+            <div>
+                <div class="vgt-kpi-val" style="color: <?php echo count($changes) > 0 ? 'var(--vgt-neon-red)' : 'var(--vgt-neon-green)'; ?>;"><?php echo (int)count($changes); ?></div>
+                <div class="vgt-kpi-label"><?php esc_html_e('DATEI-ANOMALIEN', 'vgt-sentinel'); ?></div>
+            </div>
+            <div class="vgt-kpi-desc">
+                <?php echo count($changes) > 0 ? esc_html__('Manipulierte oder modifizierte Dateien erfordern eingehende Prüfung.', 'vgt-sentinel') : esc_html__('Keine unerlaubten Modifikationen oder Malware-Muster im Dateisystem.', 'vgt-sentinel'); ?>
+            </div>
+        </div>
+        <div class="vgt-glass-panel vgt-kpi-card" style="border-left: 3px solid var(--vis-cyan); border-top: none;">
+            <div>
+                <div class="vgt-kpi-val" style="color: var(--vis-cyan); font-size: 20px;"><?php esc_html_e('CORE & ADD-ONS', 'vgt-sentinel'); ?></div>
+                <div class="vgt-kpi-label"><?php esc_html_e('MONITORED SCOPE', 'vgt-sentinel'); ?></div>
+            </div>
+            <div class="vgt-kpi-desc">
+                <?php esc_html_e('Lückenlose Überwachung von WordPress-Core, aktiven Plugins und installierten Themes.', 'vgt-sentinel'); ?>
+            </div>
+        </div>
+        <div class="vgt-glass-panel vgt-kpi-card" style="border-left: 3px solid var(--vis-blue); border-top: none;">
+            <div>
+                <div class="vgt-kpi-val" style="color: var(--vis-blue); font-size: 20px;">SHA-256</div>
+                <div class="vgt-kpi-label"><?php esc_html_e('HASH ENCRYPT ALGO', 'vgt-sentinel'); ?></div>
+            </div>
+            <div class="vgt-kpi-desc">
+                <?php esc_html_e('Kryptographische Prüfsummen schützen vor unbemerkter Code- und Shell-Injektion.', 'vgt-sentinel'); ?>
+            </div>
         </div>
     </div>
 
@@ -117,7 +159,7 @@ if ($status === 'clean' || $status === 'init') {
     <?php if(!$has_report): ?>
         <!-- EMPTY STATE -->
         <div class="vgt-glass-panel vgt-state-clean" style="border-color:var(--vgt-border);">
-            <svg class="vgt-icon" style="width:64px; height:64px; color:var(--vgt-text-muted); margin-bottom:20px; opacity:0.5;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <svg class="vgt-icon" style="width:64px; height:64px; color:var(--vgt-text-muted); margin-bottom:20px; opacity:0.5;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <h3><?php esc_html_e('AWAITING INITIALIZATION', 'vgt-sentinel'); ?></h3>
             <p><?php esc_html_e('Kein Integritäts-Bericht im System verzeichnet. Bitte starten Sie einen manuellen Baseline-Scan, um das Hashing-Netzwerk zu aktivieren.', 'vgt-sentinel'); ?></p>
         </div>
@@ -125,7 +167,10 @@ if ($status === 'clean' || $status === 'init') {
     <?php elseif($status === 'clean' || $status === 'init'): ?>
         <!-- SECURE STATE -->
         <div class="vgt-glass-panel vgt-state-clean" style="border-top:3px solid var(--vgt-neon-green);">
-            <svg class="vgt-icon vgt-state-clean-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <svg class="vgt-icon vgt-state-clean-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+            </svg>
             <h3><?php esc_html_e('SYSTEM SECURE', 'vgt-sentinel'); ?></h3>
             <p><?php esc_html_e('Alle überwachten Dateien stimmen exakt mit dem kryptographischen Manifest überein. Es wurden keine nicht-autorisierten Modifikationen (Zero-Day/Malware) im Dateisystem festgestellt.', 'vgt-sentinel'); ?></p>
         </div>
@@ -184,27 +229,27 @@ if ($status === 'clean' || $status === 'init') {
             <!-- DIRECT ANOMALY CATEGORY TABS -->
             <div class="vgt-anomaly-tabs-bar">
                 <button type="button" class="vgt-tab-btn vgt-tab-active" data-filter="all">
-                    <svg class="vgt-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <svg class="vgt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                     <span><?php esc_html_e('ALLE ANOMALIEN', 'vgt-sentinel'); ?></span>
                     <span class="vgt-tab-count"><?php echo (int)$count_all; ?></span>
                 </button>
                 <button type="button" class="vgt-tab-btn" data-filter="new">
-                    <svg class="vgt-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                    <svg class="vgt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
                     <span><?php esc_html_e('NEU', 'vgt-sentinel'); ?></span>
                     <span class="vgt-tab-count <?php echo $count_new > 0 ? 'vgt-count-new' : ''; ?>"><?php echo (int)$count_new; ?></span>
                 </button>
                 <button type="button" class="vgt-tab-btn" data-filter="modified">
-                    <svg class="vgt-icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    <svg class="vgt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                     <span><?php esc_html_e('MODIFIZIERT', 'vgt-sentinel'); ?></span>
                     <span class="vgt-tab-count <?php echo $count_modified > 0 ? 'vgt-count-mod' : ''; ?>"><?php echo (int)$count_modified; ?></span>
                 </button>
                 <button type="button" class="vgt-tab-btn" data-filter="deleted">
-                    <svg class="vgt-icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <svg class="vgt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     <span><?php esc_html_e('GELÖSCHT', 'vgt-sentinel'); ?></span>
                     <span class="vgt-tab-count <?php echo $count_deleted > 0 ? 'vgt-count-del' : ''; ?>"><?php echo (int)$count_deleted; ?></span>
                 </button>
                 <button type="button" class="vgt-tab-btn" data-filter="malware">
-                    <svg class="vgt-icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <svg class="vgt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                     <span><?php esc_html_e('MALWARE', 'vgt-sentinel'); ?></span>
                     <span class="vgt-tab-count <?php echo $count_malware > 0 ? 'vgt-count-alert' : ''; ?>"><?php echo (int)$count_malware; ?></span>
                 </button>
@@ -257,7 +302,7 @@ if ($status === 'clean' || $status === 'init') {
                         <td style="text-align:right;">
                             <div style="display:inline-flex; gap:8px;">
                                 <button type="button" class="vgt-btn vgt-btn-ghost vis-inspect-file" data-file="<?php echo esc_attr((string)($change['file'] ?? '')); ?>" style="padding:6px 10px; color:var(--vgt-text-main); border-color:var(--vgt-border);">
-                                    <svg class="vgt-icon" style="width:14px; height:14px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    <svg class="vgt-icon" style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     <?php esc_html_e('VIEW', 'vgt-sentinel'); ?>
                                 </button>
                             </div>
@@ -266,7 +311,7 @@ if ($status === 'clean' || $status === 'init') {
                 <?php endforeach; ?>
                     <tr id="vgt-tab-empty-notice" class="vgt-tab-empty-row" style="display: none;">
                         <td colspan="4">
-                            <svg class="vgt-icon" style="width:28px; height:28px; margin-bottom:8px; opacity:0.4;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            <svg class="vgt-icon" style="width:28px; height:28px; margin-bottom:8px; opacity:0.4;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                             <div><?php esc_html_e('Keine Anomalien in dieser Kategorie verzeichnet.', 'vgt-sentinel'); ?></div>
                         </td>
                     </tr>

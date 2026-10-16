@@ -27,6 +27,7 @@ final class NamespaceCompatibility {
         'VisionGaia\\GeDefense\\Core\\SecurityHealth' => ['includes/core/class-vis-security-health.php', ['VIS_Security_Health']],
         'VisionGaia\\GeDefense\\Core\\SecurityCenter' => ['includes/core/class-vis-security-center.php', ['VIS_Security_Center']],
         'VisionGaia\\GeDefense\\Core\\I18n' => ['includes/core/class-vis-i18n.php', ['VIS_I18n']],
+        'VisionGaia\\GeDefense\\Core\\GeoResolver' => ['includes/core/class-vis-geo-resolver.php', ['VIS_Geo_Resolver']],
         'VisionGaia\\GeDefense\\Compatibility\\Manager' => ['includes/compatibility/class-vis-compatibility-manager.php', ['VIS_Compatibility_Manager']],
         'VisionGaia\\GeDefense\\Dashboard\\Dashboard' => ['includes/dashboard/class-vis-dashboard-core.php', ['VIS_Dashboard_Core']],
         'VisionGaia\\GeDefense\\Dashboard\\View' => ['includes/dashboard/class-vis-dashboard-view.php', ['VIS_Dashboard_View']],

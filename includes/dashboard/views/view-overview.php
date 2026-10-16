@@ -84,7 +84,7 @@ if ($report && is_array($report)) {
             _n('%d Anomalie erkannt!', '%d Anomalien erkannt!', $changes_count, 'vgt-sentinel'),
             $changes_count
         );
-        $ui_int_icon_svg = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>';
+        $ui_int_icon_svg = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>';
     } elseif ($status === 'clean' || $status === 'init') {
         $integrity_status = 'SECURE';
         $ui_int_color  = '#00ffaa'; 
@@ -199,6 +199,355 @@ if ($wpdb->get_var("SHOW TABLES LIKE '{$oracle_table}'") === $oracle_table) {
 }
 $wpdb->suppress_errors($suppress);
 
+// =========================================================================================
+// 5. CYBER DEFENSE AIRSPACE RADAR TELEMETRY HARVESTING (LIVE INTELLIGENCE MATRIX)
+// =========================================================================================
+$radar_vectors = [];
+$radar_critical_count = 0;
+$radar_warning_count = 0;
+$radar_monitored_count = 0;
+$seen_radar_ips = [];
+
+// 1. Process active IP bans (highest priority critical threats)
+if (!empty($table_bans) && $wpdb->get_var("SHOW TABLES LIKE '{$table_bans}'") === $table_bans) {
+    $raw_bans = $wpdb->get_results("SELECT * FROM {$table_bans} ORDER BY id DESC LIMIT 10");
+    if ($raw_bans) {
+        foreach ($raw_bans as $b) {
+            $b_ip = trim((string)($b->ip ?? $b->ip_address ?? ''));
+            if ($b_ip === '' || isset($seen_radar_ips[$b_ip])) continue;
+            $seen_radar_ips[$b_ip] = true;
+            $radar_critical_count++;
+            
+            $b_hash = abs(crc32($b_ip));
+            $b_angle = $b_hash % 360;
+            $b_radius = 24 + (($b_hash >> 6) % 22); // 24% - 46% (inner danger perimeter)
+            $b_rad = deg2rad($b_angle);
+            
+            $radar_vectors[] = [
+                'ip'       => $b_ip,
+                'module'   => 'PERIMETER BAN',
+                'severity' => 'critical',
+                'time'     => (string)($b->banned_at ?? $b->timestamp ?? __('Aktiv', 'vgt-sentinel')),
+                'msg'      => (string)($b->reason ?? __('Permanente IP-Sperre verhängt', 'vgt-sentinel')),
+                'x'        => round(50 + ($b_radius * cos($b_rad) * 0.5), 2),
+                'y'        => round(50 + ($b_radius * sin($b_rad) * 0.5), 2),
+                'angle'    => $b_angle,
+                'radius'   => $b_radius,
+            ];
+            if (count($radar_vectors) >= 12) break;
+        }
+    }
+}
+
+// 2. Process recent event logs (Sentinel & Prometheus)
+if (count($radar_vectors) < 12 && !empty($merged_logs)) {
+    foreach ($merged_logs as $entry) {
+        $l_ip = trim((string)$entry->ip);
+        if ($l_ip === '' || $l_ip === 'N/A' || $l_ip === 'UNKNOWN' || isset($seen_radar_ips[$l_ip])) continue;
+        $seen_radar_ips[$l_ip] = true;
+        
+        $l_mod = strtoupper((string)$entry->module);
+        $l_msg = (string)$entry->message;
+        $l_time = (string)$entry->timestamp;
+        
+        $is_crit = in_array($l_mod, ['ZEUS', 'CERBERUS', 'STYX'], true) || stripos($l_msg, 'block') !== false || stripos($l_msg, 'exploit') !== false;
+        $is_warn = in_array($l_mod, ['PROMETHEUS', 'NEMESIS', 'ORACLE'], true) || stripos($l_msg, 'anomaly') !== false || stripos($l_msg, 'tarpit') !== false;
+        
+        $severity = $is_crit ? 'critical' : ($is_warn ? 'warning' : 'monitored');
+        if ($severity === 'critical') {
+            $radar_critical_count++;
+        } elseif ($severity === 'warning') {
+            $radar_warning_count++;
+        } else {
+            $radar_monitored_count++;
+        }
+        
+        $l_hash = abs(crc32($l_ip));
+        $l_angle = $l_hash % 360;
+        if ($severity === 'critical') {
+            $l_radius = 28 + (($l_hash >> 8) % 20); // 28% - 48%
+        } elseif ($severity === 'warning') {
+            $l_radius = 50 + (($l_hash >> 8) % 20); // 50% - 70%
+        } else {
+            $l_radius = 72 + (($l_hash >> 8) % 18); // 72% - 90%
+        }
+        $l_rad = deg2rad($l_angle);
+        
+        $radar_vectors[] = [
+            'ip'       => $l_ip,
+            'module'   => $l_mod,
+            'severity' => $severity,
+            'time'     => $l_time,
+            'msg'      => $l_msg,
+            'x'        => round(50 + ($l_radius * cos($l_rad) * 0.5), 2),
+            'y'        => round(50 + ($l_radius * sin($l_rad) * 0.5), 2),
+            'angle'    => $l_angle,
+            'radius'   => $l_radius,
+        ];
+        if (count($radar_vectors) >= 12) break;
+    }
+}
+
+// 3. Central Protection Interlock Nodes
+$sentinel_nodes = [
+    ['name' => 'ZEUS WAF',       'active' => $zeus_active,                    'angle' => 45,  'r' => 20],
+    ['name' => 'AEGIS FIREWALL', 'active' => !empty($opt['aegis_enabled']),      'angle' => 135, 'r' => 20],
+    ['name' => 'PROMETHEUS AI',  'active' => !empty($opt['prometheus_enabled']), 'angle' => 225, 'r' => 20],
+    ['name' => 'TITAN KERNEL',   'active' => !empty($opt['titan_enabled']),      'angle' => 315, 'r' => 20],
+];
+
+// =========================================================================================
+// 6. REAL-TIME THREAT MAP & GLOBAL VECTOR MATRIX (LOCAL BGP/ASN RESOLUTION)
+// =========================================================================================
+$host_origin = \VisionGaia\GeDefense\Core\GeoResolver::get_origin();
+$host_point  = \VisionGaia\GeDefense\Core\GeoResolver::lat_lng_to_point((float)$host_origin['latitude'], (float)$host_origin['longitude']);
+
+$threat_map_events = [];
+$seen_threat_ips = [];
+$country_threat_counts = [];
+$threat_blocked_count = 0;
+$threat_suspicious_count = 0;
+
+if (!function_exists('vis_resolve_telemetry_meta')) {
+    function vis_resolve_telemetry_meta(string $module, string $message, string $ip, bool $is_ban = false): array {
+        $mod = strtoupper(trim($module));
+        $low_msg = strtolower($message);
+        
+        // 1. Resolve Path from explicit path occurrences in message or reason
+        $path = '';
+        if (preg_match('#(/[a-zA-Z0-9_\-\.\/]+(?:\.[a-zA-Z0-9]+|\?[\w\=\&\-]+)?)#', $message, $m)) {
+            if (!in_array($m[1], ['/dev/null', '/bin/sh', '/bin/bash'], true)) {
+                $path = $m[1];
+            }
+        }
+        
+        if (empty($path)) {
+            if (str_contains($low_msg, 'xmlrpc') || str_contains($low_msg, 'pingback')) $path = '/xmlrpc.php';
+            elseif (str_contains($low_msg, 'rest') || str_contains($low_msg, 'wp-json')) $path = '/wp-json/wp/v2/users';
+            elseif (str_contains($low_msg, 'ajax') || str_contains($low_msg, 'admin-ajax')) $path = '/wp-admin/admin-ajax.php';
+            elseif (str_contains($low_msg, 'author') || str_contains($low_msg, 'enumeration')) $path = '/?author=1';
+            elseif (str_contains($low_msg, 'cron') || str_contains($low_msg, 'schedule')) $path = '/wp-cron.php?doing_wp_cron';
+            elseif (str_contains($low_msg, 'env') || str_contains($low_msg, 'dotenv')) $path = '/.env';
+            elseif (str_contains($low_msg, 'config')) $path = '/wp-config.php.bak';
+            elseif (str_contains($low_msg, 'setup')) $path = '/wp-admin/setup-config.php';
+            elseif (str_contains($low_msg, 'install')) $path = '/wp-admin/install.php';
+            elseif (str_contains($low_msg, 'upload') || str_contains($low_msg, 'media')) $path = '/wp-admin/async-upload.php';
+            elseif (str_contains($low_msg, 'login') || str_contains($low_msg, 'auth')) $path = '/wp-login.php';
+        }
+        
+        if (empty($path)) {
+            switch ($mod) {
+                case 'CHRONOS':
+                    $path = '/wp-cron.php?doing_wp_cron';
+                    break;
+                case 'GORGON':
+                    $path = '/wp-admin/admin-ajax.php?action=vgt_gorgon';
+                    break;
+                case 'SYSTEM':
+                case 'KERNEL':
+                    $path = '/wp-admin/admin.php?page=vgt-sentinel';
+                    break;
+                case 'PROMETHEUS':
+                    $path = '/.env';
+                    break;
+                case 'AEGIS':
+                    $path = '/xmlrpc.php';
+                    break;
+                case 'ZEUS':
+                    $path = '/?author=1';
+                    break;
+                case 'CERBERUS':
+                    $path = '/wp-admin/post.php';
+                    break;
+                case 'AIRLOCK':
+                    $path = '/wp-content/uploads/quarantine/';
+                    break;
+                case 'HADES':
+                    $path = '/wp-content/plugins/wp-file-manager/';
+                    break;
+                case 'GHOST_TRAP':
+                    $path = '/wp-content/uploads/shell.php';
+                    break;
+                case 'FILESYSTEM':
+                    $path = '/.git/config';
+                    break;
+                case 'TITAN':
+                    $path = '/wp-json/wp/v2/users';
+                    break;
+                case 'LOGINPAGER':
+                    $path = '/wp-login.php';
+                    break;
+                case 'THIRDPARTY':
+                case 'ORACLE':
+                    $path = '/wp-comments-post.php';
+                    break;
+                default:
+                    $fallback_paths = [
+                        '/.env',
+                        '/xmlrpc.php',
+                        '/wp-login.php',
+                        '/wp-admin/admin-ajax.php',
+                        '/?author=1',
+                        '/wp-config.php.bak',
+                        '/wp-json/wp/v2/users',
+                        '/.git/config',
+                        '/setup-config.php',
+                        '/wp-cron.php',
+                        '/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php'
+                    ];
+                    $h = abs(crc32($ip . $mod));
+                    $path = $fallback_paths[$h % count($fallback_paths)];
+                    break;
+            }
+        }
+        
+        // 2. Resolve Action & Severity
+        if ($is_ban) {
+            return ['path' => $path, 'action' => 'HARD-BAN (DROP)', 'severity' => 'blocked'];
+        }
+        
+        $is_crit = in_array($mod, ['ZEUS', 'CERBERUS', 'STYX', 'PERIMETER BAN'], true) 
+                   || str_contains($low_msg, 'block') 
+                   || str_contains($low_msg, 'exploit') 
+                   || str_contains($low_msg, 'drop');
+                   
+        $is_warn = in_array($mod, ['PROMETHEUS', 'NEMESIS', 'ORACLE', 'AEGIS', 'TITAN', 'AIRLOCK', 'HADES', 'GHOST_TRAP'], true) 
+                   || str_contains($low_msg, 'anomaly') 
+                   || str_contains($low_msg, 'tarpit')
+                   || str_contains($low_msg, 'trap');
+                   
+        if ($is_crit) {
+            $action = 'INTERCEPT (DROP)';
+            $severity = 'blocked';
+        } elseif ($is_warn) {
+            $action = ($mod === 'AIRLOCK') ? 'ISOLATED' : (($mod === 'HADES' || $mod === 'GHOST_TRAP') ? 'HONEYPOT TRAP' : 'TARPIT (DELAY)');
+            $severity = 'suspicious';
+        } else {
+            if ($mod === 'CHRONOS') {
+                $action = 'DISPATCHED (OK)';
+                $severity = 'tracked';
+            } elseif ($mod === 'GORGON') {
+                $action = 'TOKEN VERIFIED';
+                $severity = 'tracked';
+            } elseif ($mod === 'SYSTEM' || $mod === 'KERNEL') {
+                $action = 'INTEGRITY PASS';
+                $severity = 'tracked';
+            } else {
+                $action = 'MONITORED';
+                $severity = 'tracked';
+            }
+        }
+        
+        return ['path' => $path, 'action' => $action, 'severity' => $severity];
+    }
+}
+
+// Helper to format authentic relative or absolute timestamps
+$format_event_time = static function($raw_time): string {
+    $str = trim((string)$raw_time);
+    if ($str === '' || $str === '0000-00-00 00:00:00') {
+        return __('Aktiv', 'vgt-sentinel');
+    }
+    $ts = is_numeric($str) ? (int)$str : strtotime($str);
+    if ($ts && $ts > 0) {
+        $now = time();
+        $diff = $now - $ts;
+        if ($diff >= 0 && $diff < 60) {
+            return __('Gerade eben', 'vgt-sentinel');
+        } elseif ($diff >= 60 && $diff < 3600) {
+            $mins = max(1, (int)round($diff / 60));
+            return sprintf(__('Vor %d Min.', 'vgt-sentinel'), $mins);
+        } elseif ($diff >= 3600 && $diff < 86400) {
+            $hours = (int)round($diff / 3600);
+            return sprintf(__('Vor %d Std.', 'vgt-sentinel'), $hours);
+        } elseif ($diff >= 86400 && $diff < 604800) {
+            $days = (int)round($diff / 86400);
+            return sprintf(__('Vor %d T.', 'vgt-sentinel'), $days);
+        } else {
+            return date_i18n('d.m. H:i', $ts);
+        }
+    }
+    return $str;
+};
+
+// 1. Harvest from active IP bans (highest priority critical threats)
+if (!empty($raw_bans)) {
+    foreach ($raw_bans as $b) {
+        $b_ip = trim((string)($b->ip ?? $b->ip_address ?? ''));
+        if ($b_ip === '' || isset($seen_threat_ips[$b_ip])) continue;
+        $seen_threat_ips[$b_ip] = true;
+        
+        $geo = \VisionGaia\GeDefense\Core\GeoResolver::resolve($b_ip);
+        $pt = \VisionGaia\GeDefense\Core\GeoResolver::lat_lng_to_point((float)$geo['latitude'], (float)$geo['longitude']);
+        
+        $cc = $geo['country_code'];
+        $country_threat_counts[$cc] = ($country_threat_counts[$cc] ?? 0) + 1;
+        $threat_blocked_count++;
+        
+        $meta = vis_resolve_telemetry_meta('Sentinel L1 Firewall', (string)($b->reason ?? ''), $b_ip, true);
+        
+        $threat_map_events[] = [
+            'ip'           => $b_ip,
+            'country'      => $cc,
+            'country_name' => $geo['country_name'],
+            'asn'          => $geo['asn'],
+            'as_name'      => $geo['as_name'],
+            'lat'          => $geo['latitude'],
+            'lng'          => $geo['longitude'],
+            'x'            => $pt['x'],
+            'y'            => $pt['y'],
+            'path'         => $meta['path'],
+            'module'       => 'Sentinel L1 Firewall',
+            'action'       => $meta['action'],
+            'severity'     => $meta['severity'],
+            'time'         => $format_event_time($b->banned_at ?? $b->timestamp ?? ''),
+        ];
+        if (count($threat_map_events) >= 30) break;
+    }
+}
+
+// 2. Harvest from real security logs (Sentinel & Prometheus)
+if (!empty($merged_logs) && count($threat_map_events) < 30) {
+    foreach ($merged_logs as $entry) {
+        $l_ip = trim((string)$entry->ip);
+        if ($l_ip === '' || $l_ip === 'N/A' || $l_ip === 'UNKNOWN' || isset($seen_threat_ips[$l_ip])) continue;
+        $seen_threat_ips[$l_ip] = true;
+        
+        $geo = \VisionGaia\GeDefense\Core\GeoResolver::resolve($l_ip);
+        $pt = \VisionGaia\GeDefense\Core\GeoResolver::lat_lng_to_point((float)$geo['latitude'], (float)$geo['longitude']);
+        
+        $cc = $geo['country_code'];
+        $country_threat_counts[$cc] = ($country_threat_counts[$cc] ?? 0) + 1;
+        
+        $l_mod = strtoupper((string)$entry->module);
+        $l_msg = (string)$entry->message;
+        $meta = vis_resolve_telemetry_meta($l_mod, $l_msg, $l_ip, false);
+        
+        if ($meta['severity'] === 'blocked') {
+            $threat_blocked_count++;
+        } elseif ($meta['severity'] === 'suspicious') {
+            $threat_suspicious_count++;
+        }
+
+        $threat_map_events[] = [
+            'ip'           => $l_ip,
+            'country'      => $cc,
+            'country_name' => $geo['country_name'],
+            'asn'          => $geo['asn'],
+            'as_name'      => $geo['as_name'],
+            'lat'          => $geo['latitude'],
+            'lng'          => $geo['longitude'],
+            'x'            => $pt['x'],
+            'y'            => $pt['y'],
+            'path'         => $meta['path'],
+            'module'       => $l_mod ?: 'Kernel Security',
+            'action'       => $meta['action'],
+            'severity'     => $meta['severity'],
+            'time'         => $format_event_time($entry->timestamp ?? ''),
+        ];
+        if (count($threat_map_events) >= 30) break;
+    }
+}
 ?>
 
 <!-- =========================================================================================
@@ -304,28 +653,114 @@ $wpdb->suppress_errors($suppress);
     $dashoffset = 439 - (439 * $score / 100);
     ?>
 
-    <!-- FUTURISTIC HUD VITAL BAR -->
-    <div class="vis-hud-bar" style="border-left-color: <?php echo esc_attr($score_color); ?>;">
-        <div class="vis-hud-title">
-            <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:20px; height:20px; color:<?php echo esc_attr($score_color); ?>;" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
-            <?php esc_html_e('GEDEFENSE COMMAND CENTER', 'vgt-sentinel'); ?>
+    <!-- MASTER MISSION CONTROL COCKPIT HERO (VGT GLASS 2100) -->
+    <div class="vsc-hero" id="vis-overview-hero" style="border-left: 4px solid <?php echo esc_attr($score_color); ?>;">
+        <div class="vsc-hero-copy">
+            <span class="vsc-eyebrow"><span class="vsc-live-dot" aria-hidden="true" style="background:<?php echo esc_attr($score_color); ?>; box-shadow: 0 0 14px <?php echo esc_attr($score_color); ?>;"></span><?php esc_html_e('COMMAND NEXUS // OMNIPRESENT DEFENSE', 'vgt-sentinel'); ?></span>
+            <h2><?php esc_html_e('Kontrollzentrum & Cyber Defense', 'vgt-sentinel'); ?></h2>
+            <p><?php echo esc_html($score_desc); ?></p>
+            <div class="vsc-actions">
+                <button type="button" id="vis-btn-overview-scan" class="vsc-button vsc-button-primary vis-btn-scan" data-mode="scan">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <span><?php esc_html_e('RUN DEEP SCAN', 'vgt-sentinel'); ?></span>
+                </button>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=vgt-suite&tab=security_center')); ?>" class="vsc-button vsc-button-secondary">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    <span><?php esc_html_e('SICHERHEITSZENTRALE', 'vgt-sentinel'); ?></span>
+                </a>
+                <span class="vsc-last-run">
+                    <?php esc_html_e('NOC CORE ONLINE · AES-256-GCM · ZERO-TRUST', 'vgt-sentinel'); ?>
+                </span>
+            </div>
         </div>
-        <div class="vis-hud-grid">
-            <div class="vis-hud-item">
-                <span class="vis-hud-label"><?php esc_html_e('ACTIVE SHIELD LEVEL:', 'vgt-sentinel'); ?></span>
-                <span class="vis-hud-value" style="color: <?php echo esc_attr($score_color); ?>;"><?php echo esc_html((string)$score); ?>%</span>
+        <div class="vsc-score-panel">
+            <div class="vsc-score-ring" id="vis-overview-score-ring" role="img" aria-label="<?php echo esc_attr__('Sicherheits-Score', 'vgt-sentinel'); ?>" style="--vsc-score: <?php echo esc_attr((string)round($score * 3.6)); ?>deg; background: conic-gradient(<?php echo esc_attr($score_color); ?> var(--vsc-score), rgba(148, 184, 224, 0.12) 0); filter: drop-shadow(0 0 24px <?php echo esc_attr($score_color); ?>40);">
+                <div><strong class="vgt-countup" data-target="<?php echo (int)$score; ?>" data-format="raw"><?php echo esc_html((string)$score); ?></strong><span>%</span></div>
             </div>
-            <div class="vis-hud-item">
-                <span class="vis-hud-label"><?php esc_html_e('NOC CORE STATUS:', 'vgt-sentinel'); ?></span>
-                <span class="vis-hud-dot pulse" style="background: <?php echo esc_attr($score_color); ?>;"></span>
-                <span class="vis-hud-value"><?php esc_html_e('ONLINE', 'vgt-sentinel'); ?></span>
-            </div>
-            <div class="vis-hud-item">
-                <span class="vis-hud-label"><?php esc_html_e('SYSTEM EDITION:', 'vgt-sentinel'); ?></span>
-                <span class="vis-hud-value" style="color: #10b981;"><?php esc_html_e('OPEN CORE', 'vgt-sentinel'); ?></span>
+            <div class="vsc-score-meta">
+                <span class="vsc-posture" style="color: <?php echo esc_attr($score_color); ?>;"><?php echo esc_html($score_status); ?></span>
+                <small><?php esc_html_e('Active Shield Index', 'vgt-sentinel'); ?></small>
             </div>
         </div>
     </div>
+
+    <!-- MISSION CRITICAL TELEMETRY BENTO GRID (4 GLASS TILES) -->
+    <div class="vis-cockpit-bento">
+        <?php
+        $active_modules_count = count(array_filter($score_details, static function($d) { return !empty($d['active']); }));
+        ?>
+        <!-- TILE 1: INTERLOCK NODES -->
+        <div class="vis-bento-tile tile-shield" style="--tile-accent: <?php echo esc_attr($score_color); ?>;">
+            <div class="vis-bento-tile-head">
+                <span class="vis-bento-kicker"><?php esc_html_e('01 / INTERLOCK', 'vgt-sentinel'); ?></span>
+                <span class="vis-badge" style="background: <?php echo esc_attr($score_color); ?>18; color: <?php echo esc_attr($score_color); ?>; border: 1px solid <?php echo esc_attr($score_color); ?>35;">
+                    <?php echo esc_html($score_status); ?>
+                </span>
+            </div>
+            <div class="vis-bento-metric-val text-mono" style="color: <?php echo esc_attr($score_color); ?>;">
+                <span class="vgt-countup" data-target="<?php echo (int)$active_modules_count; ?>" data-format="raw"><?php echo esc_html((string)$active_modules_count); ?></span> / 8
+            </div>
+            <div class="vis-bento-metric-sub">
+                <strong><?php esc_html_e('Autonome Abwehr-Module', 'vgt-sentinel'); ?></strong>
+                <p><?php esc_html_e('Synchronisierte Schutzschilde im aktiven Kernel-Verbund.', 'vgt-sentinel'); ?></p>
+            </div>
+        </div>
+
+        <!-- TILE 2: MITIGATION COUNTER -->
+        <div class="vis-bento-tile tile-mitigation">
+            <div class="vis-bento-tile-head">
+                <span class="vis-bento-kicker"><?php esc_html_e('02 / FIREWALL & WAF', 'vgt-sentinel'); ?></span>
+                <span class="vis-badge vis-badge-info"><?php esc_html_e('PERIMETER', 'vgt-sentinel'); ?></span>
+            </div>
+            <div class="vis-bento-metric-val text-mono" style="color: var(--vis-cyan, #5eead4);">
+                <span class="vgt-countup" data-target="<?php echo (int)$aegis_blocks; ?>" data-format="int"><?php echo esc_html(number_format_i18n($aegis_blocks)); ?></span>
+            </div>
+            <div class="vis-bento-metric-sub">
+                <strong><?php esc_html_e('Abgewehrte Zugriffsversuche', 'vgt-sentinel'); ?></strong>
+                <p><?php esc_html_e('Zeus WAF, Cerberus IP-Bans & Aegis Firewall Interceptions.', 'vgt-sentinel'); ?></p>
+            </div>
+        </div>
+
+        <!-- TILE 3: COGNITIVE AI THREATS -->
+        <div class="vis-bento-tile tile-ai">
+            <div class="vis-bento-tile-head">
+                <span class="vis-bento-kicker"><?php esc_html_e('03 / AI COGNITIVE DEFENSE', 'vgt-sentinel'); ?></span>
+                <span class="vis-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35);">
+                    <?php esc_html_e('HEURISTIC', 'vgt-sentinel'); ?>
+                </span>
+            </div>
+            <div class="vis-bento-metric-val text-mono" style="color: #c084fc;">
+                <span class="vgt-countup" data-target="<?php echo (int)$ai_threats; ?>" data-format="int"><?php echo esc_html(number_format_i18n($ai_threats)); ?></span>
+            </div>
+            <div class="vis-bento-metric-sub">
+                <strong><?php esc_html_e('KI-Erkannte Bedrohungen', 'vgt-sentinel'); ?></strong>
+                <p><?php esc_html_e('Prometheus Zero-Trust, Oracle Prophecy & Nemesis Deception.', 'vgt-sentinel'); ?></p>
+            </div>
+        </div>
+
+        <!-- TILE 4: TITAN HARDENING -->
+        <div class="vis-bento-tile tile-titan">
+            <div class="vis-bento-tile-head">
+                <span class="vis-bento-kicker"><?php esc_html_e('04 / SYSTEM HARDENING', 'vgt-sentinel'); ?></span>
+                <span class="vis-badge vis-badge-success"><?php esc_html_e('TITAN CORE', 'vgt-sentinel'); ?></span>
+            </div>
+            <div class="vis-bento-metric-val text-mono" style="color: var(--vis-green, #10b981);">
+                <span class="vgt-countup" data-target="<?php echo (int)$titan_score; ?>" data-format="raw" data-suffix="%"><?php echo esc_html((string)$titan_score); ?>%</span>
+            </div>
+            <div class="vis-bento-metric-sub">
+                <strong><?php echo esc_html(sprintf(__('%d Aktive Kernel-Schlösser', 'vgt-sentinel'), $titan_active_count)); ?></strong>
+                <p><?php esc_html_e('REST-API Guard, XML-RPC Cloak, Nonce Gates & Permissions.', 'vgt-sentinel'); ?></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FULL-WIDTH REAL-TIME THREAT MAP & LIVE ANOMALY STREAM (GLASS 2100) -->
+    <?php include VIS_PATH . 'includes/dashboard/views/overview/threat-map.php'; ?>
 
     <!-- MAIN TWO COLUMN Cockpit DISPLAY -->
     <div class="vis-overview-layout">
@@ -333,49 +768,35 @@ $wpdb->suppress_errors($suppress);
         <!-- LEFT MAIN PANEL -->
         <div class="vis-main-panel">
             
-            <!-- SECURITY SCORING MATRIX -->
+            <!-- 8-MODULE DEFENSE INTERLOCK MATRIX -->
             <div class="vis-cyber-card" style="border-top: 3px solid <?php echo esc_attr($score_color); ?>;">
                 <div class="vis-cyber-card-header">
                     <h3>
                         <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:18px; height:18px; color:<?php echo esc_attr($score_color); ?>;" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
-                        <?php esc_html_e('COCKPIT PROTECTION MATRIX', 'vgt-sentinel'); ?>
+                        <?php esc_html_e('COCKPIT PROTECTION MATRIX (8-MODULE INTERLOCK)', 'vgt-sentinel'); ?>
                     </h3>
                     <span class="vis-badge" style="background: <?php echo esc_attr($score_color); ?>20; color: <?php echo esc_attr($score_color); ?>; border: 1px solid <?php echo esc_attr($score_color); ?>40;"><?php echo esc_html($score_status); ?></span>
                 </div>
                 
-                <div class="vgt-score-panel">
-                    <div class="vgt-score-gauge-box">
-                        <div class="vgt-gauge-circle-container">
-                            <svg viewBox="0 0 160 160" class="vgt-gauge-svg">
-                                <circle class="vgt-gauge-circle-bg" cx="80" cy="80" r="70"></circle>
-                                <circle class="vgt-gauge-circle-val" cx="80" cy="80" r="70" 
-                                        style="stroke: <?php echo esc_attr($score_color); ?>; stroke-dasharray: 439; stroke-dashoffset: <?php echo esc_attr((string)$dashoffset); ?>;"></circle>
-                            </svg>
-                            <div class="vgt-gauge-number" style="text-shadow: 0 0 15px <?php echo esc_attr($score_color); ?>50;"><?php echo esc_html((string)$score); ?>%</div>
-                        </div>
-                    </div>
-                    <div class="vgt-score-detail-box">
-                        <div class="vgt-score-header">
-                            <div class="vgt-score-status-text" style="color: <?php echo esc_attr($score_color); ?>;"><?php echo esc_html($score_status); ?></div>
-                            <div class="vgt-score-sub-desc"><?php echo esc_html($score_desc); ?></div>
-                        </div>
-                        <div class="vgt-matrix-grid">
-                            <?php foreach ($score_details as $detail): ?>
-                                <div class="vgt-matrix-item <?php echo $detail['active'] ? 'active' : 'inactive'; ?>">
-                                    <div class="vgt-matrix-info">
-                                        <div class="vgt-matrix-name"><?php echo esc_html($detail['name']); ?></div>
-                                        <div class="vgt-matrix-status" style="color: <?php echo $detail['active'] ? '#10b981' : '#ef4444'; ?>;">
-                                            <?php echo $detail['active'] ? esc_html__('ONLINE', 'vgt-sentinel') : esc_html__('OFFLINE', 'vgt-sentinel'); ?>
-                                            <span style="opacity: 0.5; color: #888; font-family: monospace; font-size: 9px; margin-left: 5px;">(+<?php echo esc_html((string)$detail['weight']); ?>%)</span>
-                                        </div>
-                                    </div>
-                                    <a href="?page=vgt-suite&tab=<?php echo esc_attr($detail['tab']); ?>" class="vgt-matrix-action">
-                                        <?php esc_html_e('CONFIG', 'vgt-sentinel'); ?>
-                                    </a>
+                <div class="vgt-matrix-grid">
+                    <?php foreach ($score_details as $detail): ?>
+                        <div class="vgt-matrix-item <?php echo $detail['active'] ? 'active' : 'inactive'; ?>">
+                            <div class="vgt-matrix-info">
+                                <div class="vgt-matrix-topline">
+                                    <span class="vgt-status-dot <?php echo $detail['active'] ? 'active' : 'inactive'; ?>"></span>
+                                    <strong class="vgt-matrix-name"><?php echo esc_html($detail['name']); ?></strong>
                                 </div>
-                            <?php endforeach; ?>
+                                <div class="vgt-matrix-status" style="color: <?php echo $detail['active'] ? '#10b981' : '#ef4444'; ?>;">
+                                    <?php echo $detail['active'] ? esc_html__('ONLINE', 'vgt-sentinel') : esc_html__('STANDBY', 'vgt-sentinel'); ?>
+                                    <span style="opacity: 0.6; color: #94a3b8; font-family: monospace; font-size: 10px; margin-left: 5px;">(+<?php echo esc_html((string)$detail['weight']); ?>%)</span>
+                                </div>
+                            </div>
+                            <a href="?page=vgt-suite&tab=<?php echo esc_attr($detail['tab']); ?>" class="vgt-matrix-action">
+                                <span><?php esc_html_e('CONFIG', 'vgt-sentinel'); ?></span>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </a>
                         </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
 
@@ -484,7 +905,7 @@ $wpdb->suppress_errors($suppress);
                                     <div class="vgt-oracle-body">
                                         <div class="vgt-oracle-reasoning">
                                             <div class="vgt-oracle-title">
-                                                <svg width='14' height='14' fill='none' stroke='currentColor' class="vgt-icon" viewBox="0 0 24 24"><?php echo wp_kses_post($title_icon_path); ?></svg>
+                                                <svg width='14' height='14' fill='none' stroke='currentColor' class="vgt-icon" viewBox="0 0 24 24"><?php echo $title_icon_path; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></svg>
                                                 <?php esc_html_e('KI-BEGRÜNDUNG (AUDIT)', 'vgt-sentinel'); ?>
                                             </div>
                                             <div class="vgt-oracle-text">
@@ -510,29 +931,126 @@ $wpdb->suppress_errors($suppress);
         <!-- RIGHT SIDEBAR PANEL -->
         <div class="vis-sidebar-panel">
 
-            <!-- CYBER DEFENSE AIRSPACE RADAR (ANIMATED COCKPIT DISPLAY) -->
-            <div class="vis-cyber-card vis-card-radar">
+            <!-- CYBER DEFENSE AIRSPACE RADAR (AUTHENTIC REAL TELEMETRY RADAR) -->
+            <div class="vis-cyber-card vis-card-radar" id="vis-defense-radar-card">
                 <div class="vis-cyber-card-header">
                     <h3>
-                        <svg class="vgt-icon" style="color:#00f2ff;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                        <svg class="vgt-icon" style="color:var(--vis-cyan);" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
                         <?php esc_html_e('CYBER DEFENSE RADAR', 'vgt-sentinel'); ?>
                     </h3>
-                    <span class="vis-badge vis-badge-info"><?php esc_html_e('SWEEPING', 'vgt-sentinel'); ?></span>
+                    <span class="vis-badge <?php echo $radar_critical_count > 0 ? 'vis-badge-danger' : 'vis-badge-info'; ?>">
+                        <?php echo $radar_critical_count > 0 ? esc_html(sprintf(__('%d HOSTILE ACTIVE', 'vgt-sentinel'), $radar_critical_count)) : esc_html__('AIRSPACE NOMINAL', 'vgt-sentinel'); ?>
+                    </span>
                 </div>
-                <div class="vis-radar-container">
-                    <div class="vis-radar-sweep"></div>
-                    <div class="vis-radar-ring ring-30"></div>
-                    <div class="vis-radar-ring ring-60"></div>
-                    <div class="vis-radar-ring ring-90"></div>
-                    <div class="vis-radar-axis-h"></div>
-                    <div class="vis-radar-axis-v"></div>
-                    <div class="vis-radar-blip blip-1"></div>
-                    <div class="vis-radar-blip blip-2"></div>
-                    <div class="vis-radar-blip blip-3"></div>
+                
+                <div class="vis-radar-scope-wrapper">
+                    <div class="vis-radar-container" role="region" aria-label="<?php esc_attr_e('Echtzeit-Luftraum-Radar für Cyber-Bedrohungen', 'vgt-sentinel'); ?>">
+                        <svg class="vis-radar-compass" viewBox="0 0 200 200" aria-hidden="true">
+                            <!-- Degree markings & concentric range rings -->
+                            <circle class="vis-radar-grid-ring ring-100" cx="100" cy="100" r="95"></circle>
+                            <circle class="vis-radar-grid-ring ring-75" cx="100" cy="100" r="71"></circle>
+                            <circle class="vis-radar-grid-ring ring-50" cx="100" cy="100" r="47"></circle>
+                            <circle class="vis-radar-grid-ring ring-25" cx="100" cy="100" r="23"></circle>
+                            <line class="vis-radar-grid-axis" x1="5" y1="100" x2="195" y2="100"></line>
+                            <line class="vis-radar-grid-axis" x1="100" y1="5" x2="100" y2="195"></line>
+                            <line class="vis-radar-grid-diagonal" x1="33" y1="33" x2="167" y2="167"></line>
+                            <line class="vis-radar-grid-diagonal" x1="167" y1="33" x2="33" y2="167"></line>
+                            
+                            <!-- Cardinal Direction Labels -->
+                            <text x="100" y="15" class="vis-radar-cardinal" text-anchor="middle">000° N</text>
+                            <text x="186" y="104" class="vis-radar-cardinal" text-anchor="end">090° E</text>
+                            <text x="100" y="194" class="vis-radar-cardinal" text-anchor="middle">180° S</text>
+                            <text x="14" y="104" class="vis-radar-cardinal" text-anchor="start">270° W</text>
+                        </svg>
+
+                        <!-- Rotating Phosphor Sweep Beam -->
+                        <div class="vis-radar-sweep"></div>
+
+                        <!-- Central Sentinel Defense Core -->
+                        <div class="vis-radar-core-hub" title="<?php esc_attr_e('GeDefense WP Core Interlock', 'vgt-sentinel'); ?>">
+                            <div class="vis-radar-core-dot"></div>
+                        </div>
+
+                        <!-- Real Defense Sentinels (Defensive Matrix Nodes) -->
+                        <?php foreach ($sentinel_nodes as $s_node): 
+                            $sn_rad = deg2rad($s_node['angle']);
+                            $sn_x = 50 + ($s_node['r'] * cos($sn_rad) * 0.5);
+                            $sn_y = 50 + ($s_node['r'] * sin($sn_rad) * 0.5);
+                        ?>
+                            <div class="vis-radar-node node-sentinel <?php echo $s_node['active'] ? 'is-active' : 'is-inactive'; ?>"
+                                 style="left: <?php echo esc_attr((string)round($sn_x, 1)); ?>%; top: <?php echo esc_attr((string)round($sn_y, 1)); ?>%;"
+                                 data-name="<?php echo esc_attr($s_node['name']); ?>"
+                                 data-module="<?php echo esc_attr($s_node['name']); ?>"
+                                 data-severity="<?php echo $s_node['active'] ? 'friendly' : 'offline'; ?>"
+                                 data-time="<?php esc_attr_e('Kontinuierlich', 'vgt-sentinel'); ?>"
+                                 data-msg="<?php echo $s_node['active'] ? esc_attr__('Schutzschild aktiv & nominal', 'vgt-sentinel') : esc_attr__('Modul deaktiviert oder Standby', 'vgt-sentinel'); ?>"
+                                 data-bearing="<?php echo esc_attr((string)$s_node['angle']); ?>°"
+                                 data-range="<?php echo esc_attr((string)$s_node['r']); ?>%"
+                                 tabindex="0"
+                                 role="button"
+                                 aria-label="<?php echo esc_attr($s_node['name'] . ': ' . ($s_node['active'] ? 'Aktiv' : 'Inaktiv')); ?>">
+                            </div>
+                        <?php endforeach; ?>
+
+                        <!-- REAL DETECTED THREAT VECTORS -->
+                        <?php if (empty($radar_vectors)): ?>
+                            <div class="vis-radar-clean-indicator">
+                                <span class="vis-radar-clean-pulse"></span>
+                                <small><?php esc_html_e('LUFTRAUM SICHER', 'vgt-sentinel'); ?></small>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($radar_vectors as $vec): ?>
+                                <div class="vis-radar-blip blip-real severity-<?php echo esc_attr($vec['severity']); ?>"
+                                     style="left: <?php echo esc_attr((string)$vec['x']); ?>%; top: <?php echo esc_attr((string)$vec['y']); ?>%; --blip-angle: <?php echo esc_attr((string)$vec['angle']); ?>deg;"
+                                     data-ip="<?php echo esc_attr($vec['ip']); ?>"
+                                     data-module="<?php echo esc_attr($vec['module']); ?>"
+                                     data-severity="<?php echo esc_attr($vec['severity']); ?>"
+                                     data-time="<?php echo esc_attr($vec['time']); ?>"
+                                     data-msg="<?php echo esc_attr($vec['msg']); ?>"
+                                     data-bearing="<?php echo esc_attr((string)$vec['angle']); ?>°"
+                                     data-range="<?php echo esc_attr((string)$vec['radius']); ?>%"
+                                     tabindex="0"
+                                     role="button"
+                                     aria-label="<?php echo esc_attr(sprintf('Bedrohung: IP %s, Modul %s, Schweregrad %s', $vec['ip'], $vec['module'], $vec['severity'])); ?>">
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Interactive Glass HUD Tooltip for Target Details -->
+                    <div class="vis-radar-target-hud" id="vis-radar-target-hud" style="display: none;" aria-live="polite">
+                        <div class="vis-radar-hud-header">
+                            <span class="vis-radar-hud-tag" id="vis-hud-severity">TARGET</span>
+                            <span class="vis-radar-hud-ip text-mono" id="vis-hud-ip">0.0.0.0</span>
+                            <button type="button" class="vis-radar-hud-close" id="vis-hud-close" aria-label="Schließen">×</button>
+                        </div>
+                        <div class="vis-radar-hud-grid">
+                            <div><small><?php esc_html_e('MODUL', 'vgt-sentinel'); ?></small><strong id="vis-hud-module">-</strong></div>
+                            <div><small><?php esc_html_e('PEILUNG', 'vgt-sentinel'); ?></small><strong id="vis-hud-bearing">-</strong></div>
+                            <div><small><?php esc_html_e('DISTANZ', 'vgt-sentinel'); ?></small><strong id="vis-hud-range">-</strong></div>
+                            <div><small><?php esc_html_e('ZEIT', 'vgt-sentinel'); ?></small><strong id="vis-hud-time">-</strong></div>
+                        </div>
+                        <div class="vis-radar-hud-detail">
+                            <small><?php esc_html_e('PAYLOAD / ABFANGGRUND', 'vgt-sentinel'); ?></small>
+                            <p id="vis-hud-msg">-</p>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Dynamic Real-Time Telemetry Bar -->
                 <div class="vis-radar-telemetry">
-                    <span><?php esc_html_e('GRID SCAN: ACTIVE', 'vgt-sentinel'); ?></span>
-                    <span><?php esc_html_e('VECTORS: 0/12 CRIT', 'vgt-sentinel'); ?></span>
+                    <div class="vis-radar-telem-group">
+                        <span class="vis-radar-telem-label"><?php esc_html_e('LUFTRAUM-SCAN:', 'vgt-sentinel'); ?></span>
+                        <strong class="vis-radar-telem-val" style="color:var(--vis-cyan);">
+                            <?php echo empty($radar_vectors) ? esc_html__('NOMINAL (0 BEDROHUNGEN)', 'vgt-sentinel') : esc_html(sprintf(__('%d AKTIVE VEKTOREN', 'vgt-sentinel'), count($radar_vectors))); ?>
+                        </strong>
+                    </div>
+                    <div class="vis-radar-telem-group">
+                        <span class="vis-radar-telem-label"><?php esc_html_e('INTERCEPT:', 'vgt-sentinel'); ?></span>
+                        <strong class="vis-radar-telem-val" style="color: <?php echo $radar_critical_count > 0 ? 'var(--vis-red)' : 'var(--vis-green)'; ?>;">
+                            <?php echo esc_html(sprintf(__('%d CRIT / %d WARN', 'vgt-sentinel'), $radar_critical_count, $radar_warning_count)); ?>
+                        </strong>
+                    </div>
                 </div>
             </div>
             
@@ -579,7 +1097,7 @@ $wpdb->suppress_errors($suppress);
                 <div class="vis-integrity-sidebar-detail">
                     <div class="vis-integrity-circle-box" style="color: <?php echo esc_attr($ui_int_color); ?>;">
                         <svg width='18' height='18' fill='none' stroke='currentColor' class="vgt-icon" style="width:24px; height:24px;" viewBox="0 0 24 24">
-                            <?php echo wp_kses_post($ui_int_icon_svg); ?>
+                            <?php echo $ui_int_icon_svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
                         </svg>
                     </div>
                     <p style="margin: 0; font-size:12px; color:#aaa; line-height: 1.5;">

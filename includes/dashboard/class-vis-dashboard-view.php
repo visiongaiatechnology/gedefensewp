@@ -43,7 +43,7 @@ class VIS_Dashboard_View {
             
             'section_privacy' => ['label' => __('V. DATENSCHUTZ & COMPLIANCE', 'vgt-sentinel'), 'type' => 'separator'],
             
-            'vlp'        => ['icon' => '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/>', 'label' => __('DATENSCHUTZ & SHADOW-NET', 'vgt-sentinel')],
+            'vlp'        => ['icon' => '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>', 'label' => __('DATENSCHUTZ & SHADOW-NET', 'vgt-sentinel')],
             'filesystem' => ['icon' => '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><rect x="9" y="11" width="6" height="4" rx="1"/><path d="M10 11V9a2 2 0 0 1 4 0v2"/>', 'label' => __('DATENSICHERHEIT', 'vgt-sentinel')],
             'vault'      => ['icon' => '<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>', 'label' => __('SCHLÜSSEL-TRESOR', 'vgt-sentinel')],
 
@@ -122,7 +122,7 @@ class VIS_Dashboard_View {
             echo '<input type="hidden" name="vis_save_config" value="1">';
             wp_nonce_field('vis_save_config');
             if ($active_tab === 'trinity') {
-                $current_xdr_sec = isset($_GET['xdr_section']) && is_string($_GET['xdr_section']) ? sanitize_key($_GET['xdr_section']) : 'overview';
+                $current_xdr_sec = isset($_GET['xdr_section']) && is_string($_GET['xdr_section']) ? sanitize_key($_GET['xdr_section']) : 'grid';
                 echo '<input type="hidden" name="xdr_section" value="' . esc_attr($current_xdr_sec) . '">';
             }
         }

@@ -24,115 +24,159 @@ $messages = [
     'fatal' => __('Der Vorgang konnte nicht abgeschlossen werden.', 'vgt-sentinel'),
 ];
 ?>
-<section class="vgt-downloads-panel vgt-downloads-panel-top">
-    <h2>
-        <svg class="vgt-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #00f2ff;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        <?php esc_html_e('GeDefense Secure Download Manager', 'vgt-sentinel'); ?>
-    </h2>
-    <p class="vgt-downloads-desc"><?php esc_html_e('Erstellt eine unveränderliche, nicht direkt webzugängliche Kopie einer Mediendatei. Nur der erzeugte GeDefense-Link erhält einen eng begrenzten AEGIS-Vertrauenspfad; andere ZIP- oder Dateianfragen bleiben vollständig geschützt.', 'vgt-sentinel'); ?></p>
-    
+
+<section class="vgt-titan" aria-label="GeDefense Secure Download Manager">
+    <header class="vgt-titan-hero">
+        <div>
+            <p class="vgt-titan-kicker"><?php esc_html_e('IMMUTABLE FILE DISTRIBUTION & AEGIS TRUST PATH', 'vgt-sentinel'); ?></p>
+            <h2>SECURE DOWNLOADS</h2>
+            <p><?php esc_html_e('Erstellt eine unveränderliche, nicht direkt webzugängliche Kopie einer Mediendatei. Nur der erzeugte GeDefense-Link erhält einen eng begrenzten AEGIS-Vertrauenspfad; andere ZIP- oder Dateianfragen bleiben vollständig geschützt.', 'vgt-sentinel'); ?></p>
+        </div>
+        <div class="vgt-titan-state-stack" aria-label="Downloads Status">
+            <span><small><?php esc_html_e('SECURE REPOSITORY', 'vgt-sentinel'); ?></small><strong><?php echo class_exists($manager) ? esc_html__('ONLINE', 'vgt-sentinel') : esc_html__('STANDBY', 'vgt-sentinel'); ?></strong></span>
+            <span><small><?php esc_html_e('ACTIVE PACKAGES', 'vgt-sentinel'); ?></small><strong style="color: var(--vis-cyan);"><?php echo esc_html((string)count($records)); ?></strong></span>
+            <span><small><?php esc_html_e('INTEGRITY LOCK', 'vgt-sentinel'); ?></small><strong>SHA-256 VAULT</strong></span>
+            <span><small><?php esc_html_e('ACCESS PATH', 'vgt-sentinel'); ?></small><strong>AEGIS RESTRICTED</strong></span>
+        </div>
+    </header>
+
+    <div class="vgt-titan-status-grid">
+        <article><small><?php esc_html_e('SECURE PACKAGES', 'vgt-sentinel'); ?></small><strong style="color: var(--vis-cyan);"><?php echo esc_html((string)count($records)); ?> FILES</strong></article>
+        <article><small><?php esc_html_e('MEDIA LIBRARY SCOPE', 'vgt-sentinel'); ?></small><strong><?php echo esc_html((string)count($attachments)); ?> MEDIA</strong></article>
+        <article><small><?php esc_html_e('TRUST PATH ENGINE', 'vgt-sentinel'); ?></small><strong>AEGIS L7</strong></article>
+        <article><small><?php esc_html_e('DIRECT ACCESS', 'vgt-sentinel'); ?></small><strong style="color: #fb7185;">BLOCKED (403)</strong></article>
+        <article><small><?php esc_html_e('CRYPTOGRAPHIC SEAL', 'vgt-sentinel'); ?></small><strong>SHA-256 IMMUTABLE</strong></article>
+        <article><small><?php esc_html_e('TRACKING ENGINE', 'vgt-sentinel'); ?></small><strong>IN-MEMORY TELEMETRY</strong></article>
+    </div>
+
     <?php if (isset($messages[$status])): ?>
-        <div class="vgt-notice <?php echo in_array($status, ['created','updated','deleted'], true) ? 'vgt-notice-success' : 'vgt-notice-error'; ?>">
-            <svg class="vgt-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <div class="vis-dashboard-notice <?php echo in_array($status, ['created','updated','deleted'], true) ? 'is-success' : 'is-error'; ?>" style="margin-bottom: 20px;">
             <span><?php echo esc_html($messages[$status]); ?></span>
         </div>
     <?php endif; ?>
 
-    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="vgt-downloads-form">
-        <input type="hidden" name="action" value="vis_download_register">
-        <?php wp_nonce_field('vis_download_register'); ?>
-        <label class="vgt-downloads-label">
-            <span><?php esc_html_e('Datei aus der WordPress-Mediathek auswählen', 'vgt-sentinel'); ?></span>
-            <select name="attachment_id" required class="vgt-downloads-select">
-                <option value=""><?php esc_html_e('Datei auswählen …', 'vgt-sentinel'); ?></option>
-                <?php foreach ($attachments as $attachmentId):
-                    $path = get_attached_file((int)$attachmentId, true);
-                    if (!is_string($path) || !is_file($path)) continue;
-                    $size = filesize($path);
-                    $label = get_the_title((int)$attachmentId) . ' — ' . basename($path) . ' (' . size_format(is_int($size) ? $size : 0) . ')';
-                ?>
-                    <option value="<?php echo esc_attr((string)$attachmentId); ?>"><?php echo esc_html($label); ?></option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-        <button type="submit" class="vgt-downloads-btn-primary">
-            <svg class="vgt-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            <?php esc_html_e('Geschützten Link erzeugen', 'vgt-sentinel'); ?>
-        </button>
-    </form>
-</section>
+    <section class="vgt-titan-panel">
+        <div class="vgt-titan-panel-head">
+            <div>
+                <small><?php esc_html_e('01 / PACKAGE GENERATOR', 'vgt-sentinel'); ?></small>
+                <h3><?php esc_html_e('Neuen geschützten Download registrieren', 'vgt-sentinel'); ?></h3>
+            </div>
+            <span class="vgt-titan-badge" style="border-color: rgba(94, 234, 212, 0.4); color: var(--vis-cyan);">
+                <?php esc_html_e('L7 TRUST LINK', 'vgt-sentinel'); ?>
+            </span>
+        </div>
 
-<section class="vgt-downloads-panel">
-    <h3>
-        <svg class="vgt-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #38bdf8;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-        <?php esc_html_e('Registrierte Downloads', 'vgt-sentinel'); ?>
-    </h3>
-    
-    <div class="vgt-downloads-table-wrap">
-        <table class="vgt-downloads-table">
-            <thead>
-                <tr>
-                    <th><?php esc_html_e('Datei & Metadaten', 'vgt-sentinel'); ?></th>
-                    <th><?php esc_html_e('Integritäts-Hash', 'vgt-sentinel'); ?></th>
-                    <th><?php esc_html_e('Downloads', 'vgt-sentinel'); ?></th>
-                    <th><?php esc_html_e('GeDefense-Link', 'vgt-sentinel'); ?></th>
-                    <th><?php esc_html_e('Aktionen', 'vgt-sentinel'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php if ($records === []): ?>
-                <tr>
-                    <td colspan="5" class="vgt-empty-cell">
-                        <?php esc_html_e('Noch keine sicheren Downloads registriert.', 'vgt-sentinel'); ?>
-                    </td>
-                </tr>
-            <?php endif; ?>
-            <?php foreach ($records as $record): $url = $manager::url((string)$record->public_id); ?>
-                <tr>
-                    <td>
-                        <span class="vgt-download-title"><?php echo esc_html((string)$record->display_name); ?></span>
-                        <div class="vgt-download-meta">
-                            <span><?php echo esc_html(size_format((int)$record->file_size)); ?></span>
-                            <span>·</span>
-                            <span><?php echo esc_html((string)$record->mime_type); ?></span>
-                            <span>·</span>
-                            <?php if (!empty($record->enabled)): ?>
-                                <span class="vgt-badge-active"><?php esc_html_e('AKTIV', 'vgt-sentinel'); ?></span>
-                            <?php else: ?>
-                                <span class="vgt-badge-paused"><?php esc_html_e('PAUSIERT', 'vgt-sentinel'); ?></span>
-                            <?php endif; ?>
-                        </div>
-                    </td>
-                    <td><code class="vgt-hash-code"><?php echo esc_html(substr((string)$record->file_hash, 0, 16)); ?>…</code></td>
-                    <td><span class="vgt-count-badge"><?php echo esc_html((string)(int)$record->download_count); ?></span></td>
-                    <td>
-                        <div class="vgt-url-group">
-                            <input type="text" readonly value="<?php echo esc_attr($url); ?>" class="vgt-url-input vis-download-url" data-select-on-focus>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="vgt-actions-cell">
-                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                                <input type="hidden" name="action" value="vis_download_toggle">
-                                <input type="hidden" name="public_id" value="<?php echo esc_attr((string)$record->public_id); ?>">
-                                <?php wp_nonce_field('vis_download_toggle'); ?>
-                                <button class="vgt-btn-action" type="submit">
-                                    <?php echo !empty($record->enabled) ? esc_html__('Pausieren', 'vgt-sentinel') : esc_html__('Aktivieren', 'vgt-sentinel'); ?>
-                                </button>
-                            </form>
-                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                                <input type="hidden" name="action" value="vis_download_delete">
-                                <input type="hidden" name="public_id" value="<?php echo esc_attr((string)$record->public_id); ?>">
-                                <?php wp_nonce_field('vis_download_delete'); ?>
-                                <button class="vgt-btn-action vgt-btn-danger" type="submit">
-                                    <?php esc_html_e('Kopie löschen', 'vgt-sentinel'); ?>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <input type="hidden" name="action" value="vis_download_register">
+            <?php wp_nonce_field('vis_download_register'); ?>
+            
+            <div class="vgt-titan-wide-field">
+                <label>
+                    <span><?php esc_html_e('Datei aus der WordPress-Mediathek auswählen', 'vgt-sentinel'); ?></span>
+                    <select name="attachment_id" required class="vgt-titan-select">
+                        <option value=""><?php esc_html_e('Datei auswählen …', 'vgt-sentinel'); ?></option>
+                        <?php foreach ($attachments as $attachmentId):
+                            $path = get_attached_file((int)$attachmentId, true);
+                            if (!is_string($path) || !is_file($path)) continue;
+                            $size = filesize($path);
+                            $label = get_the_title((int)$attachmentId) . ' — ' . basename($path) . ' (' . size_format(is_int($size) ? $size : 0) . ')';
+                        ?>
+                            <option value="<?php echo esc_attr((string)$attachmentId); ?>"><?php echo esc_html($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+            </div>
+
+            <div class="vgt-titan-actions" style="margin-top: 20px; justify-content: center; width: 100%;">
+                <button type="submit" style="width: 100%; max-width: 280px; justify-content: center;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    <?php esc_html_e('GESCHÜTZTEN LINK ERZEUGEN', 'vgt-sentinel'); ?>
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="vgt-titan-panel">
+        <div class="vgt-titan-panel-head">
+            <div>
+                <small><?php esc_html_e('02 / DISTRIBUTION MATRIX', 'vgt-sentinel'); ?></small>
+                <h3><?php esc_html_e('Registrierte geschützte Downloads', 'vgt-sentinel'); ?></h3>
+            </div>
+            <span class="vgt-titan-badge">
+                <?php echo esc_html(sprintf(__('%d Pakete aktiv', 'vgt-sentinel'), count($records))); ?>
+            </span>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--vis-line); text-align: left;">
+                        <th style="padding: 10px 14px; font: 700 10px/1.3 var(--vis-font-data); color: var(--vis-copy-muted); text-transform: uppercase; letter-spacing: 0.1em; width: 30%;"><?php esc_html_e('DATEI & METADATEN', 'vgt-sentinel'); ?></th>
+                        <th style="padding: 10px 14px; font: 700 10px/1.3 var(--vis-font-data); color: var(--vis-copy-muted); text-transform: uppercase; letter-spacing: 0.1em; width: 18%;"><?php esc_html_e('INTEGRITÄTS-HASH', 'vgt-sentinel'); ?></th>
+                        <th style="padding: 10px 14px; font: 700 10px/1.3 var(--vis-font-data); color: var(--vis-copy-muted); text-transform: uppercase; letter-spacing: 0.1em; width: 10%;"><?php esc_html_e('DOWNLOADS', 'vgt-sentinel'); ?></th>
+                        <th style="padding: 10px 14px; font: 700 10px/1.3 var(--vis-font-data); color: var(--vis-copy-muted); text-transform: uppercase; letter-spacing: 0.1em; width: 27%;"><?php esc_html_e('GEDEFENSE-LINK', 'vgt-sentinel'); ?></th>
+                        <th style="padding: 10px 14px; font: 700 10px/1.3 var(--vis-font-data); color: var(--vis-copy-muted); text-transform: uppercase; letter-spacing: 0.1em; width: 15%; text-align: right;"><?php esc_html_e('AKTIONEN', 'vgt-sentinel'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php if ($records === []): ?>
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px 14px; color: var(--vis-copy-muted);">
+                            <?php esc_html_e('Noch keine sicheren Downloads registriert.', 'vgt-sentinel'); ?>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+                <?php foreach ($records as $record): $url = $manager::url((string)$record->public_id); ?>
+                    <tr style="border-bottom: 1px solid rgba(148, 184, 224, 0.08);">
+                        <td style="padding: 12px 14px;">
+                            <span style="font-weight: 750; color: #ffffff; display: block; margin-bottom: 4px;"><?php echo esc_html((string)$record->display_name); ?></span>
+                            <div style="font-size: 11px; color: var(--vis-copy-soft); display: flex; align-items: center; gap: 8px;">
+                                <span><?php echo esc_html(size_format((int)$record->file_size)); ?></span>
+                                <span>·</span>
+                                <span><?php echo esc_html((string)$record->mime_type); ?></span>
+                                <span>·</span>
+                                <?php if (!empty($record->enabled)): ?>
+                                    <span style="color: #34d399; font-weight: 700;"><?php esc_html_e('AKTIV', 'vgt-sentinel'); ?></span>
+                                <?php else: ?>
+                                    <span style="color: #94a3b8; font-weight: 700;"><?php esc_html_e('PAUSIERT', 'vgt-sentinel'); ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td style="padding: 12px 14px;">
+                            <code style="font-family: ui-monospace, monospace; font-size: 11px; background: rgba(4, 11, 24, 0.7); border: 1px solid var(--vis-line); border-radius: 4px; padding: 3px 6px; color: var(--vis-cyan);"><?php echo esc_html(substr((string)$record->file_hash, 0, 16)); ?>…</code>
+                        </td>
+                        <td style="padding: 12px 14px;">
+                            <span style="font-family: ui-monospace, monospace; font-weight: 750; color: #ffffff;"><?php echo esc_html((string)(int)$record->download_count); ?></span>
+                        </td>
+                        <td style="padding: 12px 14px;">
+                            <input type="text" readonly value="<?php echo esc_attr($url); ?>" style="font-size: 11px; font-family: ui-monospace, monospace;" onfocus="this.select()">
+                        </td>
+                        <td style="padding: 12px 14px; text-align: right;">
+                            <div style="display: inline-flex; gap: 8px; align-items: center;">
+                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin: 0;">
+                                    <input type="hidden" name="action" value="vis_download_toggle">
+                                    <input type="hidden" name="public_id" value="<?php echo esc_attr((string)$record->public_id); ?>">
+                                    <?php wp_nonce_field('vis_download_toggle'); ?>
+                                    <button type="submit" style="min-height: 28px; padding: 4px 10px; font-size: 10px; font-weight: 700;">
+                                        <?php echo !empty($record->enabled) ? esc_html__('Pausieren', 'vgt-sentinel') : esc_html__('Aktivieren', 'vgt-sentinel'); ?>
+                                    </button>
+                                </form>
+                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin: 0;">
+                                    <input type="hidden" name="action" value="vis_download_delete">
+                                    <input type="hidden" name="public_id" value="<?php echo esc_attr((string)$record->public_id); ?>">
+                                    <?php wp_nonce_field('vis_download_delete'); ?>
+                                    <button type="submit" class="is-danger" style="min-height: 28px; padding: 4px 10px; font-size: 10px; font-weight: 700;">
+                                        <?php esc_html_e('Löschen', 'vgt-sentinel'); ?>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </section>

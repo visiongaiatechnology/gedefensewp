@@ -3,8 +3,9 @@ declare(strict_types=1);
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$xdr_section = isset($_GET['xdr_section']) && is_string($_GET['xdr_section']) ? sanitize_key($_GET['xdr_section']) : 'overview';
+$xdr_section = isset($_GET['xdr_section']) && is_string($_GET['xdr_section']) ? sanitize_key($_GET['xdr_section']) : 'grid';
 $xdr_sections = [
+    'grid' => __('Grid-Topologie & Abfang-Routen', 'vgt-sentinel'),
     'overview' => __('Lagebild', 'vgt-sentinel'),
     'incidents' => __('Incidents', 'vgt-sentinel'),
     'stories' => __('Attack Stories', 'vgt-sentinel'),
@@ -14,9 +15,8 @@ $xdr_sections = [
     'policy' => __('Policy', 'vgt-sentinel'),
     'events' => __('Events', 'vgt-sentinel'),
     'health' => __('Health', 'vgt-sentinel'),
-    'grid' => __('Grid-Konfiguration', 'vgt-sentinel'),
 ];
-if (!array_key_exists($xdr_section, $xdr_sections)) $xdr_section = 'overview';
+if (!array_key_exists($xdr_section, $xdr_sections)) $xdr_section = 'grid';
 ?>
 <nav class="vgt-xdr-nav" aria-label="<?php echo esc_attr__('TRINITY XDR Bereiche', 'vgt-sentinel'); ?>">
     <?php foreach ($xdr_sections as $section_key => $section_label): ?>
@@ -120,6 +120,119 @@ $prom_pct    = round(($prom_count / $total_vectors) * 100);
 $nemesis_pct = round(($nemesis_count / $total_vectors) * 100);
 $cerberus_pct= round(($cerberus_count / $total_vectors) * 100);
 
+// --- TOP ATTACK ROUTES & INTERCEPTION PATH TELEMETRY ---
+$top_routes = [];
+$total_route_strikes = 0;
+if ($wpdb->get_var("SHOW TABLES LIKE '{$table_bans}'")) {
+    $routes_rows = $wpdb->get_results(
+        "SELECT request_uri, COUNT(id) as hit_count, 
+         MAX(reason) as sample_reason,
+         MAX(banned_at) as last_intercept 
+         FROM {$table_bans} 
+         WHERE request_uri IS NOT NULL AND request_uri != '' 
+         GROUP BY request_uri 
+         ORDER BY hit_count DESC 
+         LIMIT 6",
+        ARRAY_A
+    );
+    if (!empty($routes_rows) && is_array($routes_rows)) {
+        $top_routes = $routes_rows;
+    }
+}
+
+// Fallback / merge from table_logs if fewer than 4 routes in bans
+if (count($top_routes) < 4 && $wpdb->get_var("SHOW TABLES LIKE '{$table_logs}'")) {
+    $existing_uris = array_column($top_routes, 'request_uri');
+    $cols = $wpdb->get_col("DESC {$table_logs}", 0);
+    $uri_field = in_array('request_uri', $cols, true) ? 'request_uri' : (in_array('uri', $cols, true) ? 'uri' : null);
+    if ($uri_field) {
+        $log_routes = $wpdb->get_results(
+            "SELECT {$uri_field} as request_uri, COUNT(id) as hit_count, 
+             MAX(module) as sample_reason, 
+             MAX(timestamp) as last_intercept 
+             FROM {$table_logs} 
+             WHERE {$uri_field} IS NOT NULL AND {$uri_field} != '' 
+             GROUP BY {$uri_field} 
+             ORDER BY hit_count DESC 
+             LIMIT 6",
+            ARRAY_A
+        );
+        if (!empty($log_routes) && is_array($log_routes)) {
+            foreach ($log_routes as $lr) {
+                if (!in_array($lr['request_uri'], $existing_uris, true)) {
+                    $top_routes[] = $lr;
+                    $existing_uris[] = $lr['request_uri'];
+                    if (count($top_routes) >= 6) break;
+                }
+            }
+        }
+    }
+}
+
+// If no real attacks intercepted yet (fresh or clean state), provide active monitored routes
+if (empty($top_routes)) {
+    $top_routes = [
+        [
+            'request_uri'   => '/wp-login.php',
+            'hit_count'     => max($aegis_count, 0),
+            'sample_reason' => 'AEGIS // Brute-Force & Credential Shield',
+            'last_intercept'=> __('Aktiv überwacht', 'vgt-sentinel'),
+            'sensor'        => 'AEGIS',
+            'sensor_badge'  => 'tag-aegis'
+        ],
+        [
+            'request_uri'   => '/xmlrpc.php',
+            'hit_count'     => max($cerberus_count, 0),
+            'sample_reason' => 'CERBERUS // Pingback & Amplification Gate',
+            'last_intercept'=> __('Aktiv überwacht', 'vgt-sentinel'),
+            'sensor'        => 'CERBERUS',
+            'sensor_badge'  => 'tag-cerberus'
+        ],
+        [
+            'request_uri'   => '/wp-admin/admin-ajax.php',
+            'hit_count'     => max($prom_count, 0),
+            'sample_reason' => 'PROMETHEUS // Rate-Decay & Anomaly Analysis',
+            'last_intercept'=> __('Aktiv überwacht', 'vgt-sentinel'),
+            'sensor'        => 'PROMETHEUS',
+            'sensor_badge'  => 'tag-prometheus'
+        ],
+        [
+            'request_uri'   => '/wp-json/wp/v2/users',
+            'hit_count'     => max($nemesis_count, 0),
+            'sample_reason' => 'NEMESIS // REST Enumeration Tarpit Trap',
+            'last_intercept'=> __('Aktiv überwacht', 'vgt-sentinel'),
+            'sensor'        => 'NEMESIS',
+            'sensor_badge'  => 'tag-nemesis'
+        ],
+    ];
+} else {
+    foreach ($top_routes as &$r_item) {
+        $reason = (string)($r_item['sample_reason'] ?? '');
+        $sensor = 'CERBERUS';
+        $badge = 'tag-cerberus';
+        if (str_contains($reason, 'AEGIS')) {
+            $sensor = 'AEGIS';
+            $badge = 'tag-aegis';
+        } elseif (str_contains($reason, 'PROMETHEUS')) {
+            $sensor = 'PROMETHEUS';
+            $badge = 'tag-prometheus';
+        } elseif (str_contains($reason, 'NEMESIS')) {
+            $sensor = 'NEMESIS';
+            $badge = 'tag-nemesis';
+        }
+        $r_item['sensor'] = $sensor;
+        $r_item['sensor_badge'] = $badge;
+        $total_route_strikes += (int)$r_item['hit_count'];
+    }
+    unset($r_item);
+}
+
+// Map the first 4 routes to the 4 nodes for the SVG animation
+$svg_route_aegis = $top_routes[0]['request_uri'] ?? '/wp-login.php';
+$svg_route_prom = $top_routes[1]['request_uri'] ?? '/wp-admin/admin-ajax.php';
+$svg_route_nemesis = $top_routes[2]['request_uri'] ?? '/wp-json/wp/v2/users';
+$svg_route_cerberus = $top_routes[3]['request_uri'] ?? '/xmlrpc.php';
+
 $wpdb->suppress_errors($suppress);
 ?>
 
@@ -174,15 +287,18 @@ $wpdb->suppress_errors($suppress);
         </div>
     </div>
 
-    <!-- GRAPHICAL NOC TOPOLOGY SCHEMATIC (INTERLOCK RADAR) -->
+    <!-- GRAPHICAL NOC TOPOLOGY SCHEMATIC (INTERLOCK & ATTACK ROUTE RADAR) -->
     <div class="visual-panel">
         <div class="panel-header-flex">
-            <div class="panel-title-text"><?php esc_html_e('TRINITY REAL-TIME INTERLOCK TOPOLOGY', 'vgt-sentinel'); ?></div>
+            <div>
+                <div class="panel-title-text"><?php esc_html_e('TRINITY REAL-TIME INTERLOCK TOPOLOGY & ATTACK VECTORS', 'vgt-sentinel'); ?></div>
+                <div class="vgt-panel-sub"><?php esc_html_e('Visuelle Echtzeit-Darstellung der eingehenden Abfang-Routen in die Trinity-Sensoren und Kernverriegelung.', 'vgt-sentinel'); ?></div>
+            </div>
             <div class="panel-badge"><?php echo $trinity_active ? esc_html__('MATRIX ACTIVE (0-LATENCY)', 'vgt-sentinel') : esc_html__('PARTIAL INTERLOCK', 'vgt-sentinel'); ?></div>
         </div>
 
         <div class="topology-container">
-            <svg class="topology-svg" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet">
+            <svg class="topology-svg" viewBox="0 0 940 340" preserveAspectRatio="xMidYMid meet">
                 <defs>
                     <linearGradient id="aegisGlow" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stop-color="#00bcff" stop-opacity="0.8"/>
@@ -205,19 +321,46 @@ $wpdb->suppress_errors($suppress);
                         <stop offset="100%" stop-color="#00bcff" stop-opacity="0.9"/>
                     </linearGradient>
 
-                    <path id="pathCoreAegis" d="M 400,160 L 150,70" />
-                    <path id="pathCoreProm" d="M 400,160 L 650,70" />
-                    <path id="pathCoreNemesis" d="M 400,160 L 150,250" />
-                    <path id="pathCoreCerberus" d="M 400,160 L 650,250" />
+                    <!-- Attack Trajectory Paths (Ingress into Sensors) -->
+                    <path id="pathAttackAegis" d="M 15,75 L 230,75" />
+                    <path id="pathAttackProm" d="M 925,75 L 710,75" />
+                    <path id="pathAttackNemesis" d="M 15,265 L 230,265" />
+                    <path id="pathAttackCerberus" d="M 925,265 L 710,265" />
+
+                    <!-- Interlock Core Paths (Sensor Interconnection) -->
+                    <path id="pathCoreAegis" d="M 470,170 L 230,75" />
+                    <path id="pathCoreProm" d="M 470,170 L 710,75" />
+                    <path id="pathCoreNemesis" d="M 470,170 L 230,265" />
+                    <path id="pathCoreCerberus" d="M 470,170 L 710,265" />
                 </defs>
 
-                <!-- Connection Lines -->
-                <line x1="400" y1="160" x2="150" y2="70" class="top-line <?php echo $aegis_on ? 'pulse-line-cyan' : ''; ?>" />
-                <line x1="400" y1="160" x2="650" y2="70" class="top-line <?php echo $prom_on ? 'pulse-line-purple' : ''; ?>" />
-                <line x1="400" y1="160" x2="150" y2="250" class="top-line <?php echo $nemesis_on ? 'pulse-line-emerald' : ''; ?>" />
-                <line x1="400" y1="160" x2="650" y2="250" class="top-line <?php echo $cerberus_on ? 'pulse-line-red' : ''; ?>" />
+                <!-- Ingress Attack Vector Guidance Lines -->
+                <line x1="15" y1="75" x2="230" y2="75" class="top-line attack-route-line" stroke="#00bcff" stroke-opacity="0.3" stroke-width="2" />
+                <line x1="925" y1="75" x2="710" y2="75" class="top-line attack-route-line" stroke="#a855f7" stroke-opacity="0.3" stroke-width="2" />
+                <line x1="15" y1="265" x2="230" y2="265" class="top-line attack-route-line" stroke="#10b981" stroke-opacity="0.3" stroke-width="2" />
+                <line x1="925" y1="265" x2="710" y2="265" class="top-line attack-route-line" stroke="#ff3366" stroke-opacity="0.3" stroke-width="2" />
 
-                <!-- Stream Signal Particles -->
+                <!-- Ingress Attack Packets (Streaming into Nodes) -->
+                <circle r="3.5" fill="#38bdf8" class="particle">
+                    <animateMotion dur="1.7s" repeatCount="indefinite"><mpath href="#pathAttackAegis"/></animateMotion>
+                </circle>
+                <circle r="3.5" fill="#c084fc" class="particle">
+                    <animateMotion dur="2.1s" repeatCount="indefinite"><mpath href="#pathAttackProm"/></animateMotion>
+                </circle>
+                <circle r="3.5" fill="#34d399" class="particle">
+                    <animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#pathAttackNemesis"/></animateMotion>
+                </circle>
+                <circle r="3.5" fill="#ff3366" class="particle">
+                    <animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#pathAttackCerberus"/></animateMotion>
+                </circle>
+
+                <!-- Interlock Core Connection Lines -->
+                <line x1="470" y1="170" x2="230" y2="75" class="top-line <?php echo $aegis_on ? 'pulse-line-cyan' : ''; ?>" />
+                <line x1="470" y1="170" x2="710" y2="75" class="top-line <?php echo $prom_on ? 'pulse-line-purple' : ''; ?>" />
+                <line x1="470" y1="170" x2="230" y2="265" class="top-line <?php echo $nemesis_on ? 'pulse-line-emerald' : ''; ?>" />
+                <line x1="470" y1="170" x2="710" y2="265" class="top-line <?php echo $cerberus_on ? 'pulse-line-red' : ''; ?>" />
+
+                <!-- Interlock Core Particles -->
                 <?php if ($trinity_active): ?>
                 <circle r="4" fill="#00bcff" class="particle">
                     <animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#pathCoreAegis"/></animateMotion>
@@ -235,40 +378,115 @@ $wpdb->suppress_errors($suppress);
 
                 <!-- CENTER NODE: TRINITY INTERLOCK CORE -->
                 <g class="topology-node core-node">
-                    <circle cx="400" cy="160" r="48" fill="url(#coreGlow)" opacity="0.15" class="core-pulse-bg" />
-                    <circle cx="400" cy="160" r="36" fill="rgba(8,16,28,0.95)" stroke="#00ff88" stroke-width="2.5" class="core-circle" />
-                    <text x="400" y="156" text-anchor="middle" fill="#00ff88" font-size="11" font-weight="900" letter-spacing="1">TRINITY</text>
-                    <text x="400" y="170" text-anchor="middle" fill="#64748b" font-size="8" font-weight="700">CORE MATRIX</text>
+                    <circle cx="470" cy="170" r="50" fill="url(#coreGlow)" opacity="0.15" class="core-pulse-bg" />
+                    <circle cx="470" cy="170" r="38" fill="rgba(8,16,28,0.96)" stroke="#00ff88" stroke-width="2.5" class="core-circle" />
+                    <text x="470" y="166" text-anchor="middle" fill="#00ff88" font-size="11" font-weight="900" letter-spacing="1">TRINITY</text>
+                    <text x="470" y="180" text-anchor="middle" fill="#64748b" font-size="8" font-weight="700">CORE MATRIX</text>
                 </g>
 
                 <!-- NODE 1: AEGIS (WAF DPI) -->
                 <g class="topology-node node-aegis <?php echo $aegis_on ? 'online' : 'offline'; ?>">
-                    <circle cx="150" cy="70" r="32" fill="rgba(10,20,35,0.9)" stroke="<?php echo $aegis_on ? '#00bcff' : '#475569'; ?>" stroke-width="2" />
-                    <text x="150" y="66" text-anchor="middle" fill="<?php echo $aegis_on ? '#00bcff' : '#94a3b8'; ?>" font-size="10" font-weight="800">AEGIS</text>
-                    <text x="150" y="79" text-anchor="middle" fill="#64748b" font-size="8">DPI / AI WAF</text>
+                    <?php if ($aegis_on): ?><circle cx="230" cy="75" r="32" fill="none" stroke="#00bcff" stroke-width="1.5" class="sensor-sonar-ring" /><?php endif; ?>
+                    <circle cx="230" cy="75" r="32" fill="rgba(10,20,35,0.92)" stroke="<?php echo $aegis_on ? '#00bcff' : '#475569'; ?>" stroke-width="2" />
+                    <text x="230" y="71" text-anchor="middle" fill="<?php echo $aegis_on ? '#00bcff' : '#94a3b8'; ?>" font-size="10" font-weight="800">AEGIS</text>
+                    <text x="230" y="84" text-anchor="middle" fill="#64748b" font-size="8">DPI / AI WAF</text>
                 </g>
 
                 <!-- NODE 2: PROMETHEUS (TELEMETRY / SWARM) -->
                 <g class="topology-node node-prom <?php echo $prom_on ? 'online' : 'offline'; ?>">
-                    <circle cx="650" cy="70" r="32" fill="rgba(20,10,35,0.9)" stroke="<?php echo $prom_on ? '#a855f7' : '#475569'; ?>" stroke-width="2" />
-                    <text x="650" y="66" text-anchor="middle" fill="<?php echo $prom_on ? '#c084fc' : '#94a3b8'; ?>" font-size="8.5" font-weight="800" letter-spacing="-0.15">PROMETHEUS</text>
-                    <text x="650" y="79" text-anchor="middle" fill="#64748b" font-size="8">SWARM / DECAY</text>
+                    <?php if ($prom_on): ?><circle cx="710" cy="75" r="32" fill="none" stroke="#a855f7" stroke-width="1.5" class="sensor-sonar-ring" /><?php endif; ?>
+                    <circle cx="710" cy="75" r="32" fill="rgba(20,10,35,0.92)" stroke="<?php echo $prom_on ? '#a855f7' : '#475569'; ?>" stroke-width="2" />
+                    <text x="710" y="71" text-anchor="middle" fill="<?php echo $prom_on ? '#c084fc' : '#94a3b8'; ?>" font-size="8.5" font-weight="800" letter-spacing="-0.15">PROMETHEUS</text>
+                    <text x="710" y="84" text-anchor="middle" fill="#64748b" font-size="8">SWARM / DECAY</text>
                 </g>
 
                 <!-- NODE 3: NEMESIS (DECEPTION GRID) -->
                 <g class="topology-node node-nemesis <?php echo $nemesis_on ? 'online' : 'offline'; ?>">
-                    <circle cx="150" cy="250" r="32" fill="rgba(10,30,20,0.9)" stroke="<?php echo $nemesis_on ? '#10b981' : '#475569'; ?>" stroke-width="2" />
-                    <text x="150" y="246" text-anchor="middle" fill="<?php echo $nemesis_on ? '#34d399' : '#94a3b8'; ?>" font-size="10" font-weight="800">NEMESIS</text>
-                    <text x="150" y="259" text-anchor="middle" fill="#64748b" font-size="8">TARPIT GRID</text>
+                    <?php if ($nemesis_on): ?><circle cx="230" cy="265" r="32" fill="none" stroke="#10b981" stroke-width="1.5" class="sensor-sonar-ring" /><?php endif; ?>
+                    <circle cx="230" cy="265" r="32" fill="rgba(10,30,20,0.92)" stroke="<?php echo $nemesis_on ? '#10b981' : '#475569'; ?>" stroke-width="2" />
+                    <text x="230" y="261" text-anchor="middle" fill="<?php echo $nemesis_on ? '#34d399' : '#94a3b8'; ?>" font-size="10" font-weight="800">NEMESIS</text>
+                    <text x="230" y="274" text-anchor="middle" fill="#64748b" font-size="8">TARPIT GRID</text>
                 </g>
 
                 <!-- NODE 4: CERBERUS (PERIMETER GATE) -->
                 <g class="topology-node node-cerberus <?php echo $cerberus_on ? 'online' : 'offline'; ?>">
-                    <circle cx="650" cy="250" r="32" fill="rgba(35,10,20,0.9)" stroke="<?php echo $cerberus_on ? '#ff3366' : '#475569'; ?>" stroke-width="2" />
-                    <text x="650" y="246" text-anchor="middle" fill="<?php echo $cerberus_on ? '#ff3366' : '#94a3b8'; ?>" font-size="10" font-weight="800">CERBERUS</text>
-                    <text x="650" y="259" text-anchor="middle" fill="#64748b" font-size="8">PRE-PHP GATE</text>
+                    <?php if ($cerberus_on): ?><circle cx="710" cy="265" r="32" fill="none" stroke="#ff3366" stroke-width="1.5" class="sensor-sonar-ring" /><?php endif; ?>
+                    <circle cx="710" cy="265" r="32" fill="rgba(35,10,20,0.92)" stroke="<?php echo $cerberus_on ? '#ff3366' : '#475569'; ?>" stroke-width="2" />
+                    <text x="710" y="261" text-anchor="middle" fill="<?php echo $cerberus_on ? '#ff3366' : '#94a3b8'; ?>" font-size="10" font-weight="800">CERBERUS</text>
+                    <text x="710" y="274" text-anchor="middle" fill="#64748b" font-size="8">PRE-PHP GATE</text>
+                </g>
+
+                <!-- ATTACK ROUTE BADGE CHIPS (SVG OVERLAYS) -->
+                <g class="route-node-chip">
+                    <rect x="15" y="48" width="145" height="26" rx="6" fill="rgba(6,18,32,0.94)" stroke="#00bcff" stroke-width="1.2" />
+                    <circle cx="27" cy="61" r="3" fill="#00bcff" />
+                    <text x="36" y="64" fill="#38bdf8" font-size="9" font-family="monospace" font-weight="700"><?php echo esc_html(substr($svg_route_aegis, 0, 16)); ?></text>
+                </g>
+                <g class="route-node-chip">
+                    <rect x="780" y="48" width="145" height="26" rx="6" fill="rgba(24,10,32,0.94)" stroke="#a855f7" stroke-width="1.2" />
+                    <circle cx="792" cy="61" r="3" fill="#a855f7" />
+                    <text x="801" y="64" fill="#c084fc" font-size="9" font-family="monospace" font-weight="700"><?php echo esc_html(substr($svg_route_prom, 0, 16)); ?></text>
+                </g>
+                <g class="route-node-chip">
+                    <rect x="15" y="274" width="145" height="26" rx="6" fill="rgba(8,24,18,0.94)" stroke="#10b981" stroke-width="1.2" />
+                    <circle cx="27" cy="287" r="3" fill="#10b981" />
+                    <text x="36" y="290" fill="#34d399" font-size="9" font-family="monospace" font-weight="700"><?php echo esc_html(substr($svg_route_nemesis, 0, 16)); ?></text>
+                </g>
+                <g class="route-node-chip">
+                    <rect x="780" y="274" width="145" height="26" rx="6" fill="rgba(32,10,20,0.94)" stroke="#ff3366" stroke-width="1.2" />
+                    <circle cx="792" cy="287" r="3" fill="#ff3366" />
+                    <text x="801" y="290" fill="#fb7185" font-size="9" font-family="monospace" font-weight="700"><?php echo esc_html(substr($svg_route_cerberus, 0, 16)); ?></text>
                 </g>
             </svg>
+        </div>
+    </div>
+
+    <!-- TOP INTERCEPTED ATTACK ROUTES & VECTOR TELEMETRY -->
+    <div class="vgt-routes-panel">
+        <div class="panel-header-flex">
+            <div>
+                <div class="panel-title-text"><?php esc_html_e('TOP ABFANG-ROUTEN & ANGRIFFS-VEKTOREN (ECHTZEIT-INTERCEPTION)', 'vgt-sentinel'); ?></div>
+                <div class="vgt-panel-sub"><?php esc_html_e('Die am häufigsten attackierten Endpunkte, analysiert und isoliert durch die Trinity-Sensoren.', 'vgt-sentinel'); ?></div>
+            </div>
+            <div class="panel-badge" style="background: rgba(56, 189, 248, 0.1); color: var(--vis-cyan); border-color: rgba(56, 189, 248, 0.3);">
+                <span class="pulse-dot"></span> <?php esc_html_e('AKTIVE VEKTOR-ANALYSE', 'vgt-sentinel'); ?>
+            </div>
+        </div>
+
+        <div class="vgt-routes-grid">
+            <?php foreach ($top_routes as $idx => $route_item): 
+                $r_uri = (string)($route_item['request_uri'] ?? '/');
+                $r_hits = (int)($route_item['hit_count'] ?? 0);
+                $r_sensor = (string)($route_item['sensor'] ?? 'CERBERUS');
+                $r_badge = (string)($route_item['sensor_badge'] ?? 'tag-cerberus');
+                $r_reason = (string)($route_item['sample_reason'] ?? 'Perimeter Defense');
+                $r_time = (string)($route_item['last_intercept'] ?? '-');
+                $pct_of_total = $total_route_strikes > 0 ? round(($r_hits / $total_route_strikes) * 100) : 0;
+            ?>
+            <div class="vgt-route-card">
+                <div class="vgt-route-card-head">
+                    <span class="vgt-route-index">#0<?php echo (int)($idx + 1); ?></span>
+                    <span class="tag-badge <?php echo esc_attr($r_badge); ?>"><?php echo esc_html($r_sensor); ?></span>
+                </div>
+                <div class="vgt-route-uri-box">
+                    <code class="vgt-route-uri" title="<?php echo esc_attr($r_uri); ?>"><?php echo esc_html($r_uri); ?></code>
+                </div>
+                <div class="vgt-route-vector-reason"><?php echo esc_html($r_reason); ?></div>
+                <div class="vgt-route-stat-row">
+                    <span class="vgt-route-hits-label"><?php esc_html_e('Abgefangene Angriffe:', 'vgt-sentinel'); ?></span>
+                    <strong class="vgt-route-hits-val text-mono"><?php echo esc_html(number_format_i18n($r_hits)); ?></strong>
+                </div>
+                <div class="vgt-route-bar-track">
+                    <div class="vgt-route-bar-fill <?php echo esc_attr($r_badge); ?>" style="width: <?php echo esc_attr((string)max(12, $pct_of_total)); ?>%;"></div>
+                </div>
+                <div class="vgt-route-card-footer">
+                    <span class="vgt-route-status-pill">
+                        <span class="pulse-dot" style="width:5px; height:5px;"></span> <?php esc_html_e('AUTOMATISCH ISOLIERT', 'vgt-sentinel'); ?>
+                    </span>
+                    <span class="vgt-route-time text-mono"><?php echo esc_html($r_time); ?></span>
+                </div>
+            </div>
+            <?php endforeach; ?>
         </div>
     </div>
 

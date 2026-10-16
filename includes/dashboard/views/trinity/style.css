@@ -621,6 +621,151 @@
 }
 .trinity-core .empty-icon { font-size: 2rem; margin-bottom: 8px; }
 
+/* TRINITY ATTACK ROUTES & VECTOR INTERCEPTION HUD */
+.trinity-core .vgt-routes-panel {
+    background: rgba(10, 10, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 30px;
+    backdrop-filter: blur(8px);
+}
+.trinity-core .vgt-panel-sub {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+.trinity-core .vgt-routes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+}
+.trinity-core .vgt-route-card {
+    background: rgba(5, 11, 22, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+.trinity-core .vgt-route-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(94, 234, 212, 0.35);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.trinity-core .vgt-route-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.trinity-core .vgt-route-index {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #64748b;
+    font-family: ui-monospace, monospace;
+}
+.trinity-core .vgt-route-uri-box {
+    margin: 2px 0;
+}
+.trinity-core .vgt-route-uri {
+    display: block;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    color: #38bdf8;
+    font-family: ui-monospace, monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.trinity-core .vgt-route-vector-reason {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    line-height: 1.4;
+    min-height: 28px;
+}
+.trinity-core .vgt-route-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+}
+.trinity-core .vgt-route-hits-label {
+    color: #64748b;
+    font-weight: 600;
+}
+.trinity-core .vgt-route-hits-val {
+    color: #f8fafc;
+    font-size: 0.9rem;
+}
+.trinity-core .vgt-route-bar-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.trinity-core .vgt-route-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: #00bcff;
+    position: relative;
+    transition: width 0.6s ease;
+}
+.trinity-core .vgt-route-bar-fill.tag-aegis { background: linear-gradient(90deg, #00bcff, #38bdf8); }
+.trinity-core .vgt-route-bar-fill.tag-prometheus { background: linear-gradient(90deg, #a855f7, #c084fc); }
+.trinity-core .vgt-route-bar-fill.tag-nemesis { background: linear-gradient(90deg, #10b981, #34d399); }
+.trinity-core .vgt-route-bar-fill.tag-cerberus { background: linear-gradient(90deg, #ff3366, #fb7185); }
+
+.trinity-core .vgt-route-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.68rem;
+    color: #64748b;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+.trinity-core .vgt-route-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #10b981;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+/* SVG TOPOLOGY ROUTE PULSES & PARTICLES */
+.trinity-core .attack-route-line {
+    stroke-dasharray: 4, 4;
+    animation: attackRouteDash 1.6s linear infinite;
+}
+@keyframes attackRouteDash {
+    to { stroke-dashoffset: -20; }
+}
+.trinity-core .route-node-chip {
+    transition: all 0.2s ease;
+}
+.trinity-core .route-node-chip:hover {
+    filter: drop-shadow(0 0 10px currentColor);
+}
+.trinity-core .sensor-sonar-ring {
+    animation: sensorSonarRing 2.4s ease-out infinite;
+    transform-origin: center;
+}
+@keyframes sensorSonarRing {
+    0% { r: 32; opacity: 0.7; }
+    100% { r: 52; opacity: 0; }
+}
+
 @media (max-width: 782px) {
     .trinity-core .vgt-header,
     .trinity-core .panel-header-flex {
@@ -631,7 +776,8 @@
 
     .trinity-core .visual-panel,
     .trinity-core .vector-panel,
-    .trinity-core .intercept-panel {
+    .trinity-core .intercept-panel,
+    .trinity-core .vgt-routes-panel {
         padding: 20px;
     }
 }
@@ -646,3 +792,4 @@
         transition-duration: 0.01ms !important;
     }
 }
+

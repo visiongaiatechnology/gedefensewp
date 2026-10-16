@@ -33,23 +33,27 @@
     overflow-x: hidden;
 }
 
-/* FUTURISTIC HUD VITAL BAR */
+/* MASTER MISSION CONTROL COCKPIT HEADER */
 .vis-hud-bar {
-    background: rgba(10, 15, 25, 0.9);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(6, 11, 22, 0.94) 100%);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 16px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 14px;
+    padding: 20px 26px;
     margin-bottom: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     backdrop-filter: blur(20px);
-    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.55), 0 0 20px rgba(0, 242, 255, 0.1);
-    border-left: 4px solid #00f2ff;
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 12px 38px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-left: 4px solid var(--vis-cyan, #5eead4);
     box-sizing: border-box;
     width: 100%;
     position: relative;
     overflow: hidden;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
 .vis-hud-bar::after {
@@ -69,43 +73,78 @@
     50%, 100% { left: 200%; }
 }
 
-.vis-hud-title {
-    font-family: 'Orbitron', -apple-system, sans-serif;
-    font-size: 14.5px;
+.vis-hud-left { display: flex; align-items: center; gap: 16px; }
+.vis-hud-title { display: flex; align-items: center; gap: 14px; }
+.vis-hud-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.12);
+    flex-shrink: 0;
+}
+.vis-hud-heading {
+    margin: 0;
+    font-size: 19px;
     font-weight: 800;
-    letter-spacing: 1.2px;
     color: #fff;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    letter-spacing: 0.8px;
+    line-height: 1.2;
 }
-
-.vis-hud-grid {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-    flex-wrap: wrap;
+.vis-hud-subheading {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 600;
+    letter-spacing: 1px;
 }
-
-.vis-hud-item {
+.vis-hud-posture {
     display: flex;
     align-items: center;
     gap: 8px;
+    margin-top: 5px;
+    font-size: 12px;
+}
+.vis-hud-sep { color: rgba(255, 255, 255, 0.2); }
+.vis-hud-actions { display: flex; align-items: center; gap: 10px; }
+.vis-hud-btn {
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: 8px;
     font-size: 11.5px;
-}
-
-.vis-hud-label {
-    color: #94a3b8;
-    font-size: 10px;
     font-weight: 700;
-    text-transform: uppercase;
     letter-spacing: 0.6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.9), rgba(14, 165, 233, 0.9));
+    color: #020617;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.35);
 }
-
-.vis-hud-value {
-    font-family: 'Fira Code', ui-monospace, monospace;
-    font-weight: 800;
+.vis-hud-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(6, 182, 212, 0.55);
+    color: #020617;
+}
+.vis-hud-btn-ghost {
+    background: rgba(255, 255, 255, 0.04);
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: none;
+}
+.vis-hud-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.28);
     color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .vis-hud-dot {
@@ -114,15 +153,95 @@
     border-radius: 50%;
     display: inline-block;
 }
-
 .vis-hud-dot.pulse {
     animation: hud-glow-pulse 1.5s infinite;
 }
-
 @keyframes hud-glow-pulse {
     0% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.8); }
     70% { box-shadow: 0 0 0 8px rgba(0, 242, 255, 0); }
     100% { box-shadow: 0 0 0 0 rgba(0, 242, 255, 0); }
+}
+
+/* TOP TELEMETRY BENTO GRID */
+.vis-cockpit-bento {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.vis-bento-tile {
+    background: linear-gradient(145deg, rgba(14, 22, 38, 0.8), rgba(7, 12, 22, 0.9));
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 10px 32px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.vis-bento-tile:hover {
+    transform: translateY(-2px);
+    border-color: rgba(73, 224, 255, 0.35);
+    box-shadow: 0 16px 42px -10px rgba(0, 0, 0, 0.65), 0 0 18px rgba(73, 224, 255, 0.12);
+}
+.vis-bento-tile-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+.vis-bento-kicker {
+    font-size: 10px;
+    font-weight: 800;
+    color: #64748b;
+    font-family: ui-monospace, monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.vis-bento-metric-val {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+.vis-bento-metric-sub strong {
+    display: block;
+    color: #f1f5f9;
+    font-size: 12.5px;
+    margin-bottom: 3px;
+}
+.vis-bento-metric-sub p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1.45;
+}
+.vis-bento-gauge-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.vis-bento-gauge-info h4 {
+    margin: 0 0 4px 0;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+}
+.vis-bento-gauge-info p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1.4;
 }
 
 /* TWO COLUMN COCKPIT LAYOUT */
@@ -303,55 +422,101 @@
 
 .vgt-matrix-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
     width: 100%;
 }
 
 .vgt-matrix-item {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 8px;
-    padding: 10px 12px;
+    background: linear-gradient(145deg, rgba(16, 24, 40, 0.75), rgba(8, 13, 24, 0.9));
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    padding: 18px 16px 16px;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    transition: border-color 0.2s, background 0.2s;
+    justify-content: space-between;
+    text-align: center;
+    min-height: 140px;
+    gap: 14px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
 }
 
 .vgt-matrix-item:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(0, 242, 255, 0.3);
+    transform: translateY(-2px);
+    background: linear-gradient(145deg, rgba(20, 32, 54, 0.88), rgba(10, 16, 30, 0.98));
+    border-color: rgba(6, 182, 212, 0.4);
+    box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.6), 0 0 16px rgba(6, 182, 212, 0.2);
+}
+
+.vgt-matrix-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+
+.vgt-matrix-topline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    width: 100%;
 }
 
 .vgt-matrix-name {
-    font-size: 11.5px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 750;
     color: #f8fafc;
+    letter-spacing: 0.2px;
+    line-height: 1.3;
 }
 
 .vgt-matrix-status {
-    font-size: 9.5px;
-    font-family: 'Fira Code', monospace;
-    font-weight: 700;
+    font-size: 10.5px;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-weight: 750;
+    letter-spacing: 0.6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 
 .vgt-matrix-action {
-    font-size: 9.5px;
-    font-weight: 700;
+    margin-top: auto;
+    width: 100%;
+    max-width: 180px;
+    justify-content: center;
+    font-size: 10.5px;
+    font-weight: 750;
+    letter-spacing: 0.6px;
     color: #00f2ff;
     text-decoration: none;
-    padding: 3px 8px;
-    border-radius: 4px;
-    background: rgba(0, 242, 255, 0.1);
-    border: 1px solid rgba(0, 242, 255, 0.25);
-    transition: all 0.2s ease;
+    padding: 7px 14px;
+    border-radius: 6px;
+    background: rgba(0, 242, 255, 0.08);
+    border: 1px solid rgba(0, 242, 255, 0.28);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
 }
 
 .vgt-matrix-action:hover {
-    background: rgba(0, 242, 255, 0.25);
-    box-shadow: 0 0 8px rgba(0, 242, 255, 0.3);
+    background: rgba(0, 242, 255, 0.24);
+    border-color: #00f2ff;
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(0, 242, 255, 0.45);
+    transform: translateY(-1px);
 }
 
 /* DATA TABLES & SCROLL WRAPPERS */
@@ -394,63 +559,80 @@
    ANIMATED CYBER THREAT RADAR DISPLAY
    ========================================================================= */
 .vis-card-radar {
-    border-top: 3px solid #00f2ff;
-    background: radial-gradient(circle at 50% 40%, rgba(14, 30, 50, 0.9) 0%, rgba(6, 12, 22, 0.95) 100%);
+    border-top: 3px solid var(--vis-cyan, #5eead4);
+    background: linear-gradient(145deg, rgba(13, 24, 43, 0.85) 0%, rgba(6, 12, 23, 0.95) 100%);
+    position: relative;
+}
+
+.vis-radar-scope-wrapper {
+    position: relative;
+    width: 100%;
+    margin: 12px 0 16px;
 }
 
 .vis-radar-container {
     position: relative;
-    width: 190px;
-    height: 190px;
-    margin: 14px auto;
+    width: 210px;
+    height: 210px;
+    margin: 0 auto;
     border-radius: 50%;
-    background: rgba(0, 242, 255, 0.03);
-    box-shadow: 0 0 30px rgba(0, 242, 255, 0.15), inset 0 0 30px rgba(0, 242, 255, 0.08);
-    border: 1.5px solid rgba(0, 242, 255, 0.4);
+    background: radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.05) 0%, rgba(4, 10, 22, 0.96) 88%);
+    box-shadow: 0 0 35px rgba(14, 165, 233, 0.12), inset 0 0 25px rgba(94, 234, 212, 0.08);
+    border: 1.5px solid rgba(94, 234, 212, 0.35);
     overflow: hidden;
+    user-select: none;
 }
 
-.vis-radar-ring {
+/* SVG Compass & Coordinate System */
+.vis-radar-compass {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    border: 1px dashed rgba(0, 242, 255, 0.25);
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
 
-.vis-radar-ring.ring-30 { width: 34%; height: 34%; }
-.vis-radar-ring.ring-60 { width: 68%; height: 68%; }
-.vis-radar-ring.ring-90 { width: 94%; height: 94%; }
-
-.vis-radar-axis-h {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: rgba(0, 242, 255, 0.2);
+.vis-radar-grid-ring {
+    fill: none;
+    stroke: rgba(94, 234, 212, 0.18);
+    stroke-width: 1;
 }
 
-.vis-radar-axis-v {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: rgba(0, 242, 255, 0.2);
+.vis-radar-grid-ring.ring-100 { stroke: rgba(94, 234, 212, 0.35); }
+.vis-radar-grid-ring.ring-75,
+.vis-radar-grid-ring.ring-50,
+.vis-radar-grid-ring.ring-25 { stroke-dasharray: 2 4; }
+
+.vis-radar-grid-axis {
+    stroke: rgba(94, 234, 212, 0.22);
+    stroke-width: 1;
 }
 
+.vis-radar-grid-diagonal {
+    stroke: rgba(94, 234, 212, 0.08);
+    stroke-width: 0.8;
+    stroke-dasharray: 2 3;
+}
+
+.vis-radar-cardinal {
+    fill: rgba(148, 184, 224, 0.65);
+    font-family: var(--vis-font-data, monospace);
+    font-size: 7.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+/* Phosphor Sweep Beam */
 .vis-radar-sweep {
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 300deg, rgba(0, 242, 255, 0.45) 360deg);
-    animation: vis-radar-sweep 3.6s linear infinite;
+    background: conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 300deg, rgba(94, 234, 212, 0.05) 320deg, rgba(94, 234, 212, 0.42) 360deg);
+    animation: vis-radar-sweep 4s linear infinite;
     pointer-events: none;
+    z-index: 2;
 }
 
 @keyframes vis-radar-sweep {
@@ -458,35 +640,275 @@
     100% { transform: rotate(360deg); }
 }
 
-.vis-radar-blip {
+/* Central Defense Core Interlock */
+.vis-radar-core-hub {
     position: absolute;
-    width: 8px;
-    height: 8px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    box-shadow: 0 0 10px currentColor;
-    animation: vis-radar-blip 3s ease-in-out infinite;
+    background: rgba(94, 234, 212, 0.2);
+    border: 1px solid var(--vis-cyan, #5eead4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    box-shadow: 0 0 10px rgba(94, 234, 212, 0.4);
 }
 
-.vis-radar-blip.blip-1 { top: 28%; left: 70%; color: #10b981; background: #10b981; animation-delay: 0.6s; }
-.vis-radar-blip.blip-2 { top: 68%; left: 32%; color: #00f2ff; background: #00f2ff; animation-delay: 1.8s; }
-.vis-radar-blip.blip-3 { top: 22%; left: 24%; color: #bc13fe; background: #bc13fe; animation-delay: 1.2s; }
-
-@keyframes vis-radar-blip {
-    0%, 100% { opacity: 0.2; transform: scale(0.8); }
-    50% { opacity: 1; transform: scale(1.4); }
+.vis-radar-core-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ffffff;
 }
 
+/* Clean State Indicator */
+.vis-radar-clean-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 28px);
+    text-align: center;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.vis-radar-clean-indicator small {
+    display: block;
+    color: var(--vis-green, #34d399);
+    font: 750 9px/1.2 var(--vis-font-data, monospace);
+    letter-spacing: 0.14em;
+    text-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
+}
+
+/* Sentinel Matrix Nodes (Friendly Interlock) */
+.vis-radar-node.node-sentinel {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    margin-left: -4.5px;
+    margin-top: -4.5px;
+    border-radius: 50%;
+    background: #10b981;
+    border: 1px solid #ffffff;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+    cursor: pointer;
+    z-index: 4;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.vis-radar-node.node-sentinel.is-inactive {
+    background: #475569;
+    border-color: #64748b;
+    box-shadow: none;
+    opacity: 0.6;
+}
+
+.vis-radar-node.node-sentinel:hover,
+.vis-radar-node.node-sentinel:focus-visible,
+.vis-radar-node.node-sentinel.is-selected {
+    transform: scale(1.6);
+    outline: none;
+    box-shadow: 0 0 14px #10b981, 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+/* Real Live Threat Vector Blips */
+.vis-radar-blip.blip-real {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    margin-top: -5px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 4;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vis-radar-blip.blip-real::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0.6;
+    animation: blip-beacon 2.4s ease-out infinite;
+}
+
+@keyframes blip-beacon {
+    0% { transform: scale(0.8); opacity: 0.9; }
+    100% { transform: scale(2.4); opacity: 0; }
+}
+
+.vis-radar-blip.severity-critical {
+    color: var(--vis-red, #fb7185);
+    background: var(--vis-red, #fb7185);
+    box-shadow: 0 0 12px rgba(251, 113, 133, 0.9);
+}
+
+.vis-radar-blip.severity-warning {
+    color: var(--vis-amber, #fbbf24);
+    background: var(--vis-amber, #fbbf24);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+}
+
+.vis-radar-blip.severity-monitored {
+    color: var(--vis-blue, #38bdf8);
+    background: var(--vis-blue, #38bdf8);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+}
+
+.vis-radar-blip.blip-real:hover,
+.vis-radar-blip.blip-real:focus-visible,
+.vis-radar-blip.blip-real.is-selected {
+    transform: scale(1.6);
+    outline: none;
+    box-shadow: 0 0 16px currentColor, 0 0 0 2px #ffffff;
+    z-index: 10;
+}
+
+/* Glass Target Details HUD Popover */
+.vis-radar-target-hud {
+    position: absolute;
+    inset: auto 8px 8px 8px;
+    z-index: 20;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(94, 234, 212, 0.35);
+    background: rgba(6, 13, 24, 0.94);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(94, 234, 212, 0.15);
+    animation: hud-pop .2s ease-out;
+}
+
+@keyframes hud-pop {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.vis-radar-hud-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(148, 184, 224, 0.14);
+}
+
+.vis-radar-hud-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font: 750 8.5px/1 var(--vis-font-data, monospace);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.vis-radar-hud-tag.vis-badge-danger { background: rgba(251, 113, 133, 0.16); color: #fecdd3; border: 1px solid rgba(251, 113, 133, 0.4); }
+.vis-radar-hud-tag.vis-badge-warning { background: rgba(251, 191, 36, 0.16); color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.4); }
+.vis-radar-hud-tag.vis-badge-success { background: rgba(52, 211, 153, 0.16); color: #a7f3d0; border: 1px solid rgba(52, 211, 153, 0.4); }
+.vis-radar-hud-tag.vis-badge-info { background: rgba(56, 189, 248, 0.16); color: #bae6fd; border: 1px solid rgba(56, 189, 248, 0.4); }
+.vis-radar-hud-tag.vis-badge-muted { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+.vis-radar-hud-ip {
+    flex-grow: 1;
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.vis-radar-hud-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.vis-radar-hud-close:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.vis-radar-hud-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.vis-radar-hud-grid small {
+    display: block;
+    color: #718399;
+    font: 700 8px/1 var(--vis-font-data, monospace);
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+}
+
+.vis-radar-hud-grid strong {
+    display: block;
+    color: var(--vis-copy, #f4f8fc);
+    font: 700 10.5px/1.1 var(--vis-font-data, monospace);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vis-radar-hud-detail small {
+    display: block;
+    color: #718399;
+    font: 700 8px/1 var(--vis-font-data, monospace);
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+}
+
+.vis-radar-hud-detail p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 10px;
+    line-height: 1.35;
+    max-height: 48px;
+    overflow-y: auto;
+    word-break: break-word;
+}
+
+/* Dynamic Telemetry Footer */
 .vis-radar-telemetry {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     padding: 10px 14px;
-    background: rgba(5, 12, 22, 0.85);
-    border-radius: 8px;
-    border: 1px solid rgba(0, 242, 255, 0.18);
-    font-family: 'Fira Code', ui-monospace, monospace;
-    font-size: 10.5px;
-    color: #7dd3fc;
+    background: rgba(4, 9, 18, 0.75);
+    border-radius: 10px;
+    border: 1px solid rgba(148, 184, 224, 0.12);
+    font-family: var(--vis-font-data, monospace);
+    font-size: 10px;
+}
+
+.vis-radar-telem-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.vis-radar-telem-label {
+    color: #718399;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}
+
+.vis-radar-telem-val {
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.02em;
 }
 
 /* SIDEBAR HERO PULSE CORE */
@@ -874,3 +1296,922 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================================================================
+   VGT KONTROLLZENTRUM LIVING COCKPIT ANIMATIONS (GLASS 2100)
+   ========================================================================= */
+
+/* 1. Holographic Dual Orbital Reticle for Master Score Ring */
+#vis-overview-score-ring::after {
+    border-color: rgba(94, 234, 212, 0.45) !important;
+    border-width: 1.5px !important;
+    box-shadow: 0 0 16px rgba(94, 234, 212, 0.22);
+    animation: vsc-ring-orbit 16s linear infinite !important;
+}
+#vis-overview-score-ring::before {
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 0 14px rgba(94, 234, 212, 0.12);
+}
+
+/* 2. Hero Ambient Horizon Sweep */
+#vis-overview-hero {
+    position: relative;
+    overflow: hidden;
+}
+#vis-overview-hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.05), rgba(56, 189, 248, 0.12), transparent);
+    animation: vsc-hero-sweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+@keyframes vsc-hero-sweep {
+    0% { left: -120%; }
+    40%, 100% { left: 160%; }
+}
+
+/* 3. Bento Telemetry Tiles Shimmer & Smooth Elevation */
+.vis-cockpit-bento .vis-bento-tile {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.25s ease;
+}
+.vis-cockpit-bento .vis-bento-tile:hover {
+    transform: translateY(-3px);
+    border-color: rgba(94, 234, 212, 0.38);
+    box-shadow: 0 14px 34px -4px rgba(0, 0, 0, 0.65), 0 0 24px rgba(94, 234, 212, 0.12);
+}
+.vis-cockpit-bento .vis-bento-tile::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--tile-accent, rgba(94, 234, 212, 0.6)), transparent);
+    opacity: 0.7;
+    animation: bento-shimmer-bar 4s ease-in-out infinite alternate;
+}
+@keyframes bento-shimmer-bar {
+    0% { opacity: 0.3; transform: scaleX(0.7); }
+    100% { opacity: 1; transform: scaleX(1); }
+}
+
+/* 4. Authentic Military Radar Sonar Ripples on Blips */
+.vis-radar-blip.blip-real {
+    position: absolute;
+}
+.vis-radar-blip.blip-real::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    animation: blip-sonar-wave 2.2s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+    pointer-events: none;
+}
+@keyframes blip-sonar-wave {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(3.2); opacity: 0; }
+}
+.vis-radar-blip.severity-critical {
+    animation: blip-critical-pulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes blip-critical-pulse {
+    0% { filter: drop-shadow(0 0 4px #fb7185); }
+    100% { filter: drop-shadow(0 0 14px #fb7185) drop-shadow(0 0 22px rgba(251, 113, 133, 0.7)); }
+}
+
+/* 5. Sentinel Defensive Nodes Pulse Ring */
+.vis-radar-node.node-sentinel.is-active::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid #10b981;
+    animation: sentinel-beacon 3s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+    pointer-events: none;
+}
+@keyframes sentinel-beacon {
+    0% { transform: scale(0.8); opacity: 0.8; }
+    100% { transform: scale(2.8); opacity: 0; }
+}
+
+/* 6. Active Protection Matrix Heartbeats */
+.vgt-status-dot.active {
+    position: relative;
+    box-shadow: 0 0 10px #10b981;
+}
+.vgt-status-dot.active::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 1px solid #10b981;
+    animation: matrix-dot-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes matrix-dot-ping {
+    0% { transform: scale(0.9); opacity: 0.9; }
+    70%, 100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* 7. Cockpit HUD Real-time Status Badge Shimmer */
+.vis-badge-info, .vis-badge-success, .vis-badge-danger {
+    position: relative;
+    overflow: hidden;
+}
+.vis-badge-info::before, .vis-badge-success::before, .vis-badge-danger::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    animation: badge-sweep 4s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes badge-sweep {
+    0% { left: -100%; }
+    30%, 100% { left: 200%; }
+}
+
+/* =========================================================================
+   8. REAL-TIME THREAT MAP & LIVE ANOMALY STREAM MASTER (GLASS 2100)
+   ========================================================================= */
+
+.vis-threat-map-section {
+    width: 100%;
+    margin-bottom: 24px;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, rgba(9, 18, 33, 0.92) 0%, rgba(4, 9, 18, 0.98) 100%);
+    border: 1px solid rgba(82, 199, 255, 0.22);
+    border-top: 2px solid var(--vis-cyan, #00f3ff);
+    border-radius: 14px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.vis-threat-map-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.65), transparent);
+    pointer-events: none;
+}
+
+/* HEADER BAR */
+.vis-threat-map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(8, 14, 26, 0.85) 100%);
+    border-bottom: 1px solid rgba(82, 199, 255, 0.16);
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.vis-threat-map-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.vis-threat-map-header-left h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vis-threat-header-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(0, 242, 255, 0.08);
+    border: 1px solid rgba(0, 242, 255, 0.25);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #00f3ff;
+    flex-shrink: 0;
+    line-height: 0;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.vis-threat-header-icon-wrap svg,
+.vis-threat-header-icon-wrap .vgt-icon {
+    display: block;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0;
+}
+
+.vis-threat-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #10b981;
+    text-transform: uppercase;
+}
+
+.vis-threat-live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    animation: threat-live-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes threat-live-pulse {
+    0% { transform: scale(0.9); opacity: 0.8; box-shadow: 0 0 4px #10b981; }
+    50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 14px #10b981; }
+    100% { transform: scale(0.9); opacity: 0.8; box-shadow: 0 0 4px #10b981; }
+}
+
+.vis-threat-geo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    color: #38bdf8;
+}
+
+.vis-threat-map-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.vis-threat-kpi-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+}
+
+.vis-threat-kpi-chip .vis-chip-val {
+    color: #fff;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.vis-threat-kpi-chip.danger {
+    border-color: rgba(255, 51, 102, 0.35);
+    background: rgba(255, 51, 102, 0.08);
+    color: #ff6482;
+}
+.vis-threat-kpi-chip.danger .vis-chip-val {
+    color: #ff6482;
+}
+
+.vis-map-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vis-map-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    user-select: none;
+}
+
+.vis-map-btn:hover {
+    background: rgba(0, 242, 255, 0.18);
+    border-color: rgba(0, 242, 255, 0.45);
+    color: #00f3ff;
+    box-shadow: 0 0 12px rgba(0, 242, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.vis-map-btn:active {
+    transform: translateY(1px);
+}
+
+.vis-map-btn.stream-toggle {
+    font-size: 11px;
+    letter-spacing: -1px;
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.vis-map-btn.stream-toggle.is-paused {
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.12);
+}
+
+/* MAP CANVAS STAGE */
+.vis-threat-map-stage {
+    position: relative;
+    width: 100%;
+    height: 460px;
+    min-height: 420px;
+    background: radial-gradient(ellipse at center, rgba(13, 33, 56, 0.95) 0%, rgba(6, 17, 31, 0.98) 75%, #030811 100%);
+    overflow: hidden;
+    user-select: none;
+}
+
+/* CLEAN STATE / NO THREATS ON MAP */
+.vis-threat-clean-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(10, 22, 38, 0.88);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-top: 1px solid rgba(16, 185, 129, 0.65);
+    border-radius: 999px;
+    padding: 12px 26px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 24px rgba(16, 185, 129, 0.18);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    pointer-events: none;
+}
+.vis-threat-clean-indicator .vis-clean-badge-halo {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+.vis-threat-clean-indicator .vis-clean-copy {
+    display: flex;
+    flex-direction: column;
+}
+.vis-threat-clean-indicator .vis-clean-copy strong {
+    font-size: 13px;
+    font-weight: 800;
+    color: #34d399;
+    letter-spacing: 0.5px;
+    font-family: ui-monospace, monospace;
+}
+.vis-threat-clean-indicator .vis-clean-copy span {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.vis-threat-svg-viewport {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    transform-origin: 50% 50%;
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    position: relative;
+    z-index: 1;
+}
+
+.vis-threat-svg-viewport.is-dragging {
+    cursor: grabbing;
+    transition: none;
+}
+
+.vis-threat-map-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+}
+
+/* COUNTRIES / LANDMASS */
+.vis-map-country {
+    fill: #0c1d2e;
+    stroke: rgba(82, 199, 255, 0.18);
+    stroke-width: 0.45;
+    vector-effect: non-scaling-stroke;
+    transition: fill 0.2s ease, stroke 0.2s ease, filter 0.2s ease;
+    cursor: pointer;
+}
+
+.vis-map-country:hover {
+    fill: #144169;
+    stroke: #00f3ff;
+    stroke-width: 0.9;
+    filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.55));
+}
+
+.vis-map-country.has-threats {
+    fill: #192b3d;
+    stroke: rgba(255, 100, 130, 0.4);
+}
+
+.vis-map-country.has-threats:hover {
+    fill: #2d1d33;
+    stroke: #ff3366;
+    filter: drop-shadow(0 0 10px rgba(255, 51, 102, 0.6));
+}
+
+/* ATTACK TRAJECTORY ARCS */
+.vis-threat-arc {
+    fill: none;
+    stroke-linecap: round;
+    stroke-dasharray: 6 5;
+    animation: threat-arc-flow 2.8s linear infinite;
+    pointer-events: stroke;
+    cursor: pointer;
+    transition: stroke-width 0.2s ease, opacity 0.2s ease;
+}
+
+.vis-threat-arc.is-blocked {
+    stroke: url(#visArcGradBlocked);
+    stroke-width: 1.4;
+    opacity: 0.88;
+}
+
+.vis-threat-arc.is-suspicious {
+    stroke: url(#visArcGradTracked);
+    stroke-width: 1.15;
+    opacity: 0.78;
+}
+
+.vis-threat-arc.is-tracked {
+    stroke: rgba(0, 243, 255, 0.45);
+    stroke-width: 0.95;
+    opacity: 0.65;
+}
+
+.vis-arc-item:hover .vis-threat-arc,
+.vis-arc-item.is-focused .vis-threat-arc {
+    stroke-width: 2.4 !important;
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.8));
+}
+
+@keyframes threat-arc-flow {
+    from { stroke-dashoffset: 44; }
+    to { stroke-dashoffset: 0; }
+}
+
+/* THREAT NODES & SONAR PULSES */
+.vis-threat-marker {
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.vis-threat-marker:hover,
+.vis-threat-marker.is-focused {
+    transform: scale(1.4);
+}
+
+.vis-sonar-pulse {
+    animation: threat-sonar-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    transform-origin: center;
+    pointer-events: none;
+}
+
+@keyframes threat-sonar-ping {
+    0% { r: 3.5px; opacity: 0.85; }
+    100% { r: 16px; opacity: 0; }
+}
+
+.vis-threat-marker.is-blocked .vis-marker-core { fill: #ff3366; }
+.vis-threat-marker.is-suspicious .vis-marker-core { fill: #ffaa00; }
+.vis-threat-marker.is-tracked .vis-marker-core { fill: #00f3ff; }
+
+/* ORIGIN HUB (SOVEREIGN SERVER LOCATION) */
+.vis-origin-marker {
+    pointer-events: none;
+}
+
+.vis-origin-glow {
+    animation: origin-glow-breathe 4s ease-in-out infinite alternate;
+}
+
+@keyframes origin-glow-breathe {
+    0% { r: 24px; opacity: 0.65; }
+    100% { r: 34px; opacity: 0.95; }
+}
+
+.vis-origin-ping-outer {
+    animation: origin-ping-wave 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+    transform-origin: center;
+}
+
+@keyframes origin-ping-wave {
+    0% { r: 8px; opacity: 0.9; }
+    100% { r: 28px; opacity: 0; }
+}
+
+.vis-origin-label {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 8px;
+    font-weight: 800;
+    fill: #00ffaa;
+    letter-spacing: 0.8px;
+    text-shadow: 0 0 6px rgba(0, 255, 170, 0.65);
+    user-select: none;
+}
+
+/* FLOATING INTERACTIVE TOOLTIP */
+.vis-threat-map-tooltip {
+    position: absolute;
+    z-index: 100;
+    pointer-events: none;
+    min-width: 260px;
+    background: rgba(6, 14, 26, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 242, 255, 0.35);
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 242, 255, 0.15);
+    transform: translate(-50%, -120%);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.vis-tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vis-tt-flag {
+    font-size: 14px;
+}
+
+.vis-tt-ip {
+    color: #fff;
+    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.vis-tt-status-badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    background: rgba(255, 51, 102, 0.2);
+    border: 1px solid rgba(255, 51, 102, 0.4);
+    color: #ff6482;
+}
+
+.vis-tooltip-body {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+}
+
+.vis-tt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    color: #94a3b8;
+}
+
+.vis-tt-row strong {
+    color: #f1f5f9;
+    font-weight: 600;
+    text-align: right;
+}
+
+.vis-tt-row strong.vis-tt-path {
+    color: #00f3ff;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+}
+
+/* MAP LEGEND */
+.vis-threat-map-legend {
+    position: absolute;
+    bottom: 14px;
+    left: 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 14px;
+    background: rgba(6, 14, 26, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    font-size: 11px;
+    color: #94a3b8;
+    pointer-events: none;
+    z-index: 5;
+    flex-wrap: wrap;
+}
+
+.vis-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vis-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.vis-legend-dot.blocked { background: #ff3366; box-shadow: 0 0 6px #ff3366; }
+.vis-legend-dot.suspicious { background: #ffaa00; box-shadow: 0 0 6px #ffaa00; }
+.vis-legend-dot.tracked { background: #00f3ff; box-shadow: 0 0 6px #00f3ff; }
+.vis-legend-dot.origin { background: #00ffaa; box-shadow: 0 0 6px #00ffaa; }
+
+/* REAL-TIME TELEMETRY STREAM SECTION */
+.vis-threat-stream-section {
+    border-top: 1px solid rgba(82, 199, 255, 0.16);
+    background: rgba(5, 12, 22, 0.88);
+}
+
+.vis-threat-stream-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.vis-stream-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vis-stream-title h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    color: #e2e8f0;
+}
+
+.vis-stream-counter {
+    font-size: 12px;
+    color: #64748b;
+    font-variant-numeric: tabular-nums;
+}
+
+.vis-stream-filter-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vis-filter-pill {
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.vis-filter-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.vis-filter-pill.active {
+    background: rgba(0, 242, 255, 0.15);
+    border-color: rgba(0, 242, 255, 0.4);
+    color: #00f3ff;
+    box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+}
+
+/* STREAM TABLE */
+.vis-threat-table-wrapper {
+    max-height: 290px;
+    overflow-y: auto;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 242, 255, 0.3) rgba(10, 20, 36, 0.6);
+}
+
+.vis-threat-table-wrapper::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.vis-threat-table-wrapper::-webkit-scrollbar-track {
+    background: rgba(10, 20, 36, 0.6);
+}
+.vis-threat-table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(0, 242, 255, 0.3);
+    border-radius: 3px;
+}
+.vis-threat-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 242, 255, 0.55);
+}
+
+.vis-threat-stream-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    text-align: left;
+}
+
+.vis-threat-stream-table thead {
+    position: sticky;
+    top: 0;
+    background: rgba(8, 16, 30, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 3;
+}
+
+.vis-threat-stream-table th {
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+}
+
+.vis-threat-stream-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+}
+
+.vis-stream-row {
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+
+.vis-stream-row:hover,
+.vis-stream-row.is-focused {
+    background: rgba(0, 242, 255, 0.08) !important;
+}
+
+.vis-col-time {
+    white-space: nowrap;
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+}
+
+.vis-time-pulse {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00f3ff;
+    margin-right: 6px;
+    vertical-align: middle;
+    animation: time-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes time-ping {
+    0% { opacity: 0.9; }
+    50% { opacity: 0.3; }
+    100% { opacity: 0.9; }
+}
+
+.vis-ip-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vis-country-flag {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 10px;
+    font-weight: 700;
+    color: #cbd5e1;
+    letter-spacing: 0.4px;
+}
+
+.vis-ip-code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: #f8fafc;
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.vis-path-code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    max-width: 260px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.vis-module-chip {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 11px;
+    color: #e2e8f0;
+    font-weight: 600;
+}
+
+.vis-asn-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 220px;
+}
+
+.vis-asn-num {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: #e2e8f0;
+}
+
+.vis-as-name {
+    font-size: 10px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .vis-threat-map-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .vis-threat-map-stage {
+        height: 340px;
+        min-height: 300px;
+    }
+    .vis-threat-map-legend {
+        display: none;
+    }
+}
+
+

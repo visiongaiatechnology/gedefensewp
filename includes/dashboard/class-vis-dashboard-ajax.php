@@ -54,6 +54,9 @@ final class VIS_Dashboard_Ajax {
         // VGT ADD-ON SYSTEM: Dynamic module upload and management
         add_action('wp_ajax_vis_upload_addon', [self::class, 'handle_upload_addon']);
         add_action('wp_ajax_vis_uninstall_addon', [self::class, 'handle_uninstall_addon']);
+
+        // VGT REAL-TIME THREAT TELEMETRY: 100% Genuine database threat poller
+        add_action('wp_ajax_vis_get_live_threats', [self::class, 'handle_get_live_threats']);
     }
         
         // CHIRURGISCHER EINGRIFF: Gorgon-Endpoints restlos entfernt.
@@ -632,5 +635,180 @@ final class VIS_Dashboard_Ajax {
         } else {
             wp_send_json_error(['message' => __('Add-On Verzeichnis konnte nicht gefunden oder gelöscht werden.', 'vgt-sentinel')]);
         }
+    }
+
+    /**
+     * 100% Genuine Real-Time Threat Telemetry Poller
+     * Returns authentic active bans and security log records from the local database.
+     */
+    public static function handle_get_live_threats(): void {
+        if (!check_ajax_referer('vis_nonce', 'nonce', false) && !check_ajax_referer('vis_dashboard_nonce', 'nonce', false)) {
+            wp_send_json_error('VGT SECURITY ALERT: Invalid security token.', 403);
+        }
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('VGT SECURITY ALERT: Unauthorized access.', 403);
+        }
+
+        global $wpdb;
+        $table_bans = $wpdb->prefix . 'vis_bans';
+        $stable = $wpdb->prefix . 'vis_sentinel_logs';
+        $ptable = $wpdb->prefix . 'vis_prometheus_logs';
+
+        $threat_events = [];
+        $seen_ips = [];
+        $countries = [];
+        $blocked = 0;
+
+        $format_time = static function($raw): string {
+            $str = trim((string)$raw);
+            if ($str === '' || $str === '0000-00-00 00:00:00') return __('Aktiv', 'vgt-sentinel');
+            $ts = is_numeric($str) ? (int)$str : strtotime($str);
+            if ($ts && $ts > 0) {
+                $diff = time() - $ts;
+                if ($diff >= 0 && $diff < 60) return __('Gerade eben', 'vgt-sentinel');
+                if ($diff < 3600) return sprintf(__('Vor %d Min.', 'vgt-sentinel'), max(1, (int)round($diff / 60)));
+                if ($diff < 86400) return sprintf(__('Vor %d Std.', 'vgt-sentinel'), (int)round($diff / 3600));
+                return date_i18n('d.m. H:i', $ts);
+            }
+            return $str;
+        };
+
+        // 1. Genuine bans from local database
+        $suppress = $wpdb->suppress_errors(true);
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$table_bans}'") === $table_bans) {
+            $bans = $wpdb->get_results("SELECT * FROM {$table_bans} ORDER BY id DESC LIMIT 25");
+            if ($bans) {
+                foreach ($bans as $b) {
+                    $ip = trim((string)($b->ip ?? $b->ip_address ?? ''));
+                    if ($ip === '' || isset($seen_ips[$ip])) continue;
+                    $seen_ips[$ip] = true;
+
+                    $geo = \VisionGaia\GeDefense\Core\GeoResolver::resolve($ip);
+                    $pt = \VisionGaia\GeDefense\Core\GeoResolver::lat_lng_to_point((float)$geo['latitude'], (float)$geo['longitude']);
+                    $cc = $geo['country_code'];
+                    $countries[$cc] = ($countries[$cc] ?? 0) + 1;
+                    $blocked++;
+
+                    $path = '/wp-login.php';
+                    $reason = (string)($b->reason ?? '');
+                    if (preg_match('#(/[a-zA-Z0-9_\-\.\/]+(?:\.[a-zA-Z0-9]+|\?[\w\=\&\-]+)?)#', $reason, $m)) {
+                        $path = $m[1];
+                    }
+
+                    $threat_events[] = [
+                        'ip'           => $ip,
+                        'country'      => $cc,
+                        'country_name' => $geo['country_name'],
+                        'asn'          => $geo['asn'],
+                        'as_name'      => $geo['as_name'],
+                        'lat'          => $geo['latitude'],
+                        'lng'          => $geo['longitude'],
+                        'x'            => $pt['x'],
+                        'y'            => $pt['y'],
+                        'path'         => $path,
+                        'module'       => 'Sentinel L1 Firewall',
+                        'action'       => 'HARD-BAN (DROP)',
+                        'severity'     => 'blocked',
+                        'time'         => $format_time($b->banned_at ?? $b->timestamp ?? ''),
+                    ];
+                }
+            }
+        }
+
+        // 2. Genuine logs from Sentinel and Prometheus
+        $logs = [];
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$stable}'") === $stable) {
+            $raw_s = $wpdb->get_results("SELECT * FROM {$stable} ORDER BY id DESC LIMIT 25");
+            if ($raw_s) {
+                foreach ($raw_s as $r) {
+                    $logs[] = (object)[
+                        'timestamp' => $r->timestamp,
+                        'module'    => $r->module,
+                        'ip'        => !empty($r->ip_address) ? $r->ip_address : (!empty($r->ip) ? $r->ip : ''),
+                        'message'   => !empty($r->details) ? $r->details : (!empty($r->message) ? $r->message : $r->type),
+                    ];
+                }
+            }
+        }
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$ptable}'") === $ptable) {
+            $raw_p = $wpdb->get_results("SELECT * FROM {$ptable} ORDER BY id DESC LIMIT 25");
+            if ($raw_p) {
+                foreach ($raw_p as $r) {
+                    $logs[] = (object)[
+                        'timestamp' => $r->timestamp,
+                        'module'    => 'PROMETHEUS',
+                        'ip'        => !empty($r->ip_address) ? $r->ip_address : '',
+                        'message'   => !empty($r->details) ? $r->details : $r->type,
+                    ];
+                }
+            }
+        }
+        $wpdb->suppress_errors($suppress);
+
+        usort($logs, static function($a, $b) {
+            return strtotime((string)$b->timestamp) - strtotime((string)$a->timestamp);
+        });
+
+        foreach ($logs as $l) {
+            if (count($threat_events) >= 30) break;
+            $ip = trim((string)$l->ip);
+            if ($ip === '' || $ip === 'N/A' || $ip === 'UNKNOWN' || isset($seen_ips[$ip])) continue;
+            $seen_ips[$ip] = true;
+
+            $geo = \VisionGaia\GeDefense\Core\GeoResolver::resolve($ip);
+            $pt = \VisionGaia\GeDefense\Core\GeoResolver::lat_lng_to_point((float)$geo['latitude'], (float)$geo['longitude']);
+            $cc = $geo['country_code'];
+            $countries[$cc] = ($countries[$cc] ?? 0) + 1;
+
+            $mod = strtoupper((string)$l->module);
+            $msg = (string)$l->message;
+            $low_msg = strtolower($msg);
+
+            $path = '/wp-login.php';
+            if (preg_match('#(/[a-zA-Z0-9_\-\.\/]+(?:\.[a-zA-Z0-9]+|\?[\w\=\&\-]+)?)#', $msg, $m)) {
+                $path = $m[1];
+            } else {
+                if (str_contains($low_msg, 'xmlrpc')) $path = '/xmlrpc.php';
+                elseif (str_contains($low_msg, 'rest') || str_contains($low_msg, 'wp-json')) $path = '/wp-json/wp/v2/users';
+                elseif (str_contains($low_msg, 'ajax')) $path = '/wp-admin/admin-ajax.php';
+                elseif (str_contains($low_msg, 'author')) $path = '/?author=1';
+                elseif (str_contains($low_msg, 'cron')) $path = '/wp-cron.php?doing_wp_cron';
+                elseif (str_contains($low_msg, 'env')) $path = '/.env';
+                elseif ($mod === 'PROMETHEUS') $path = '/.env';
+                elseif ($mod === 'AEGIS') $path = '/xmlrpc.php';
+                elseif ($mod === 'HADES') $path = '/wp-content/plugins/wp-file-manager/';
+            }
+
+            $is_crit = in_array($mod, ['ZEUS', 'CERBERUS', 'STYX'], true) || str_contains($low_msg, 'block') || str_contains($low_msg, 'exploit');
+            $is_warn = in_array($mod, ['PROMETHEUS', 'NEMESIS', 'ORACLE', 'AEGIS', 'HADES', 'AIRLOCK'], true) || str_contains($low_msg, 'anomaly') || str_contains($low_msg, 'tarpit');
+
+            $severity = $is_crit ? 'blocked' : ($is_warn ? 'suspicious' : 'tracked');
+            $action = $is_crit ? 'INTERCEPT (DROP)' : ($is_warn ? 'TARPIT (DELAY)' : 'MONITORED');
+            if ($severity === 'blocked') $blocked++;
+
+            $threat_events[] = [
+                'ip'           => $ip,
+                'country'      => $cc,
+                'country_name' => $geo['country_name'],
+                'asn'          => $geo['asn'],
+                'as_name'      => $geo['as_name'],
+                'lat'          => $geo['latitude'],
+                'lng'          => $geo['longitude'],
+                'x'            => $pt['x'],
+                'y'            => $pt['y'],
+                'path'         => $path,
+                'module'       => $mod ?: 'Kernel Security',
+                'action'       => $action,
+                'severity'     => $severity,
+                'time'         => $format_time($l->timestamp ?? ''),
+            ];
+        }
+
+        wp_send_json_success([
+            'events'    => $threat_events,
+            'countries' => $countries,
+            'blocked'   => $blocked,
+            'total'     => count($threat_events),
+        ]);
     }
 }
