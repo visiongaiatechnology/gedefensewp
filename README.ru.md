@@ -3,6 +3,11 @@
 🌐 **Languages / Sprachen / Языки / 语言**:  
 [**English**](README.md) • [**Deutsch**](README.de.md) • [**Русский**](README.ru.md) • [**中文 (简体)**](README.zh.md)
 
+<br/>
+
+📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
+[**🇷🇺 К журналу изменений (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Релиз на GitHub v8.2.6**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.2.6)
+
 </div>
 
 ---
@@ -121,22 +126,22 @@ GeDefense WP построен как многоуровневое суверен
 
 ```mermaid
 flowchart TD
-    A[Входящий HTTP / HTTPS запрос]
+    A["Входящий HTTP / HTTPS запрос"]
 
-    A --> L0[Уровень 0: Pre-Boot допуск<br/>ZEUS + CERBERUS (0.08мс)]
-    L0 --> L1[Уровень 1: Самоконтроль целостности<br/>Корень Merkle (27 компонентов)]
-    L1 --> L23[Уровни 2-3: DPI инспекция и поведение<br/>AEGIS WAF + PROMETHEUS AI]
-    L23 --> L45[Уровни 4-5: Децепция и укрепление<br/>TITAN + HADES + NEMESIS + GHOST TRAP]
-    L45 --> L67[Уровни 6-7: Среда выполнения и Egress<br/>MORPHEUS RASP + AIRLOCK + STYX]
-    L67 --> WP[Ядро WordPress / Темы / Плагины]
+    A --> L0["Уровень 0: Pre-Boot допуск<br/>ZEUS + CERBERUS (0.08мс)"]
+    L0 --> L1["Уровень 1: Самоконтроль целостности<br/>Корень Merkle (27 компонентов)"]
+    L1 --> L23["Уровни 2-3: DPI инспекция и поведение<br/>AEGIS WAF + PROMETHEUS AI"]
+    L23 --> L45["Уровни 4-5: Децепция и укрепление<br/>TITAN + HADES + NEMESIS + GHOST TRAP"]
+    L45 --> L67["Уровни 6-7: Среда выполнения и Egress<br/>MORPHEUS RASP + AIRLOCK + STYX"]
+    L67 --> WP["Ядро WordPress / Темы / Плагины"]
 
-    XDR[Автономная фабрика TRINITY XDR] -. 2-сторонняя изоляция маршрутов .-> L0
-    XDR -. поведенческая корреляция угроз .-> L23
-    XDR -. динамическое наложение RASP .-> L67
+    XDR["Автономная фабрика TRINITY XDR"] -. "2-сторонняя изоляция маршрутов" .-> L0
+    XDR -. "поведенческая корреляция угроз" .-> L23
+    XDR -. "динамическое наложение RASP" .-> L67
 
-    CHR[CHRONOS] -. фоновый аудит целостности .-> WP
-    ORA[ORACLE] -. оценка состояния защищенности .-> WP
-    VLT[KEY VAULT] -. криптографические секреты .-> L0
+    CHR["CHRONOS"] -. "фоновый аудит целостности" .-> WP
+    ORA["ORACLE"] -. "оценка состояния защищенности" .-> WP
+    VLT["KEY VAULT"] -. "криптографические секреты" .-> L0
 ```
 
 ### Модель эшелонированной обороны:

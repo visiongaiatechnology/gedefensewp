@@ -3,6 +3,11 @@
 🌐 **Languages / Sprachen / Языки / 语言**:  
 [**English**](README.md) • [**Deutsch**](README.de.md) • [**Русский**](README.ru.md) • [**中文 (简体)**](README.zh.md)
 
+<br/>
+
+📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
+[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.2.6**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.2.6)
+
 </div>
 
 ---
@@ -121,22 +126,22 @@ Alle Schnittstellen nutzen den kanonischen Namespace `VisionGaia\GeDefense`. Ker
 
 ```mermaid
 flowchart TD
-    A[Eingehender HTTP / HTTPS Request]
+    A["Eingehender HTTP / HTTPS Request"]
 
-    A --> L0[Layer 0: Pre-Boot-Zulassung<br/>ZEUS + CERBERUS (0.08ms)]
-    L0 --> L1[Layer 1: Selbst-Integrität<br/>Merkle Trust-Anker (27 Komponenten)]
-    L1 --> L23[Layers 2-3: Ingress-Inspektion & KI-Verhalten<br/>AEGIS WAF + PROMETHEUS AI]
-    L23 --> L45[Layers 4-5: Täuschung & Härtung<br/>TITAN + HADES + NEMESIS + GHOST TRAP]
-    L45 --> L67[Layers 6-7: Laufzeit & Egress<br/>MORPHEUS RASP + AIRLOCK + STYX]
-    L67 --> WP[WordPress Core / Themes / Plugins]
+    A --> L0["Layer 0: Pre-Boot-Zulassung<br/>ZEUS + CERBERUS (0.08ms)"]
+    L0 --> L1["Layer 1: Selbst-Integrität<br/>Merkle Trust-Anker (27 Komponenten)"]
+    L1 --> L23["Layers 2-3: Ingress-Inspektion & KI-Verhalten<br/>AEGIS WAF + PROMETHEUS AI"]
+    L23 --> L45["Layers 4-5: Täuschung & Härtung<br/>TITAN + HADES + NEMESIS + GHOST TRAP"]
+    L45 --> L67["Layers 6-7: Laufzeit & Egress<br/>MORPHEUS RASP + AIRLOCK + STYX"]
+    L67 --> WP["WordPress Core / Themes / Plugins"]
 
-    XDR[TRINITY Autonome XDR] -. 2-Wege virtuelle Routen-Isolierung .-> L0
-    XDR -. Verhaltens-Korrelation .-> L23
-    XDR -. Laufzeit-Overlay Ausführung .-> L67
+    XDR["TRINITY Autonome XDR"] -. "2-Wege virtuelle Routen-Isolierung" .-> L0
+    XDR -. "Verhaltens-Korrelation" .-> L23
+    XDR -. "Laufzeit-Overlay Ausführung" .-> L67
 
-    CHR[CHRONOS] -. Hintergrund-Integritätsprüfung .-> WP
-    ORA[ORACLE] -. Posture-Auditierung .-> WP
-    VLT[KEY VAULT] -. Kryptografische Geheimnisse .-> L0
+    CHR["CHRONOS"] -. "Hintergrund-Integritätsprüfung" .-> WP
+    ORA["ORACLE"] -. "Posture-Auditierung" .-> WP
+    VLT["KEY VAULT"] -. "Kryptografische Geheimnisse" .-> L0
 ```
 
 ### Schichtenmodell der Verteidigung:

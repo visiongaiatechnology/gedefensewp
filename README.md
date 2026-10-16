@@ -3,6 +3,11 @@
 🌐 **Languages / Sprachen / Языки / 语言**:  
 [**English**](README.md) • [**Deutsch**](README.de.md) • [**Русский**](README.ru.md) • [**中文 (简体)**](README.zh.md)
 
+<br/>
+
+📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
+[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.2.6**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.2.6)
+
 </div>
 
 ---
@@ -32,16 +37,16 @@
 
 ---
 
-> ### 📚 Offizielle Dokumentation & Handbücher / Official Documentation & Handbooks
+> ### 📚 Official Documentation & Handbooks
 >
-> 🏛️ **Vollständige Architekturspezifikation**: [`ARCHITECTURE.md`](ARCHITECTURE.md) *(Detaillierte Systemebenen, Invarianten, Pre-Boot Kernel-Abläufe & Dashboard-Struktur)*  
+> 🏛️ **Complete Architecture Specification**: [`ARCHITECTURE.md`](ARCHITECTURE.md) *(Detailed system layers, security invariants, pre-boot kernel lifecycles & dashboard architecture)*  
 >
-> 📖 **GeDefense WP 8.1.0 Benutzer- & Administrationshandbuch (PDF)** — *Das offizielle Handbuch für Administratoren, Entwickler und Sicherheitsbeauftragte:*
+> 📖 **GeDefense WP User & Administrator Handbook (PDF)** — *The official handbook for administrators, developers, and security engineers:*
+> - 🇬🇧 **English**: [📗 GeDefense_WP_Handbook_8.1.0_EN.pdf](GeDefense_WP_Handbook_8.1.0_EN.pdf)
 > - 🇩🇪 **Deutsch**: [📘 GeDefense_WP_Handbuch_8.1.0_FINAL.pdf](GeDefense_WP_Handbuch_8.1.0_FINAL.pdf)
 > - 🇷🇺 **Русский**: [📕 GeDefense_WP_Handbuch_8.1.0_RU.pdf](GeDefense_WP_Handbuch_8.1.0_RU.pdf)
-> - 🇬🇧 **English**: [📗 GeDefense_WP_Handbook_8.1.0_EN.pdf](GeDefense_WP_Handbook_8.1.0_EN.pdf)
 >
-> *Hinweis: Das Handbuch bietet praxisnahe Anleitungen zur Konfiguration, Bedrohungsanalyse und Systemhärtung für alle Benutzergruppen.*
+> *Note: The handbook provides comprehensive, hands-on guidance on configuration, threat analysis, and sovereign system hardening for all user groups.*
 
 ---
 
@@ -212,7 +217,7 @@ The core is designed to remain **fully functional as an independent open-source 
 
 ## Table of Contents
 
-- [Documentation & Handbooks](#-offizielle-dokumentation--handbücher--official-documentation--handbooks)
+- [Documentation & Handbooks](#-official-documentation--handbooks)
 - [What's New in GeDefense WP 8.1.0](#-whats-new-in-gedefense-wp-810)
 - [Security Architecture & Technical Specification](#-security-architecture--technical-specification)
 - [Multi-Phase Ignition Protocol](#multi-phase-ignition-protocol)
@@ -256,22 +261,22 @@ All GeDefense-owned runtime APIs use the canonical `VisionGaia\GeDefense` namesp
 
 ```mermaid
 flowchart TD
-    A[Incoming HTTP / HTTPS Request]
+    A["Incoming HTTP / HTTPS Request"]
 
-    A --> L0[Layer 0: Pre-Boot Admission<br/>ZEUS + CERBERUS (0.08ms)]
-    L0 --> L1[Layer 1: Self-Integrity<br/>Merkle Trust Anchor (27 Components)]
-    L1 --> L23[Layers 2-3: Ingress Inspection & Behavioral<br/>AEGIS WAF + PROMETHEUS AI]
-    L23 --> L45[Layers 4-5: Deception & Hardening<br/>TITAN + HADES + NEMESIS + GHOST TRAP]
-    L45 --> L67[Layers 6-7: Runtime & Egress<br/>MORPHEUS RASP + AIRLOCK + STYX]
-    L67 --> WP[WordPress Core / Themes / Plugins]
+    A --> L0["Layer 0: Pre-Boot Admission<br/>ZEUS + CERBERUS (0.08ms)"]
+    L0 --> L1["Layer 1: Self-Integrity<br/>Merkle Trust Anchor (27 Components)"]
+    L1 --> L23["Layers 2-3: Ingress Inspection & Behavioral<br/>AEGIS WAF + PROMETHEUS AI"]
+    L23 --> L45["Layers 4-5: Deception & Hardening<br/>TITAN + HADES + NEMESIS + GHOST TRAP"]
+    L45 --> L67["Layers 6-7: Runtime & Egress<br/>MORPHEUS RASP + AIRLOCK + STYX"]
+    L67 --> WP["WordPress Core / Themes / Plugins"]
 
-    XDR[TRINITY Autonomous XDR] -. 2-way virtual route containment .-> L0
-    XDR -. behavioral threat correlation .-> L23
-    XDR -. runtime overlay execution .-> L67
+    XDR["TRINITY Autonomous XDR"] -. "2-way virtual route containment" .-> L0
+    XDR -. "behavioral threat correlation" .-> L23
+    XDR -. "runtime overlay execution" .-> L67
 
-    CHR[CHRONOS] -. background integrity audit .-> WP
-    ORA[ORACLE] -. posture assurance .-> WP
-    VLT[KEY VAULT] -. cryptographic secrets .-> L0
+    CHR["CHRONOS"] -. "background integrity audit" .-> WP
+    ORA["ORACLE"] -. "posture assurance" .-> WP
+    VLT["KEY VAULT"] -. "cryptographic secrets" .-> L0
 ```
 
 ### Architectural Defense Model:
@@ -287,13 +292,6 @@ flowchart TD
    Morpheus intercepts PHP call stacks and AST execution trees in real time, neutralizing unauthorized filesystem access, SSRF to cloud metadata endpoints (`169.254.169.254`), and webshell invocation. Airlock inspects file uploads with polyglot and magic-byte analyzers. Styx enforces a strict zero-trust egress whitelist on outbound HTTP connections, neutralizing data exfiltration and C2 callbacks.
 6. **Unified Cross-Layer Fabric (Trinity XDR & ThroneGuard)**:
    Autonomous closed-loop detection and response fabric that links telemetry across all sensors, deploys dynamic emergency route overlays, and enforces the Sovereign Master role (`mcp_master_access`) with Superkey session tokens and 12-hour omni-whitelists.
-    XDR -. behavioral correlation .-> L23
-    XDR -. runtime overlay .-> L67
-
-    CHR[CHRONOS] -. background integrity .-> WP
-    ORA[ORACLE] -. posture audit .-> WP
-    VLT[KEY VAULT] -. cryptographic secrets .-> L0
-```
 
 ---
 

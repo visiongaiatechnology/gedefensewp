@@ -3,6 +3,11 @@
 🌐 **Languages / Sprachen / Языки / 语言**:  
 [**English**](README.md) • [**Deutsch**](README.de.md) • [**Русский**](README.ru.md) • [**中文 (简体)**](README.zh.md)
 
+<br/>
+
+📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
+[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.2.6**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.2.6)
+
 </div>
 
 ---
@@ -121,22 +126,22 @@ GeDefense WP 被设计为一个主权级、多梯队纵深防御内核，在 Wor
 
 ```mermaid
 flowchart TD
-    A[传入 HTTP / HTTPS 请求]
+    A["传入 HTTP / HTTPS 请求"]
 
-    A --> L0[Layer 0: 引导前准入控制<br/>ZEUS + CERBERUS (0.08ms)]
-    L0 --> L1[Layer 1: 自主完整性验证<br/>Merkle 信任锚点 (27 组件)]
-    L1 --> L23[Layers 2-3: 深度包检测与行为分析<br/>AEGIS WAF + PROMETHEUS AI]
-    L23 --> L45[Layers 4-5: 欺骗防御与加固<br/>TITAN + HADES + NEMESIS + GHOST TRAP]
-    L45 --> L67[Layers 6-7: 运行时监控与出站防护<br/>MORPHEUS RASP + AIRLOCK + STYX]
-    L67 --> WP[WordPress 核心 / 主题 / 插件]
+    A --> L0["Layer 0: 引导前准入控制<br/>ZEUS + CERBERUS (0.08ms)"]
+    L0 --> L1["Layer 1: 自主完整性验证<br/>Merkle 信任锚点 (27 组件)"]
+    L1 --> L23["Layers 2-3: 深度包检测与行为分析<br/>AEGIS WAF + PROMETHEUS AI"]
+    L23 --> L45["Layers 4-5: 欺骗防御与加固<br/>TITAN + HADES + NEMESIS + GHOST TRAP"]
+    L45 --> L67["Layers 6-7: 运行时监控与出站防护<br/>MORPHEUS RASP + AIRLOCK + STYX"]
+    L67 --> WP["WordPress 核心 / 主题 / 插件"]
 
-    XDR[TRINITY 自主 XDR] -. 双向虚拟路由隔离 .-> L0
-    XDR -. 威胁行为关联研判 .-> L23
-    XDR -. 运行时安全覆盖执行 .-> L67
+    XDR["TRINITY 自主 XDR"] -. "双向虚拟路由隔离" .-> L0
+    XDR -. "威胁行为关联研判" .-> L23
+    XDR -. "运行时安全覆盖执行" .-> L67
 
-    CHR[CHRONOS] -. 后台完整性持续审计 .-> WP
-    ORA[ORACLE] -. 系统安全态势评估 .-> WP
-    VLT[KEY VAULT] -. 密码学密钥隔离存储 .-> L0
+    CHR["CHRONOS"] -. "后台完整性持续审计" .-> WP
+    ORA["ORACLE"] -. "系统安全态势评估" .-> WP
+    VLT["KEY VAULT"] -. "密码学密钥隔离存储" .-> L0
 ```
 
 ### 分层纵深防御体系：
