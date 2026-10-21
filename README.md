@@ -1,3 +1,8 @@
+> [!WARNING]
+> **PUBLIC BETA / RELEASE CANDIDATE — NOT FOR UNSUPERVISED PRODUCTION USE**
+>
+> **VGT GeDefense WP 8.4.1 Open Core is a public beta / release candidate, not a GA release.** Hooks, policies, detection rules, configuration formats and security behavior may change without notice. Validate every build in a staging environment, start in **observe mode**, keep tested backups and out-of-band recovery access, and do not use it for unsupervised production. Provided **as-is**, without warranty, under AGPL-3.0-or-later. See [`CHANGELOG.md`](CHANGELOG.md) and the [GitHub releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+
 <div align="center">
 
 🌐 **Languages / Sprachen / Языки / 语言**:  
@@ -6,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.4.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.0)
+[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.4.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.1)
 
 </div>
 
@@ -22,6 +27,7 @@
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
 [![Version](https://img.shields.io/badge/version-8.4.1_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -236,7 +242,7 @@ The core is designed to remain **fully functional as an independent open-source 
 ## Table of Contents
 
 - [Documentation & Handbooks](#-official-documentation--handbooks)
-- [What's New in GeDefense WP 8.4.0](#-whats-new-in-gedefense-wp-840)
+- [What's New in GeDefense WP 8.4.1](#-whats-new-in-gedefense-wp-841)
 - [Security Architecture & Technical Specification](#-security-architecture--technical-specification)
 - [Multi-Phase Ignition Protocol](#multi-phase-ignition-protocol)
 - [Core Module Matrix](#core-module-matrix)
@@ -960,7 +966,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.4.0 — Open Core
+## GeDefense WP 8.4.1 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

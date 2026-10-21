@@ -1,3 +1,8 @@
+> [!WARNING]
+> **公开测试版 / 发布候选 — 禁止在无人值守的生产环境中使用**
+>
+> **VGT GeDefense WP 8.4.1 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
+
 <div align="center">
 
 🌐 **Languages / Sprachen / Языки / 语言**:  
@@ -6,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.4.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.0)
+[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.4.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.1)
 
 </div>
 
@@ -20,7 +25,8 @@
 
 ### 主权级 WordPress 安全架构与 Pre-Boot 引导前准入内核
 
-[![Version](https://img.shields.io/badge/version-8.4.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.1_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -51,14 +57,15 @@
 
 ---
 
-# 🚀 GeDefense WP 8.4.0 新特性
+# 🚀 GeDefense WP 8.4.1 新特性
 
-> **8.4.0 发布**：PHP 上传进度加固、全新 ThroneGuard 认证界面与 LoginPager 视口居中。详情见 [`CHANGELOG.md`](CHANGELOG.md)。
+> **8.4.1 发布**：基于生产审计强化运行层，包括 AEGIS 内的 Oracle 策略蒸馏、受限 AI 网关、Cerberus 回环保护、XDR 死锁重试、日志保留以及实时 AI 效率面板。详情见 [`CHANGELOG.md`](CHANGELOG.md)。
 
-- **安全：** 通过 Zeus `.user.ini` 管理器强制 `session.upload_progress.enabled = Off`，按实际 Web SAPI 校验并在安全健康面板展示（回归覆盖）。不替代官方 PHP 更新。
-- **ThroneGuard：** 品牌化、视口居中的锁定界面，支持安全区域、减少动画与可访问错误状态。
-- **LoginPager：** `#login` 通过 `translate(-50%, -50%)` 在视口中居中，不受后续 `body.login` 覆盖影响。
-- **发布：** 入口、`VIS_VERSION`、WAF 编译器及模块清单/信任锚均升级至 `8.4.0`。
+- **Oracle 蒸馏 / AI 网关：** AI 现为例外；78.6% 的历史 Oracle 拦截在调用模型前已在本地判定。
+- **安全：** 通过 Zeus `.user.ini` 管理器强制 `session.upload_progress.enabled = Off`，并针对实际 Web SAPI 验证、在安全健康仪表盘展示（已覆盖回归测试）。不能替代官方 PHP 更新。
+- **ThroneGuard：** 品牌化、视口居中的锁定界面，支持安全区域、减少动态效果和无障碍错误状态。
+- **LoginPager：** `#login` 通过 `translate(-50%, -50%)` 视口居中，不受后续 `body.login` 覆盖影响。
+- **发布：** 入口、`VIS_VERSION`、模块清单和信任锚均升级至 `8.4.1`。
 
 ---
 
@@ -96,7 +103,7 @@
 ## 目录
 
 - [官方文档与技术手册](#-官方文档与技术手册)
-- [GeDefense WP 8.4.0 新特性](#-gedefense-wp-840-新特性)
+- [GeDefense WP 8.4.1 新特性](#-gedefense-wp-841-新特性)
 - [安全架构与技术规范](#-安全架构与技术规范)
 - [多阶段点火引导协议](#多阶段点火引导协议)
 - [核心模块矩阵](#核心模块矩阵)
@@ -421,7 +428,7 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 
 <div align="center">
 
-## GeDefense WP 8.4.0 — Open Core
+## GeDefense WP 8.4.1 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

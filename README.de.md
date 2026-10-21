@@ -1,3 +1,8 @@
+> [!WARNING]
+> **PUBLIC BETA / RELEASE CANDIDATE — NICHT FÜR UNBEAUFSICHTIGTEN PRODUKTIVBETRIEB**
+>
+> **VGT GeDefense WP 8.4.1 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+
 <div align="center">
 
 🌐 **Languages / Sprachen / Языки / 语言**:  
@@ -6,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.4.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.0)
+[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.4.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.1)
 
 </div>
 
@@ -20,7 +25,8 @@
 
 ### Souveräne WordPress-Sicherheitsarchitektur & Pre-Boot-Zulassungskern
 
-[![Version](https://img.shields.io/badge/version-8.4.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.1_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -51,14 +57,15 @@
 
 ---
 
-# 🚀 Neu in GeDefense WP 8.4.0
+# 🚀 Neu in GeDefense WP 8.4.1
 
-> **Release 8.4.0** bringt die PHP-Upload-Progress-Härtung, die neu gestaltete ThroneGuard-Auth-Fläche und die LoginPager-Viewport-Zentrierung. Details in [`CHANGELOG.md`](CHANGELOG.md).
+> **Release 8.4.1** härtet die operative Ebene aus den Produktionsaudits: Oracle-Policy-Distillation in AEGIS, ein begrenztes AI-Gate, Cerberus-Loopback-Schutz, XDR-Deadlock-Retries, Log-Retention und ein Live-Panel für AI-Effizienz. Details in [`CHANGELOG.md`](CHANGELOG.md).
 
-- **Security:** `session.upload_progress.enabled = Off` wird über den Zeus-`.user.ini`-Manager erzwungen, gegen den effektiven Web-SAPI geprüft und im Security-Health-Dashboard angezeigt (regressionsgesichert). Ersetzt nicht das offizielle PHP-Update.
-- **ThroneGuard:** markenkonforme, viewport-zentrierte Lock-Fläche mit Safe-Area, Reduced-Motion und barrierefreien Fehlerzuständen.
-- **LoginPager:** `#login` ist per `translate(-50%, -50%)` im Viewport zentriert und gegen spätere `body.login`-Overrides immun.
-- **Release:** `8.4.0` in Entrypoint, `VIS_VERSION`, WAF-Compiler und Modul-Manifest/Trust-Anchor.
+- **Oracle-Distillate / AI-Gate:** KI ist jetzt die Ausnahme; 78,6 % der historischen Oracle-Blocks werden lokal vor einem Modellaufruf entschieden.
+- **Sicherheit:** `session.upload_progress.enabled = Off` wird über den Zeus-`.user.ini`-Manager erzwungen, gegen die effektive Web-SAPI verifiziert und im Security-Health-Dashboard angezeigt (regressionsgetestet). Es ersetzt nicht das offizielle PHP-Update.
+- **ThroneGuard:** gebrandete, viewport-zentrierte Lock-Oberfläche mit Safe-Area-, Reduced-Motion- und barrierefreien Fehlerzuständen.
+- **LoginPager:** `#login` ist viewport-zentriert mit `translate(-50%, -50%)` und immun gegen spätere `body.login`-Overrides.
+- **Release:** `8.4.1` in Entrypoint, `VIS_VERSION`, Modul-Manifest und Trust-Anchor.
 
 ---
 
@@ -96,7 +103,7 @@
 ## Inhaltsverzeichnis
 
 - [Dokumentation & Handbücher](#-offizielle-dokumentation--handbücher)
-- [Neu in GeDefense WP 8.4.0](#-neu-in-gedefense-wp-840)
+- [Neu in GeDefense WP 8.4.1](#-neu-in-gedefense-wp-841)
 - [Sicherheitsarchitektur & Technische Spezifikation](#-sicherheitsarchitektur--technische-spezifikation)
 - [Multi-Phase Zündungsprotokoll](#multi-phase-zündungsprotokoll)
 - [Kernmodul-Matrix](#kernmodul-matrix)
@@ -416,7 +423,7 @@ GeDefense WP Open Core steht unter der **GNU Affero General Public License v3.0 
 
 <div align="center">
 
-## GeDefense WP 8.4.0 — Open Core
+## GeDefense WP 8.4.1 — Open Core
 
 **SOUVERÄNE WORDPRESS SICHERHEIT**
 
