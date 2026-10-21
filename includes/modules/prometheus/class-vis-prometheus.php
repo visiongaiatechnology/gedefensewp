@@ -657,8 +657,8 @@ final class Prometheus {
             'defense_engine' => 'VisionGaia-Prometheus',
         ];
 
-        if (class_exists('VIS_Cerberus')) {
-            VIS_Cerberus::instance()->terminate_request($reason_text, $context);
+        if (class_exists('\VIS_Cerberus')) {
+            \VIS_Cerberus::instance()->terminate_request($reason_text, $context);
         }
 
         $this->terminate_standalone($reason_text, $ip, $context);

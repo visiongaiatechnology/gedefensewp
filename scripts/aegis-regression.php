@@ -33,7 +33,7 @@ if ($schema->invoke(null, $invalidCategory) !== false) $failures[] = 'Unknown ca
 if ($schema->invoke(null, $validSafe) !== true) $failures[] = 'Valid safe schema rejected.';
 
 $fallback = VIS_Aegis_Oracle::judge("1' UNION SELECT password FROM users--");
-if (($fallback['verdict'] ?? '') !== 'BLOCK' || ($fallback['source'] ?? '') !== 'deterministic_fallback') {
+if (($fallback['verdict'] ?? '') !== 'BLOCK' || !in_array(($fallback['source'] ?? ''), ['deterministic_fallback', 'distillate'], true)) {
     $failures[] = 'Oracle dependency outage did not fail closed.';
 }
 

@@ -2646,4 +2646,12 @@ return [
     'Vor %d Std.' => '%d h ago',
     'Vor %d T.' => '%d d ago',
     'Aktiv' => 'Active',
+    'AEGIS DISTILLATE / AI EFFICIENCY' => 'AEGIS DISTILLATE / AI EFFICIENCY',
+    'Local decisions before the model' => 'Local decisions before the model',
+    'Oracle policy matrix resolved locally, AI only for ambiguous sensitive routes.' => 'Oracle policy matrix resolved locally, AI only for ambiguous sensitive routes.',
+    'Local decisions' => 'Local decisions',
+    'AI consultations' => 'AI consultations',
+    'AI ratio' => 'AI ratio',
+    'of all filter decisions' => 'of all filter decisions',
+    'Today: %s' => 'Today: %s',
 ];

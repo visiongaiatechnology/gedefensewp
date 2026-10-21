@@ -71,8 +71,8 @@ final class VIS_Cerberus {
         
         global $wpdb;
         $prefix = isset($wpdb) && isset($wpdb->prefix) ? (string)$wpdb->prefix : 'wp_';
-        $this->table_bans = $prefix . (defined('VIS_TABLE_BANS') ? VIS_TABLE_BANS : 'vis_omega_bans');
-        $this->table_strikes = $prefix . (defined('VIS_TABLE_STRIKES') ? VIS_TABLE_STRIKES : 'vis_omega_strikes');
+        $this->table_bans = $prefix . (defined('VIS_TABLE_BANS') ? VIS_TABLE_BANS : 'vis_apex_bans');
+        $this->table_strikes = $prefix . (defined('VIS_TABLE_STRIKES') ? VIS_TABLE_STRIKES : 'vis_cerberus_strikes');
 
         $this->init_hooks();
     }
@@ -145,6 +145,12 @@ final class VIS_Cerberus {
     public function is_ip_banned(?string $custom_ip = null): bool {
         $ip = $custom_ip !== null ? trim($custom_ip) : $this->get_validated_ip();
         if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return false;
+        }
+        // Loopback must never be treated as a banned visitor. If a proxy hop
+        // appears as 127.0.0.1, one legacy auto-ban would lock down the whole
+        // site for every client.
+        if (self::is_unbannable_address($ip)) {
             return false;
         }
 
@@ -246,6 +252,7 @@ final class VIS_Cerberus {
 
     public function handle_failed_login(string $username): void {
         global $wpdb;
+        $this->verify_strike_schema();
         $ip = $this->get_validated_ip();
         
         $expire_time = time() + $this->lockout_time;
@@ -336,6 +343,10 @@ final class VIS_Cerberus {
             error_log('[VIS CERBERUS] Invalid ban target rejected.');
             return;
         }
+        if (self::is_unbannable_address($ip)) {
+            error_log('[VIS CERBERUS] Loopback/reserved ban target rejected.');
+            return;
+        }
 
         global $wpdb;
         $uri = substr(esc_url_raw($_SERVER['REQUEST_URI'] ?? ''), 0, 255);
@@ -401,6 +412,26 @@ final class VIS_Cerberus {
         $packed = @inet_pton($network);
         if ($packed === false || !ctype_digit($prefix)) return false;
         return (int)$prefix >= 0 && (int)$prefix <= strlen($packed) * 8;
+    }
+
+    /**
+     * Loopback / unspecified addresses are proxy hops, never client identities.
+     * Refusing to ban them prevents a single tarpit event from locking down an
+     * entire reverse-proxied site.
+     */
+    private static function is_unbannable_address(string $value): bool {
+        $ip = trim(explode('/', $value, 2)[0]);
+        $packed = @inet_pton($ip);
+        if ($packed === false) return true;
+        if (strlen($packed) === 4) {
+            $long = unpack('N', $packed)[1] ?? 0;
+            if ($long === 0) return true;                       // 0.0.0.0
+            if (($long & 0xFF000000) === 0x7F000000) return true; // 127.0.0.0/8
+        } elseif (strlen($packed) === 16) {
+            if ($packed === inet_pton('::1')) return true;
+            if ($packed === str_repeat("\0", 16)) return true;   // ::
+        }
+        return false;
     }
 
     public function sync_os_firewall_rules(): void {
@@ -1267,9 +1298,14 @@ function vgtCopyIncident() {
      * Schema Installer für die atomare Tracking-Tabelle.
      */
     public function verify_strike_schema(): void {
-        if (get_option('vgt_cerberus_schema_verified')) return;
-
         global $wpdb;
+
+        // Never trust the stored flag alone: older releases created a different
+        // strikes table name (vis_omega_strikes) while setting the flag for it.
+        // If the effective table is missing, the schema must be (re)created.
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $this->table_strikes));
+        if (get_option('vgt_cerberus_schema_verified') && $table_exists === $this->table_strikes) return;
+
         $charset_collate = $wpdb->get_charset_collate();
 
         $sql_strikes = "CREATE TABLE IF NOT EXISTS {$this->table_strikes} (
@@ -1283,7 +1319,9 @@ function vgtCopyIncident() {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_strikes);
 
-        update_option('vgt_cerberus_schema_verified', true, false);
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $this->table_strikes)) === $this->table_strikes) {
+            update_option('vgt_cerberus_schema_verified', true, false);
+        }
     }
 }
 

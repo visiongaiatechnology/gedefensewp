@@ -159,7 +159,7 @@ final class IncidentEngine {
                     if (count($entities) > 32) $entities = array_slice($entities, -32);
                 }
 
-                $wpdb->update($incidents, [
+                self::update_with_deadlock_retry($wpdb, $incidents, [
                     'updated_at' => $now,
                     'classification' => $classification,
                     'severity' => max((int)$incident['severity'], $event->severity),
@@ -186,7 +186,7 @@ final class IncidentEngine {
             // Attach rolling cryptographic evidence
             $rootHash = EvidenceStore::attach($incidentId, $event);
             if ($rootHash !== '') {
-                $wpdb->update($incidents, ['evidence_root' => $rootHash], ['incident_uuid' => $incidentId]);
+                self::update_with_deadlock_retry($wpdb, $incidents, ['evidence_root' => $rootHash], ['incident_uuid' => $incidentId]);
             }
 
             $wpdb->query('COMMIT');
@@ -213,11 +213,31 @@ final class IncidentEngine {
         if (!is_string($incidentUuid) || $incidentUuid === '') return;
 
         $now = gmdate('Y-m-d H:i:s');
-        $wpdb->query($wpdb->prepare(
+        self::query_with_deadlock_retry($wpdb, $wpdb->prepare(
             "UPDATE {$incidents} SET updated_at = %s, event_count = event_count + 1 WHERE incident_uuid = %s",
             $now,
             $incidentUuid
         ));
+    }
+
+    private static function update_with_deadlock_retry(\wpdb $wpdb, string $table, array $data, array $where): bool {
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $result = $wpdb->update($table, $data, $where);
+            if ($result !== false) return true;
+            if (!str_contains(strtolower((string)($wpdb->last_error ?? '')), 'deadlock')) return false;
+            usleep(50000 * $attempt);
+        }
+        return false;
+    }
+
+    private static function query_with_deadlock_retry(\wpdb $wpdb, string $sql): bool {
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $result = $wpdb->query($sql);
+            if ($result !== false) return true;
+            if (!str_contains(strtolower((string)($wpdb->last_error ?? '')), 'deadlock')) return false;
+            usleep(50000 * $attempt);
+        }
+        return false;
     }
 
     /** @return array<int, object> */

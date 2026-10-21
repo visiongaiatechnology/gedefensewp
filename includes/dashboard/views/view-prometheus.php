@@ -52,7 +52,7 @@ if ($wpdb->get_var("SHOW TABLES LIKE '{$table_logs}'") === $table_logs) {
     $global_entropy = min(100, ($recent_strikes * 10) + ($total_anomalies > 0 ? 5 : 0));
 
     $real_logs = $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM {$table_logs} WHERE module = %s ORDER BY timestamp DESC LIMIT 30", 
+        "SELECT id, timestamp, module, type, details AS message, ip_address AS ip FROM {$table_logs} WHERE module = %s ORDER BY timestamp DESC LIMIT 30", 
         'PROMETHEUS'
     ));
 }

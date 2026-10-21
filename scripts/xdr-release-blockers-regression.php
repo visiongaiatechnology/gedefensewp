@@ -6,6 +6,8 @@ $root = dirname(__DIR__);
 if (!defined('ABSPATH')) define('ABSPATH', $root . DIRECTORY_SEPARATOR);
 if (!defined('ARRAY_A')) define('ARRAY_A', 'ARRAY_A');
 if (!defined('AUTH_SALT')) define('AUTH_SALT', 'test-salt-secret-0123456789abcdef0123456789abcdef');
+if (!defined('VIS_TABLE_BANS')) define('VIS_TABLE_BANS', 'vis_omega_bans');
+if (!defined('VIS_TABLE_STRIKES')) define('VIS_TABLE_STRIKES', 'vis_omega_strikes');
 
 define('WP_CONTENT_DIR', sys_get_temp_dir() . '/vgt_test_content_' . md5($root));
 define('WP_PLUGIN_DIR', WP_CONTENT_DIR . '/plugins');

@@ -70,7 +70,10 @@ final class Morpheus_Shield_DB {
         $target_tables = $this->extract_ast_dml_targets( $query );
 
         if ( empty( $target_tables ) ) {
-            $this->ui->execute_kill( $caller, 'DB_AST_PARSE_FAILURE', 'Unrecognized DML syntax, Subquery obfuscation, or Hex-Evasion detected.' );
+            // Unknown/complex but syntactically valid DML (CTEs, JOIN updates,
+            // multi-table statements) must not be treated as an attack. Keep it
+            // observable, never hard-kill a legitimate request.
+            $this->ui->log_audit_trace( $caller, 'DB_PARSE_UNKNOWN', 'DML target could not be classified; query passed through.' );
             return $query;
         }
 

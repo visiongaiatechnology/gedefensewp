@@ -26,23 +26,72 @@ final class VIS_Aegis_Oracle {
     private const CIRCUIT_KEY = 'vis_oracle_circuit_v2';
     private const ALLOWED_CATEGORIES = ['Database Attack', 'Client-Side Attack', 'Remote Code Execution Attack', 'Reconnaissance', 'Obfuscation', 'Prompt Injection', 'Zero-Day', 'Safe'];
 
-    public static function judge(string $payload): array {
+    private const DISTILL_VERSION = '1.0.0';
+
+    /** Hosts that may legitimately serve archives/plugins to WordPress. */
+    private const DISTILL_ARCHIVE_ALLOWLIST = [
+        'wordpress.org', 'www.wordpress.org', 'downloads.wordpress.org', 'api.wordpress.org',
+        'w.org', 'wordpress.com', 'elementor.com', 'github.com', 'objects.githubusercontent.com',
+    ];
+
+    /**
+     * Deterministic policy matrix distilled from the Oracle's own policy
+     * definitions and from production verdicts. AEGIS evaluates this BEFORE
+     * any AI call, so the model only sees genuinely ambiguous input.
+     *
+     * [vector, policy, confidence, pattern]
+     */
+    private const DISTILL_RULES = [
+        ['recon_actuator', 'Reconnaissance', 96, '~/(?:api/)?actuator/(?:env|heapdump|health|beans|configprops|mappings|threaddump|refresh|restart|shutdown|loggers|httptrace|sessions|jolokia)(?:[/?\s]|$)~i'],
+        ['recon_profiler', 'Reconnaissance', 94, '~/(?:_profiler(?:/|open|\?)|app_dev\.php/_profiler|_ignition/execute-solution|telescope/(?:requests|entries|api)|horizon/(?:api|stats)|api/swagger|swagger-ui|v2/api-docs|openapi\.(?:json|yaml))~i'],
+        ['recon_env_git', 'Reconnaissance', 90, '~(?:^|[/\\\\])\.(?:env(?:\.[a-z0-9]+)?|git(?:/config|/HEAD)?|svn|hg|ds_store)(?:[/?\s]|$)~i'],
+        ['recon_backup_archive', 'Reconnaissance', 90, '~(?:^|[/\\\\])(?:[a-z0-9][a-z0-9._-]{0,60}/)*(?:backup|db|database|dump|sql|www|web|site|full|prod|root|data)[a-z0-9._-]*\.(?:sql|sql\.gz|tar|tar\.gz|tgz|zip|rar|7z|bak|old|dump|bz2)(?:[/?\s]|$)~i'],
+        ['recon_config', 'Reconnaissance', 85, '~(?:^|[/\\\\])(?:wp-config|config|configuration|settings)\.(?:php|bak|old|txt|json)(?:[/?\s]|$)~i'],
+        ['recon_wp_config', 'Reconnaissance', 92, '~(?:^|[/\\\\])wp-config\.php(?:\.(?:bak|old|save|txt|swp)|[?\s]|$)~i'],
+        ['sql_union', 'Database Attack', 96, '~(?:\bunion\b[\s/\*]+(?:all[\s/\*]+)?\bselect\b|\bunion(?:[\s/\*]|%20|%2f|%2a)+(?:all|distinct|select)\b)~i'],
+        ['sql_tautology', 'Database Attack', 88, '~(?:\b(?:or|and)\b[\s/\*\'"]{0,8}(?:[\'"\w\d]+)\s*(?:=|like)\s*(?:[\'"\w\d]+)|\b(?:or|and)\b\s*\(?\s*select\b)~i'],
+        ['sql_time', 'Database Attack', 96, '~\b(?:sleep|benchmark|pg_sleep)\s*\(|\bwaitfor\s+delay\b~i'],
+        ['sql_structure', 'Database Attack', 88, '~(?:\b(?:information_schema|load_file|into\s+(?:out|dump)file|extractvalue|updatexml)\b|[\'")]\s*(?:order|group)\s+by\s+\d)~i'],
+        ['sql_keyword_obfuscation', 'Database Attack', 92, '~(?:and|or)[\s/\*`\'"]{0,8}`(?:select|union|sleep|benchmark|version|database|user)`[\s/\*`\'"]{0,8}`[a-z_]+`~i'],
+        ['sql_hex_encoded', 'Database Attack', 92, '~0x[0-9a-f]{16,}~i'],
+        ['rce_php', 'Remote Code Execution Attack', 95, '~\b(?:system|exec|shell_exec|passthru|popen|proc_open|pcntl_exec)\s*\(|\bcall_user_func\s*\(\s*[\'"]?(?:system|exec|shell_exec|passthru)~i'],
+        ['rce_callback_name', 'Remote Code Execution Attack', 92, '~(?:\[[^\]]{0,64}\]=(?:system|exec|shell_exec|passthru|eval)\b|[?&](?:cmd|func|function|call|exec)=(?:system|exec|shell_exec|passthru|eval)\b)~i'],
+        ['code_php_globals', 'Remote Code Execution Attack', 88, '~\$wpdb->|\beval\s*\(|\bassert\s*\(|preg_replace\s*\([^)]*\/e~i'],
+        ['rce_php', 'Remote Code Execution Attack', 95, '~\b(?:system|exec|shell_exec|passthru|popen|proc_open|pcntl_exec)\s*\(|\bcall_user_func\s*\(\s*[\'"]?(?:system|exec|shell_exec|passthru)~i'],
+        ['rce_obfuscated', 'Obfuscation', 92, '~\$[\'"](?:\\x[0-9a-f]{2})+[\'"]|\$[\'"](?:system|exec|passthru|shell_exec|eval)[\'"]~i'],
+        ['rce_jndi', 'Remote Code Execution Attack', 96, '~\$\{(?:jndi|env):~i'],
+        ['xss_exec', 'Client-Side Attack', 90, '~(?:(?:<|%3c)\s*(?:script|svg|img|iframe|object|embed)\b|(?:onerror|onload|onclick|onmouseover)\s*=|javascript\s*:|data:text/html)~i'],
+        ['xss_encoded', 'Client-Side Attack', 85, '~(?:(?:%3c|%253c|\\u003c|&#x3c;|&#60;).{0,64}(?:script|onerror|onload)|(?:%6a%61%76%61%73%63%72%69%70%74%3a|javascript%3a))~i'],
+        ['obfuscation', 'Obfuscation', 78, '~(?:base64_decode|gzinflate|str_rot13|hex2bin)\s*\(|(?:[A-Fa-f0-9]{220,})~'],
+        ['graphql_introspection', 'Reconnaissance', 90, '~__(?:schema|type)\s*(?:\{|\(|:|\s)|query\s*\{\s*__~i'],
+        ['path_traversal', 'Remote Code Execution Attack', 92, '~(?:\.\.[/\\\\]|%2e%2e%2f|%2e%2e/|\.\.%2f)~i'],
+        ['prompt_injection', 'Prompt Injection', 80, '~\b(?:ignore|disregard|forget)\b.{0,40}\b(?:previous|prior|above|system)\b.{0,30}\b(?:instructions?|directives?|rules?|prompts?)\b|\b(?:system\s+override|developer\s+mode|jailbreak|dan\s+mode|output\s+your\s+system\s+prompt|return\s+http\s+200\s+for\s+all)\b~i'],
+    ];
+
+    private const DISTILL_SAFE_RULES = [
+        ['safe_own_admin', 'Trusted Admin Surface', '~(?:^|[/?&])page=(?:vis|vgt)-[a-z0-9_-]+~i'],
+        ['safe_security_txt', 'Public Security Policy', '~\.well-known/security\.txt(?:$|[?\s])~i'],
+        ['safe_elementor', 'Trusted Page Builder JSON', '~"(?:get_widgets_config|save_builder|render_widget)"~i'],
+    ];
+
+
+    public static function judge(string $payload, string $context = ''): array {
         
         // 1. KRYPTOGRAFISCHE AUFLÖSUNG (VGT KEY VAULT)
         if (!class_exists('VIS_Key_Vault')) {
             self::log_telemetry('CRITICAL: VIS_Key_Vault missing. Deterministic fallback initialized.');
-            return self::deterministic_fallback(self::extract_threat_matrix(self::force_utf8_json_safe($payload)));
+            return self::deterministic_fallback(self::extract_threat_matrix(self::force_utf8_json_safe($payload)), $context);
         }
 
         try {
             $api_key = VIS_Key_Vault::get_key('vis_aegis_ai_key');
         } catch (\RuntimeException $e) {
             self::log_telemetry('VAULT SECURITY EXCEPTION. Deterministic fallback initialized.');
-            return self::deterministic_fallback(self::extract_threat_matrix(self::force_utf8_json_safe($payload)));
+            return self::deterministic_fallback(self::extract_threat_matrix(self::force_utf8_json_safe($payload)), $context);
         }
 
         if (empty($api_key)) {
-            return self::deterministic_fallback(self::extract_threat_matrix(self::force_utf8_json_safe($payload)));
+            return self::deterministic_fallback(self::extract_threat_matrix(self::force_utf8_json_safe($payload)), $context);
         }
 
         // 2. APEX PAYLOAD COMPRESSION & UTF-8 SANITIZATION
@@ -62,7 +111,7 @@ final class VIS_Aegis_Oracle {
             $rnd = bin2hex(random_bytes(32));
         } catch (\Exception $e) {
             self::log_telemetry('CRITICAL: System lacks cryptographic randomness. Halting.');
-            return self::deterministic_fallback($smart_payload);
+            return self::deterministic_fallback($smart_payload, $context);
         }
         
         $delimiter = ':::VGT_BOUNDARY_' . $rnd . ':::';
@@ -141,13 +190,13 @@ EOT;
             $json_body = wp_json_encode($body, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             self::log_telemetry('API FATAL: Payload wp_json_encode failed.');
-            return self::deterministic_fallback($smart_payload);
+            return self::deterministic_fallback($smart_payload, $context);
         }
 
         // CIRCUIT BREAKER
         if (self::circuit_is_open()) {
             self::log_telemetry('Circuit Breaker Active - Bypassing API to prevent Server Exhaustion.');
-            return self::deterministic_fallback($smart_payload);
+            return self::deterministic_fallback($smart_payload, $context);
         }
 
         // 4. ONE-SHOT EXECUTION
@@ -170,7 +219,7 @@ EOT;
         if (is_wp_error($response)) {
             self::record_failure();
             self::log_telemetry('API Network Failure -> deterministic fallback.');
-            return self::deterministic_fallback($smart_payload);
+            return self::deterministic_fallback($smart_payload, $context);
         }
 
         $status_code = wp_remote_retrieve_response_code($response);
@@ -178,13 +227,13 @@ EOT;
 
         if (!is_string($response_body) || strlen($response_body) > self::MAX_RESPONSE_BYTES) {
             self::record_failure();
-            return self::deterministic_fallback($smart_payload);
+            return self::deterministic_fallback($smart_payload, $context);
         }
 
         if ($status_code !== 200) {
             self::record_failure();
             self::log_telemetry("API HTTP {$status_code}.");
-            return self::deterministic_fallback($smart_payload);
+            return self::deterministic_fallback($smart_payload, $context);
         }
         self::record_success();
 
@@ -193,7 +242,7 @@ EOT;
         
         if (empty($content)) {
             self::log_telemetry("X-RAY ALERT: Groq returned EMPTY content block.");
-            return self::deterministic_fallback($smart_payload);
+            return self::deterministic_fallback($smart_payload, $context);
         }
         
         // 6. SAFEGUARD HARMONY JSON PARSING
@@ -212,12 +261,12 @@ EOT;
             self::record_oracle_decision($smart_payload, $reason, $verdict);
 
             $result = ['verdict' => $verdict, 'reason' => $reason, 'source' => 'oracle', 'confidence' => (float)($json['confidence'] ?? 0.5)];
-            set_transient($cache_key, $result, self::CACHE_TTL);
+            set_transient($cache_key, $result, $verdict === 'BLOCK' ? 21600 : 1800);
             return $result;
         }
 
         self::log_telemetry('API Parse Error - JSON extraction failed for content: ' . substr($content, 0, 100));
-        return self::deterministic_fallback($smart_payload);
+        return self::deterministic_fallback($smart_payload, $context);
     }
 
     private static function force_utf8_json_safe(string $payload): string {
@@ -298,20 +347,161 @@ EOT;
         delete_transient(self::CIRCUIT_KEY);
     }
 
-    private static function deterministic_fallback(string $payload): array {
-        $len = function_exists('mb_strlen') ? mb_strlen($payload, 'UTF-8') : strlen($payload);
-        if ($len > 50) {
-            $entropy = preg_match_all('/[^a-zA-Z0-9\s\-_.]/', $payload);
-            if (($entropy / $len) > 0.35) { 
-                self::log_telemetry("Fallback Block Triggered - [high_entropy_ratio]");
-                self::record_oracle_decision($payload, "High Entropy Ratio (>35%) during API Outage", 'BLOCK');
-                return ['verdict' => 'BLOCK', 'reason' => "High Entropy Ratio (>35%) during API Outage", 'source' => 'deterministic_fallback', 'confidence' => 0.7];
+    /**
+     * Deterministic distillation of the Oracle policy matrix.
+     *
+     * This is the layer that runs inside AEGIS before any model call. It
+     * encodes the categories, criteria and recurring payload shapes that the
+     * Oracle learned in production (Reconnaissance, SQLi, XSS, RCE,
+     * Obfuscation, Prompt Injection, Remote Asset Hijacking) as explicit,
+     * auditable regular expressions and allowlists.
+     *
+     * @return array{verdict:string,confidence:int,policy:string,vector:string,reasons:array<int,string>,engine:string,version:string}
+     */
+    public static function distill(string $payload, string $context = ''): array {
+        $payload = trim($payload);
+        if ($payload === '' || strlen($payload) < 5) {
+            return self::distill_result('UNCERTAIN', 0, 'None', 'none');
+        }
+
+        $trusted = self::trusted_payload_context($payload, $context);
+        $best = self::archive_hijack_rule($payload);
+
+        foreach (self::DISTILL_RULES as $rule) {
+            [$vector, $policy, $confidence, $pattern] = $rule;
+            if ($trusted && $confidence < 95) {
+                continue;
+            }
+            if (@preg_match($pattern, $payload) === 1 && ($best === null || $confidence > $best['confidence'])) {
+                $best = self::distill_result('BLOCK', (int)$confidence, (string)$policy, (string)$vector);
             }
         }
 
-        self::log_telemetry("Fallback Block Triggered - [Unverified Aegis Suspicion]");
-        self::record_oracle_decision($payload, "API Offline: Zero-Trust Fail-Closed for Aegis-Flagged Payload", 'BLOCK');
-        return ['verdict' => 'BLOCK', 'reason' => "API Offline: Zero-Trust Fail-Closed for Aegis-Flagged Payload", 'source' => 'deterministic_fallback', 'confidence' => 0.6];
+        $safe = null;
+        foreach (self::DISTILL_SAFE_RULES as $rule) {
+            [$vector, $policy, $pattern] = $rule;
+            if (@preg_match($pattern, $payload) === 1) {
+                $safe = self::distill_result('SAFE', 95, (string)$policy, (string)$vector);
+                break;
+            }
+        }
+
+        // A trusted context suppresses medium-confidence matches (page builder
+        // HTML, own admin surface, public security.txt), but never a
+        // high-confidence SQL/RCE/path-traversal finding.
+        if ($best !== null && $best['confidence'] >= 95) {
+            return $best;
+        }
+        if ($safe !== null) {
+            return $safe;
+        }
+        if ($best !== null) {
+            return $best;
+        }
+
+        if ($trusted) {
+            return self::distill_result('SAFE', 80, 'Trusted Page Builder JSON', 'safe_builder');
+        }
+
+        return self::distill_result('UNCERTAIN', 0, 'None', 'none');
+    }
+
+    /** @return array{verdict:string,confidence:int,policy:string,vector:string,reasons:array<int,string>,engine:string,version:string} */
+    private static function distill_result(string $verdict, int $confidence, string $policy, string $vector): array {
+        $reasons = [];
+        if ($verdict === 'BLOCK') {
+            $reasons[] = 'Oracle policy match: ' . $policy . ' (deterministic distillate).';
+        } elseif ($verdict === 'SAFE' && $policy !== 'None') {
+            $reasons[] = 'Trusted context accepted by distillate: ' . $policy . '.';
+        }
+        return [
+            'verdict' => $verdict,
+            'confidence' => $confidence,
+            'policy' => $policy,
+            'vector' => $vector,
+            'reasons' => $reasons,
+            'engine' => 'distillate',
+            'version' => self::DISTILL_VERSION,
+        ];
+    }
+
+    private static function trusted_payload_context(string $payload, string $context): bool {
+        if (str_contains(strtoupper($context), 'ASSESSMENT')) {
+            return false;
+        }
+        if (preg_match('~"(?:get_widgets_config|save_builder|render_widget)"~i', $payload) === 1) {
+            return true;
+        }
+        return false;
+    }
+
+    /** @return array{verdict:string,confidence:int,policy:string,vector:string,reasons:array<int,string>,engine:string,version:string}|null */
+    private static function archive_hijack_rule(string $payload): ?array {
+        if (preg_match('~https?://([^\s/"\'<>]+)(/[^\s"\'<>]*?)\.(?:zip|tar\.gz|tgz|rar|7z|sql|sql\.gz|bz2|php|phtml|phar|exe|sh|env)(?:[?\s"\'<>]|$)~i', $payload, $m) !== 1) {
+            return null;
+        }
+
+        $host = strtolower((string)$m[1]);
+        $host = preg_replace('/:\d+$/', '', $host) ?? $host;
+        $host = ltrim($host, '[.]');
+        $host = rtrim($host, '.]');
+
+        foreach (self::DISTILL_ARCHIVE_ALLOWLIST as $allowed) {
+            if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
+                return self::distill_result('SAFE', 92, 'Trusted Archive Host', 'safe_archive_host');
+            }
+        }
+
+        return self::distill_result('BLOCK', 90, 'Remote Asset Hijacking', 'remote_asset_hijack');
+    }
+
+    private static function deterministic_fallback(string $payload, string $context = ''): array {
+        // Reuse a short-lived local verdict for repeated scanner payloads so an
+        // API outage cannot turn into a log/CPU amplifier.
+        $cache_key = 'vis_oracle_fallback_' . hash('sha256', $payload . '|' . $context);
+        $cached = function_exists('get_transient') ? get_transient($cache_key) : false;
+        if (is_array($cached) && isset($cached['verdict'])) {
+            return $cached;
+        }
+
+        $distillate = self::distill($payload, $context);
+
+        if ($distillate['verdict'] === 'BLOCK' && $distillate['confidence'] >= 80) {
+            self::log_telemetry('Fallback Matrix Match: ' . $distillate['vector'] . ' [' . $distillate['policy'] . ']');
+            self::record_oracle_decision($payload, 'Deterministic distillate: ' . $distillate['policy'], 'BLOCK');
+            $result = [
+                'verdict' => 'BLOCK',
+                'reason' => 'Deterministic distillate: ' . $distillate['policy'],
+                'source' => 'distillate',
+                'confidence' => $distillate['confidence'] / 100,
+            ];
+            if (function_exists('set_transient')) set_transient($cache_key, $result, 120);
+            return $result;
+        }
+
+        if ($distillate['verdict'] === 'SAFE') {
+            self::log_telemetry('Fallback Deterministic SAFE: ' . $distillate['policy']);
+            $result = [
+                'verdict' => 'SAFE',
+                'reason' => 'Deterministic distillate accepted: ' . $distillate['policy'],
+                'source' => 'distillate',
+                'confidence' => $distillate['confidence'] / 100,
+            ];
+            if (function_exists('set_transient')) set_transient($cache_key, $result, 300);
+            return $result;
+        }
+
+        // API outage + inconclusive local matrix: do not fail closed on an
+        // unverified heuristic. AEGIS atomic signatures already handled the
+        // high-confidence layer; the caller decides whether the route is
+        // sensitive enough to deny.
+        self::log_telemetry('Fallback UNCERTAIN: local matrix inconclusive; AI deferred.');
+        return [
+            'verdict' => 'UNCERTAIN',
+            'reason' => 'API offline; deterministic matrix inconclusive.',
+            'source' => 'distillate',
+            'confidence' => 0.0,
+        ];
     }
 
     private static function record_oracle_decision(string $payload, string $ai_reason, string $verdict): void {

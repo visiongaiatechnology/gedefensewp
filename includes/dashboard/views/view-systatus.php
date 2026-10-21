@@ -375,4 +375,41 @@ $security_failures = array_values(array_filter($security_checks, static fn(array
         <?php endforeach; ?>
     </div>
 
+    <?php
+    $ai_efficiency = (class_exists('VIS_Aegis') && method_exists('VIS_Aegis', 'metrics')) ? VIS_Aegis::metrics() : null;
+    if (is_array($ai_efficiency)):
+        $ai_total = (int)($ai_efficiency['total']['ai_calls'] ?? 0);
+        $local_total = (int)($ai_efficiency['local_decisions'] ?? 0);
+        $ai_today = (int)($ai_efficiency['today']['ai_calls'] ?? 0);
+        $local_today = (int)($ai_efficiency['today']['local_blocks'] ?? 0) + (int)($ai_efficiency['today']['local_safe'] ?? 0);
+        $ratio = (float)($ai_efficiency['ai_ratio'] ?? 0.0);
+    ?>
+    <div class="vgt-ai-efficiency" style="margin-top:18px;padding:20px 22px;border:1px solid var(--vgt-border);border-radius:18px;background:linear-gradient(135deg,rgba(16,185,129,0.07),rgba(6,14,26,0.55));backdrop-filter:blur(14px);">
+        <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between;">
+            <div>
+                <div style="font-size:10px;letter-spacing:.18em;color:var(--vgt-text-muted);text-transform:uppercase;"><?php esc_html_e('AEGIS DISTILLATE / AI EFFICIENCY', 'vgt-sentinel'); ?></div>
+                <div style="font-size:16px;font-weight:700;color:var(--vgt-text);margin-top:5px;"><?php esc_html_e('Local decisions before the model', 'vgt-sentinel'); ?></div>
+                <div style="font-size:12px;color:var(--vgt-text-muted);margin-top:4px;"><?php esc_html_e('Oracle policy matrix resolved locally, AI only for ambiguous sensitive routes.', 'vgt-sentinel'); ?></div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:22px;">
+                <div>
+                    <div style="font-size:10px;letter-spacing:.14em;color:var(--vgt-text-muted);text-transform:uppercase;"><?php esc_html_e('Local decisions', 'vgt-sentinel'); ?></div>
+                    <div style="font-size:22px;font-weight:800;color:#5eead4;margin-top:4px;"><?php echo esc_html(number_format_i18n($local_total)); ?></div>
+                    <div style="font-size:11px;color:var(--vgt-text-muted);"><?php echo esc_html(sprintf(__('Today: %s', 'vgt-sentinel'), number_format_i18n($local_today))); ?></div>
+                </div>
+                <div>
+                    <div style="font-size:10px;letter-spacing:.14em;color:var(--vgt-text-muted);text-transform:uppercase;"><?php esc_html_e('AI consultations', 'vgt-sentinel'); ?></div>
+                    <div style="font-size:22px;font-weight:800;color:#fbbf24;margin-top:4px;"><?php echo esc_html(number_format_i18n($ai_total)); ?></div>
+                    <div style="font-size:11px;color:var(--vgt-text-muted);"><?php echo esc_html(sprintf(__('Today: %s', 'vgt-sentinel'), number_format_i18n($ai_today))); ?></div>
+                </div>
+                <div>
+                    <div style="font-size:10px;letter-spacing:.14em;color:var(--vgt-text-muted);text-transform:uppercase;"><?php esc_html_e('AI ratio', 'vgt-sentinel'); ?></div>
+                    <div style="font-size:22px;font-weight:800;color:<?php echo $ratio <= 10 ? '#5eead4' : ($ratio <= 30 ? '#fbbf24' : '#fb7185'); ?>;margin-top:4px;"><?php echo esc_html(number_format_i18n($ratio, 1)); ?>%</div>
+                    <div style="font-size:11px;color:var(--vgt-text-muted);"><?php esc_html_e('of all filter decisions', 'vgt-sentinel'); ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
 </div>

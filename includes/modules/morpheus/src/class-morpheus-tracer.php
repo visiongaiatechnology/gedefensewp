@@ -55,6 +55,25 @@ final class Morpheus_Tracer {
         }
     }
 
+    private static function is_self_file( string $file ): bool {
+        $file = strtolower( str_replace( '\\', '/', $file ) );
+        foreach ( array(
+            '/mu-plugins/visiongaia-integrity/',
+            '/plugins/gedefense-wp-core/',
+            '/plugins/gedefense/',
+            '/plugins/geDefense/',
+            '/vgt-vault/',
+            'vision-integrity-sentinel.php',
+            'vgt-omega-kernel.php',
+            'vgt-scanner-omega.php',
+        ) as $marker ) {
+            if ( str_contains( $file, strtolower( $marker ) ) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function identify_caller(): string {
         $stack = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 30 ); 
         
@@ -70,6 +89,9 @@ final class Morpheus_Tracer {
 
             // 1. Eigene Ausführung ignorieren (VGT Sentinel / Morpheus selbst)
             if ( ! empty( $vis_path ) && str_starts_with( $file, $vis_path ) ) {
+                continue;
+            }
+            if ( self::is_self_file( $file ) ) {
                 continue;
             }
             if ( str_contains( $file, 'vgt-sentinel-bridge.php' ) ) {

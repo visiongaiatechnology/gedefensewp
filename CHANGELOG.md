@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.4.1] — 2026-10-21
+
+### Security / Reliability Hotfix
+- **Oracle distillate in AEGIS:** policy categories learned from the Oracle's production verdicts
+  (Reconnaissance, SQLi, XSS, RCE, Obfuscation, Prompt Injection, Remote Asset Hijacking) are now
+  deterministic, auditable local rules. 78.6% of historically AI-classified blocks are resolved
+  before a model call.
+- **AI gate:** the Oracle is consulted only for sensitive routes and genuinely ambiguous input,
+  with per-IP/global budgets; the API-outage fallback no longer fails closed unconditionally.
+- **CERBERUS loopback guard:** proxy hops (`127.0.0.0/8`, `0.0.0.0`, `::1`, `::`) can no longer be
+  banned, preventing a single tarpit event from locking down an entire reverse-proxied site.
+- **XDR deadlock retry:** incident and response updates retry transient MySQL deadlocks.
+- **Morpheus network shield:** null-URL hardening and self-host allowlist.
+- **Event bus:** request dedupe, hourly flood notice, internal Morpheus context, CLI attribution and
+  30-day retention for human-readable logs.
+- **AEGIS telemetry:** route, user-agent, engine and AI-call count are persisted with each event.
+- **NOC dashboard:** new AI-efficiency panel (local decisions, AI consultations, AI ratio).
+
+### Fixed
+- `VIS_Cerberus` namespace fatal in Prometheus mitigation.
+- `started_at` vs `created_at` SQL error in XDR response escalation.
+- Missing `vis_cerberus_strikes` schema on legacy installations.
+- Prometheus/Nemesis dashboard `->ip`/`->message` warnings.
+- Float-modulo deprecation, scanner read warnings, VLP null-buffer and builder CSP variable
+  (edition-specific fixes ship in the internal MU build).
+
+---
+
 ## [8.4.0] — 2026-10-21
 
 ### Security

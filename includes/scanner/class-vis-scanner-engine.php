@@ -673,10 +673,10 @@ final class VIS_Scanner_Engine_Omega {
 
     /** @return array<string, mixed> */
     private function loadJson(string $file): array {
-        if (!is_file($file)) return [];
+        if (!is_file($file) || !is_readable($file)) return [];
         $size = filesize($file);
         if ($size === false || $size > self::MAX_STATE_BYTES) throw new StorageException('Scanner JSON size boundary exceeded.');
-        $content = file_get_contents($file);
+        $content = @file_get_contents($file);
         if (!is_string($content) || $content === '') return [];
         try {
             $data = json_decode($content, true, 64, JSON_THROW_ON_ERROR);

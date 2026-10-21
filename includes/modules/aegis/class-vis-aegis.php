@@ -40,8 +40,13 @@ final class VIS_Aegis {
     private const MAX_INSPECTED_NODES = 10000;
     private const MAX_HEADER_BYTES = 65536;
     private const MAX_ORACLE_CALLS = 2;
+    private const MAX_AI_CALLS_PER_IP = 3;
+    private const MAX_AI_CALLS_GLOBAL = 40;
     private const MAX_UPLOAD_BYTES = 26214400;
     private const UPLOAD_EDGE_SCAN_BYTES = 1048576;
+
+    private static int $ai_consultations = 0;
+    private static int $local_policy_blocks = 0;
 
     // L1 In-Memory Cache für Laufzeit-Optimierung
     private static ?array $combined_signatures = null;
@@ -56,12 +61,15 @@ final class VIS_Aegis {
         'rce_eval'           => '/(?i)\b(eval|assert|passthru|shell_exec|system|exec|proc_open|popen|pcntl_exec|create_function)\b\s*[\(\[]/S',
         'rce_callbacks'      => '/(?i)\b(call_user_func|call_user_func_array|array_map|array_filter|array_walk|usort|uasort|uksort|preg_replace_callback|register_shutdown_function|register_tick_function|ob_start)\b\s*[\(\[]/S',
         'rce_misc'           => '/(?i)\b(phpinfo|putenv|mail|dl|ffi_load|invokefunction)\b\s*[\(\[]/S',
-        'rce_backticks'      => '/`[^`]{1,255}`/S',
+        'rce_backticks'      => '/`\s*(?:cat|tac|head|tail|more|less|ls|id|whoami|uname|hostname|pwd|wget|curl|nc|nmap|nslookup|dig|ping|bash|sh|zsh|python|perl|php)\b\s+[^`\n]{1,160}`/iS',
         'rce_subshells'      => '/\$\((?:[^)]+)\)/S',
         'rce_jndi_env'       => '/(?i)\$\{(?>jndi|env):[^\}]+\}|\$\{jndi:(?>ldap|rmi|dns|iiop|http|https):\/\//S',
         'rce_cmd_extensions' => '/(?i)\b(cmd|bash|sh|powershell|pwsh|python|perl|ruby)\.exe/S',
         'rce_cmd_paths'      => '/\/(bin|usr|etc|var|tmp|opt)\/(sh|bash|zsh|dash|ksh|whoami|id|cat|ls|pwd|wget|curl|nc|powershell|uname)/S',
-        'rce_cmd_standalone' => '/\b(cat|whoami|id|uname|hostname|tac|wget|curl|nc|nmap|nslookup|dig|ping|traceroute)\b/S',
+        'rce_cmd_standalone' => '/(?i)(?:[;|&\r\n]|%3b|%7c|%26|\$\(|%24%28)\s*(?:cat|whoami|id|uname|hostname|tac|wget|curl|nc|nmap|nslookup|dig|ping|traceroute)\b(?!\s*=)(?:[^\w]|$)/S',
+        'rce_backtick_cmd'   => '/`\s*(?:cat|whoami|id|uname|hostname|tac|wget|curl|nc|nmap|nslookup|dig|ping)\b\s*`/iS',
+        'rce_cmd_param'      => '/(?i)[?&](?:cmd|command|exec|execute|run|shell|payload)=[^&\s]*(?:cat|whoami|id|uname|hostname|tac|wget|curl|nc|nmap|nslookup|dig|ping|traceroute)\b/S',
+        'rce_cmd_args'       => '/(?i)\b(?:cat|tac|head|tail|more|less|wget|curl|nc|nmap|nslookup|dig|ping)\s+(?:\/|https?:\/\/|-[a-z])/S',
         'rce_windows_chain'  => '/(?i)(?:&&|\|\||[;&|])\s*(?:net\s+user|net\s+localgroup|whoami|powershell|cmd(?:\.exe)?\s+\/c)\b/S',
         'rce_serialized'     => '/(?i)O:\d+:"[^"]+":\d+:\{|a:\d+:\{|C:\d+:"[^"]+":|rO0AB|\\\\x80\\\\x04\\\\x95/S',
         'lfi_rfi_os'         => '/(?i)(?>\.\.[\/\\\\])|(?>\/etc\/+[.\/]*?(?>passwd|shadow|hosts|group|issue|fstab|hostname))|(?>\/var\/log\/(?>auth|secure|messages|syslog|apache2|nginx|access|error)\.log)|(?>c:\\\\(?>windows|winnt)(?>\\\\(?>system32|repair|system|sam))?)|(?>\bboot\.ini\b)|(?>wp-config\.php)|(?>php:\/\/(?>filter|input|temp|memory))|(?>\b(?>file|zip|phar|data|expect|input|glob|ssh2|ogg|rar|zlib):\/\/)|(?>\/proc\/(?>self|version|cmdline|environ|net\/arp))|%00|%%32%65|%2e%2e/S',
@@ -511,6 +519,9 @@ final class VIS_Aegis {
             }
 
             foreach (self::SIG_ATOMIC_KILL as $type => $regex) {
+                if (self::signature_context_skipped($type, $context)) {
+                    continue;
+                }
                 $match = @preg_match($regex, $mutated_input);
                 if ($match === 1) {
                     $this->terminate("Threat detected in $context ($mutation_type): [$type]", 'BLOCK', $type);
@@ -525,12 +536,72 @@ final class VIS_Aegis {
     }
 
     /**
+     * Some signatures are only meaningful in request-line/header context.
+     * Applying them to article bodies, JSON payloads or form fields produced
+     * false positives on legitimate content (Markdown backticks, prose).
+     *
+     * @param string $type
+     * @param string $context
+     * @return bool
+     */
+    private static function signature_context_skipped(string $type, string $context): bool {
+        if (!in_array($type, ['rce_backticks', 'rce_backtick_cmd', 'rce_cmd_args'], true)) {
+            return false;
+        }
+        $context = strtoupper($context);
+        foreach (['POST_DATA', 'JSON_BODY', 'RAW_BODY', 'GET_DATA', 'COOKIE_DATA'] as $marker) {
+            if (str_contains($context, $marker)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * VGT KERNEL DIRECTIVE: HEURISTIC / SUSPICION CHECK (Phase 2)
      * Berechnet den Risiko-Score und leitet an das GORGON-Netzwerk oder VIS Oracle weiter.
      */
     private function scan_string_heuristic(string $input, string $context): void {
         if ($input === '' || strlen($input) < 3) {
             return;
+        }
+
+        // Authenticated editors/admins and the plugin's own admin screens must
+        // not be judged by the probabilistic Oracle: it classified ordinary
+        // GeDefense dashboard URLs as "Reconnaissance" in production logs.
+        if ($this->is_privileged_admin_request()) {
+            return;
+        }
+
+        // FIRST LINE: Deterministic Oracle policy distillation. This encodes
+        // the categories the AI learned in production as local rules. Anything
+        // that matches with high confidence is decided before a model call.
+        $distillate = null;
+        if (class_exists('VIS_Aegis_Oracle') && method_exists('VIS_Aegis_Oracle', 'distill')) {
+            try {
+                $distillate = VIS_Aegis_Oracle::distill($input, $context);
+                if (is_array($distillate)
+                    && ($distillate['verdict'] ?? '') === 'BLOCK'
+                    && (int)($distillate['confidence'] ?? 0) >= 85) {
+                    self::$local_policy_blocks++;
+                    self::record_metric('local_blocks');
+                    $policy = substr((string)($distillate['policy'] ?? 'Oracle Policy'), 0, 80);
+                    $vector = substr((string)($distillate['vector'] ?? 'oracle_policy'), 0, 64);
+                    $this->terminate("Oracle policy [$policy] in $context", 'BLOCK', 'ORACLE_' . $vector);
+                }
+                if (is_array($distillate) && ($distillate['verdict'] ?? '') === 'SAFE') {
+                    self::record_metric('local_safe');
+                    // Local matrix explicitly resolved this input as trusted
+                    // (page-builder JSON, own admin surface, WordPress update
+                    // archive). No AI call and no heuristic escalation.
+                    return;
+                }
+            } catch (\RuntimeException $e) {
+                // assessment() uses RuntimeException as its internal BLOCK signal
+                throw $e;
+            } catch (\Throwable $e) {
+                error_log('[VGT AEGIS] Distillate evaluation failed: ' . $e->getMessage());
+            }
         }
 
         $mutations = [
@@ -633,22 +704,167 @@ final class VIS_Aegis {
                  $this->terminate("Global Reputation Block in $context (Score: $total_threat_score)", 'BLOCK', 'GORGON_REPUTATION_KILL');
             }
 
-            if (class_exists('VIS_Aegis_Oracle') && $this->oracle_calls < self::MAX_ORACLE_CALLS) {
+            if (class_exists('VIS_Aegis_Oracle') && $this->should_consult_oracle($input, $context, $distillate, $suspicion_score, $total_threat_score)) {
                 try {
+                    self::$ai_consultations++;
+                    self::record_metric('ai_calls');
                     $this->oracle_calls++;
-                    $oracle_data = VIS_Aegis_Oracle::judge($input);
-                    $verdict = is_array($oracle_data) ? $oracle_data['verdict'] : $oracle_data;
-                    
+                    $oracle_data = VIS_Aegis_Oracle::judge($input, $context);
+                    $verdict = is_array($oracle_data) ? ($oracle_data['verdict'] ?? 'UNCERTAIN') : 'UNCERTAIN';
+
                     if ($verdict === 'BLOCK') {
+                        self::record_metric('ai_blocks');
                         $ai_reason = is_array($oracle_data) && !empty($oracle_data['reason']) ? $oracle_data['reason'] : 'Unknown AI Heuristic';
-                        $clean_reason = substr(strip_tags($ai_reason), 0, 255);
+                        $clean_reason = substr(strip_tags((string)$ai_reason), 0, 255);
                         $this->terminate("AI Threat [$context] | Oracle: $clean_reason", 'BLOCK', 'AI_DETECTED_THREAT');
                     }
                 } catch (\Throwable $e) {
                     error_log("VIS_AEGIS_ORACLE_CRITICAL_FAILURE: " . $e->getMessage());
                 }
+            } elseif ($this->is_sensitive_request()
+                && is_array($distillate)
+                && ($distillate['verdict'] ?? '') === 'UNCERTAIN'
+                && $suspicion_score >= 70) {
+                // No AI capacity / local matrix inconclusive: only a sensitive
+                // route (login, admin, API mutation) is denied. Ordinary GETs
+                // keep flowing instead of being blocked without evidence.
+                $this->terminate("Local uncertainty on sensitive target [$context]", 'BLOCK', 'heuristic_threshold');
             }
         }
+    }
+
+    /**
+     * Returns true for authenticated editors/admins and the plugin's own
+     * admin screens. Those requests keep the deterministic atomic signatures,
+     * but skip the probabilistic heuristic/Oracle layer.
+     */
+    private function is_privileged_admin_request(): bool {
+        if (function_exists('is_user_logged_in') && is_user_logged_in() && function_exists('current_user_can')) {
+            if (current_user_can('edit_posts') || current_user_can('manage_options')) {
+                return true;
+            }
+        }
+
+        $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+        if ($uri === '') return false;
+        if (str_contains($uri, 'page=vis-') || str_contains($uri, 'page=vgt-')) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * AI is now the exception, not the default: the distillate matrix already
+     * resolved high-confidence policies. Consult the model only when the
+     * request is sensitive and the local matrix is genuinely inconclusive.
+     */
+    private function should_consult_oracle(string $input, string $context, ?array $distillate, float $score, float $total_score): bool {
+        if (!class_exists('VIS_Aegis_Oracle')) {
+            return false;
+        }
+        if ($this->oracle_calls >= self::MAX_ORACLE_CALLS) {
+            return false;
+        }
+        if (is_array($distillate)) {
+            if (($distillate['verdict'] ?? '') === 'BLOCK') {
+                return false;
+            }
+            if (($distillate['verdict'] ?? '') === 'SAFE' && $score < 85) {
+                return false;
+            }
+            if ((int)($distillate['confidence'] ?? 0) >= 85) {
+                return false;
+            }
+        }
+        if (!$this->is_sensitive_request() && $score < 60) {
+            return false;
+        }
+        if (!$this->ai_budget_available()) {
+            error_log('[VGT AEGIS] Oracle deferred: local AI budget exhausted.');
+            return false;
+        }
+        return true;
+    }
+
+    private function is_sensitive_request(): bool {
+        $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+        if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+            return true;
+        }
+        $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+        foreach (['wp-login.php', 'wp-admin', 'admin-ajax.php', 'xmlrpc.php', 'wp-json/', '/api/'] as $marker) {
+            if (str_contains($uri, $marker)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function ai_budget_available(): bool {
+        $per_ip_limit = (int)apply_filters('vis_aegis_ai_calls_per_ip', self::MAX_AI_CALLS_PER_IP);
+        $global_limit = (int)apply_filters('vis_aegis_ai_calls_global', self::MAX_AI_CALLS_GLOBAL);
+        $per_ip_limit = max(1, min(20, $per_ip_limit));
+        $global_limit = max(1, min(500, $global_limit));
+
+        $ip = $this->get_secure_ip();
+        $per_key = 'vis_aegis_ai_budget_' . md5($ip);
+        $per_ip = (int)get_transient($per_key);
+        $global = (int)get_transient('vis_aegis_ai_budget_global');
+        if ($per_ip >= $per_ip_limit || $global >= $global_limit) {
+            return false;
+        }
+        set_transient($per_key, $per_ip + 1, 600);
+        set_transient('vis_aegis_ai_budget_global', $global + 1, 3600);
+        return true;
+    }
+
+    /** @return array{ai_consultations:int,local_policy_blocks:int,oracle_calls:int} */
+    public static function ai_metrics(): array {
+        return [
+            'ai_consultations' => self::$ai_consultations,
+            'local_policy_blocks' => self::$local_policy_blocks,
+            'oracle_calls' => self::$ai_consultations,
+        ];
+    }
+
+    /**
+     * Persistent efficiency metrics for the NOC dashboard: how many decisions
+     * AEGIS resolved locally versus how many were escalated to the Oracle.
+     *
+     * @return array{total:array<string,int>,today:array<string,int>,local_decisions:int,ai_ratio:float}
+     */
+    public static function metrics(): array {
+        $raw = function_exists('get_option') ? get_option('vis_aegis_metrics', []) : [];
+        if (!is_array($raw)) $raw = [];
+        $defaults = ['local_blocks' => 0, 'local_safe' => 0, 'ai_calls' => 0, 'ai_blocks' => 0];
+        $total = array_merge($defaults, is_array($raw['total'] ?? null) ? $raw['total'] : []);
+        $today = array_merge($defaults, is_array($raw['today'] ?? null) ? $raw['today'] : []);
+        $local = (int)$total['local_blocks'] + (int)$total['local_safe'];
+        $ai = (int)$total['ai_calls'];
+        $denom = $local + $ai;
+        return [
+            'total' => array_map('intval', $total),
+            'today' => array_map('intval', $today),
+            'local_decisions' => $local,
+            'ai_ratio' => $denom > 0 ? round(($ai / $denom) * 100, 1) : 0.0,
+        ];
+    }
+
+    private static function record_metric(string $key): void {
+        if (!function_exists('get_option') || !function_exists('update_option')) return;
+        $raw = get_option('vis_aegis_metrics', []);
+        if (!is_array($raw)) $raw = [];
+        $day = gmdate('Y-m-d');
+        if (($raw['day'] ?? '') !== $day) {
+            $raw['day'] = $day;
+            $raw['today'] = [];
+        }
+        if (!isset($raw['total']) || !is_array($raw['total'])) $raw['total'] = [];
+        if (!isset($raw['today']) || !is_array($raw['today'])) $raw['today'] = [];
+        $raw['total'][$key] = (int)($raw['total'][$key] ?? 0) + 1;
+        $raw['today'][$key] = (int)($raw['today'][$key] ?? 0) + 1;
+        $raw['updated'] = time();
+        update_option('vis_aegis_metrics', $raw, false);
     }
 
     /**
@@ -745,14 +961,26 @@ final class VIS_Aegis {
         }
         
         // Zero-Trust: Localhost Whitelisting nur auf echter physikalischer Socket-Ebene!
+        // When a reverse proxy forwards through loopback it always carries a
+        // client-IP header; such requests must still pass the full inspection.
         $socket_ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        if (in_array($socket_ip, ['127.0.0.1', '::1', 'fe80::1'], true)) {
+        $proxy_headers_present = !empty($_SERVER['HTTP_X_REAL_IP'])
+            || !empty($_SERVER['HTTP_X_FORWARDED_FOR'])
+            || !empty($_SERVER['HTTP_CF_CONNECTING_IP'])
+            || !empty($_SERVER['HTTP_TRUE_CLIENT_IP']);
+        if (!$proxy_headers_present && in_array($socket_ip, ['127.0.0.1', '::1', 'fe80::1'], true)) {
             return true;
         }
-        
-        if (defined('DOING_CRON') && DOING_CRON) {
-            $server_ip = $_SERVER['SERVER_ADDR'] ?? null;
-            if ($server_ip && $ip === $server_ip) return true;
+
+        // The server's own public address is used by WP-Cron, health probes and
+        // internal curl calls. It can never be a spoofed remote client address.
+        $server_ip = (string)($_SERVER['SERVER_ADDR'] ?? '');
+        if ($server_ip !== '' && $server_ip === $ip) {
+            return true;
+        }
+
+        if ((defined('WP_CLI') && WP_CLI) || (defined('DOING_CRON') && DOING_CRON)) {
+            return true;
         }
 
         if (!empty($this->whitelist_ips)) {
@@ -943,7 +1171,7 @@ final class VIS_Aegis {
                 $this->scan_string_heuristic($normalized_str, "HEADER_VAL_$name");
             }
             
-            foreach ($all_patterns as $type => $regex) {
+            foreach (array_merge(self::SIG_ATOMIC_KILL, self::SIG_AI_DELEGATION) as $type => $regex) {
                  if (@preg_match($regex, $normalized_str) === 1) {
                     $this->terminate("Header Injection: $name", 'BLOCK', $type);
                 }
@@ -976,8 +1204,10 @@ final class VIS_Aegis {
             $this->scan_string_heuristic($normalized_uri, 'URI_NORMALIZED');
         }
         
-        $all_patterns = self::get_combined_signatures();
-        foreach ($all_patterns as $type => $regex) {
+        // Header-only signatures (e.g. scanner user agents) must never be
+        // applied to the request path: an article slug containing "nmap"
+        // is not a malicious user agent.
+        foreach (self::SIG_AI_DELEGATION as $type => $regex) {
             if (@preg_match($regex, $normalized_uri) === 1) {
                  $this->terminate("URI Threat: [$type]", 'BLOCK', $type);
             }
@@ -1119,6 +1349,7 @@ final class VIS_Aegis {
             $critical_vectors = [
                 'rce_eval', 'rce_callbacks', 'rce_misc', 'rce_backticks', 'rce_subshells',
                 'rce_jndi_env', 'rce_serialized', 'rce_cmd_extensions', 'rce_cmd_paths', 'rce_cmd_standalone',
+                'rce_cmd_param', 'rce_cmd_args', 'rce_backtick_cmd',
                 'lfi_rfi_os', 'sqli_union', 'sqli_select', 'sqli_functions', 
                 'sqli_structure', 'sqli_logic', 'sqli_hard_kill', 'xxe_ssrf', 'rce_source_hijack',
                 'framework', 'gql_recon', 'rce_upload', 'rce_upload_polyglot',
@@ -1134,6 +1365,10 @@ final class VIS_Aegis {
                 VIS_Event_Bus::emit('AEGIS', $action, $reason, [
                     'vector' => $vector,
                     'method' => $method,
+                    'route' => substr((string)($_SERVER['REQUEST_URI'] ?? ''), 0, 255),
+                    'ua' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 160),
+                    'engine' => str_starts_with($vector, 'ORACLE_') ? 'aegis_distillate' : ($vector === 'AI_DETECTED_THREAT' ? 'aegis_oracle_ai' : 'aegis'),
+                    'ai_calls' => self::$ai_consultations,
                 ], $severity);
             }
             

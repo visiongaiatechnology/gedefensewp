@@ -95,7 +95,14 @@ final class Nemesis {
     private function write_telemetry( string $type, string $details, string $ip = '' ): void {
         global $wpdb;
         if ( empty( $ip ) ) {
-            $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            $ip = class_exists( '\VIS_Security' )
+                ? (string) \VIS_Security::client_ip()
+                : (string) ( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
+        }
+        // CLI/cron requests have no socket address. Tag them explicitly instead
+        // of writing a misleading 0.0.0.0 telemetry record.
+        if ( $ip === '0.0.0.0' || $ip === '' ) {
+            $ip = ( defined( 'WP_CLI' ) && WP_CLI ) || ( defined( 'DOING_CRON' ) && DOING_CRON ) ? 'CLI' : '0.0.0.0';
         }
         $raw_ua = $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
 

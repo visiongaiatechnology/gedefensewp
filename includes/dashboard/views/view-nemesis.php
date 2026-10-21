@@ -29,7 +29,7 @@ if ($wpdb->get_var("SHOW TABLES LIKE '{$table_logs}'") === $table_logs) {
         'NEMESIS'
     ));
     $real_logs = $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM {$table_logs} WHERE module = %s ORDER BY timestamp DESC LIMIT 30", 
+        "SELECT id, timestamp, module, type, details, ip_address AS ip FROM {$table_logs} WHERE module = %s ORDER BY timestamp DESC LIMIT 30", 
         'NEMESIS'
     ));
 }

@@ -21,21 +21,30 @@ final class Morpheus_Shield_Network {
         if ( Morpheus::$is_internal_action ) return $response;
 
         $caller = $this->tracer->identify_caller();
-        if ( 'core' === $caller || 'theme' === $caller ) return $response; 
+        if ( 'core' === $caller || 'theme' === $caller ) return $response;
 
         $safe_url = $url;
         try {
-            $safe_url = \VIS_Security::validate_public_http_url($url, true);
+            $validated = \VIS_Security::validate_public_http_url($url, true);
+            if ( is_string($validated) && $validated !== '' ) {
+                $safe_url = $validated;
+            }
         } catch (\Throwable $e) {
+            // Reject only the URL, never continue with an empty target.
             $this->ui->execute_kill( $caller, 'NETWORK_SSRF_GUARD', 'Outbound URL rejected by Sentinel network policy.' );
+            $safe_url = $url;
         }
 
         $host = parse_url( $safe_url, PHP_URL_HOST );
         if ( empty( $host ) ) {
             $host = parse_url( $url, PHP_URL_HOST );
         }
-        if ( empty( $host ) ) return $response;
-        $host = strtolower((string)$host);
+        if ( ! is_string( $host ) || $host === '' ) return $response;
+        $host = strtolower( rtrim( (string) $host, '.' ) );
+
+        // A site is always allowed to talk to itself: WP-Cron, loopback health
+        // probes and plugin-internal callbacks must not be classified as egress.
+        if ( $this->is_own_host( $host ) ) return $response;
 
         $this->ui->log_audit_trace( $caller, 'NETWORK', sprintf( 'Egress TCP/IP attempt to host: %s', $host ) );
 
@@ -46,5 +55,33 @@ final class Morpheus_Shield_Network {
         }
 
         return $response;
+    }
+
+    /**
+     * Returns true for the site's own hostnames, the server address and loopback.
+     * Prevents the network shield from blocking WordPress' own self-calls.
+     */
+    private function is_own_host( string $host ): bool {
+        if ( in_array( $host, array( 'localhost', '127.0.0.1', '::1' ), true ) ) return true;
+
+        $candidates = array();
+        if ( function_exists( 'home_url' ) ) $candidates[] = (string) parse_url( (string) home_url(), PHP_URL_HOST );
+        if ( function_exists( 'site_url' ) ) $candidates[] = (string) parse_url( (string) site_url(), PHP_URL_HOST );
+        if ( isset( $_SERVER['HTTP_HOST'] ) ) $candidates[] = (string) $_SERVER['HTTP_HOST'];
+        if ( isset( $_SERVER['SERVER_NAME'] ) ) $candidates[] = (string) $_SERVER['SERVER_NAME'];
+        if ( isset( $_SERVER['SERVER_ADDR'] ) ) $candidates[] = (string) $_SERVER['SERVER_ADDR'];
+
+        foreach ( $candidates as $candidate ) {
+            $candidate = strtolower( trim( (string) $candidate ) );
+            if ( str_contains( $candidate, ':' ) && ! str_starts_with( $candidate, '[' ) && filter_var( $candidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) === false ) {
+                $candidate = strtolower( (string) parse_url( 'http://' . $candidate, PHP_URL_HOST ) );
+            }
+            $candidate = rtrim( $candidate, '.' );
+            if ( $candidate !== '' && ( $host === $candidate || str_ends_with( $host, '.' . $candidate ) ) ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

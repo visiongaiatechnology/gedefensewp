@@ -139,7 +139,7 @@ if (!defined('ABSPATH')) {
                 $core_color  = $is_blocked ? '#ff3366' : ($is_suspicious ? '#ffaa00' : '#00f3ff');
                 $glow_filter = $is_blocked ? 'url(#visGlowRose)' : 'url(#visGlowCyan)';
                 $duration    = max(1.8, min(3.8, 1.4 + ($dist / 220.0)));
-                $anim_delay  = round(($idx * 0.28) % 2.5, 2);
+                $anim_delay  = round(fmod($idx * 0.28, 2.5), 2);
 
                 // Trajectory Path and animated photon packet
                 $arcs_html .= sprintf(

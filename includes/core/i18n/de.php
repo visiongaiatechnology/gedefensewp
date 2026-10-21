@@ -2179,4 +2179,12 @@ return [
     'Vor %d Std.' => 'Vor %d Std.',
     'Vor %d T.' => 'Vor %d T.',
     'Aktiv' => 'Aktiv',
+    'AEGIS DISTILLATE / AI EFFICIENCY' => 'AEGIS-DISTILLAT / KI-EFFIZIENZ',
+    'Local decisions before the model' => 'Lokale Entscheidungen vor dem Modell',
+    'Oracle policy matrix resolved locally, AI only for ambiguous sensitive routes.' => 'Oracle-Policy-Matrix lokal aufgelöst; KI nur bei unklaren sensiblen Routen.',
+    'Local decisions' => 'Lokale Entscheidungen',
+    'AI consultations' => 'KI-Konsultationen',
+    'AI ratio' => 'KI-Quote',
+    'of all filter decisions' => 'aller Filterentscheidungen',
+    'Today: %s' => 'Heute: %s',
 ];

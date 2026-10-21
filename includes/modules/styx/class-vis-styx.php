@@ -64,6 +64,12 @@ final class Styx {
         if (!$this->block_wp_telemetry) {
             $hosts = ['api.wordpress.org', 'downloads.wordpress.org'];
         }
+
+        // The site itself is never "egress": WP-Cron, loopback health checks and
+        // plugin-internal callbacks must remain functional.
+        foreach ($this->own_hosts() as $own_host) {
+            $hosts[] = $own_host;
+        }
         
         if (defined('WP_ACCESSIBLE_HOSTS')) {
             $extra = explode(',', WP_ACCESSIBLE_HOSTS);
@@ -84,6 +90,29 @@ final class Styx {
                 $this->exact_hosts[$host] = true;
             }
         }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function own_hosts(): array {
+        $candidates = [];
+        if (function_exists('home_url')) $candidates[] = (string) home_url();
+        if (function_exists('site_url')) $candidates[] = (string) site_url();
+        if (!empty($_SERVER['HTTP_HOST'])) $candidates[] = (string) $_SERVER['HTTP_HOST'];
+        if (!empty($_SERVER['SERVER_NAME'])) $candidates[] = (string) $_SERVER['SERVER_NAME'];
+        if (!empty($_SERVER['SERVER_ADDR'])) $candidates[] = (string) $_SERVER['SERVER_ADDR'];
+
+        $hosts = [];
+        foreach ($candidates as $candidate) {
+            $candidate = trim($candidate);
+            if ($candidate === '') continue;
+            $host = parse_url(str_contains($candidate, '://') ? $candidate : 'http://' . $candidate, PHP_URL_HOST);
+            if (!is_string($host) || $host === '') continue;
+            $host = rtrim(strtolower($host), '.');
+            if ($host !== '') $hosts[] = $host;
+        }
+        return array_values(array_unique($hosts));
     }
 
     public function intercept_outbound($preempt, array $args, string $url) {

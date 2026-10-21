@@ -21,7 +21,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.4.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.1_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -56,14 +56,15 @@
 
 ---
 
-# 🚀 What's New in GeDefense WP 8.4.0
+# 🚀 What's New in GeDefense WP 8.4.1
 
-> **Release 8.4.0** delivers the PHP upload-progress mitigation, the redesigned ThroneGuard auth surface and LoginPager viewport centering. Full detail in [`CHANGELOG.md`](CHANGELOG.md).
+> **Release 8.4.1** hardens the operational layer learned from production audits: Oracle policy distillation inside AEGIS, a bounded AI gate, Cerberus loopback protection, XDR deadlock retries, log retention and a live AI-efficiency panel. Full detail in [`CHANGELOG.md`](CHANGELOG.md).
 
+- **Oracle distillate / AI gate:** AI is now the exception; 78.6% of historic Oracle blocks are decided locally before a model call.
 - **Security:** `session.upload_progress.enabled = Off` is enforced through the Zeus `.user.ini` manager, verified against the effective web SAPI and surfaced in the security health dashboard (regression-covered). It does not replace the official PHP update.
 - **ThroneGuard:** branded, viewport-centered lock surface with safe-area, reduced-motion and accessible error states.
 - **LoginPager:** `#login` is viewport-centered with `translate(-50%, -50%)`, immune to later `body.login` overrides.
-- **Release:** `8.4.0` across entrypoint, `VIS_VERSION`, WAF compiler and module manifest/trust anchor.
+- **Release:** `8.4.1` across entrypoint, `VIS_VERSION`, module manifest and trust anchor.
 
 ---
 

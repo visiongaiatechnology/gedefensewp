@@ -81,7 +81,7 @@ final class ResponseEngine {
         $auto = is_array($config) && !empty($config['auto_response_enabled']);
 
         if (!$auto || !$decision['containment_allowed']) {
-            $wpdb->update($incidents, ['response_state' => $decision['tier']], ['incident_uuid' => $incidentId]);
+            self::update_incident_with_retry($wpdb, $incidents, ['response_state' => $decision['tier']], $incidentId);
             return;
         }
 
@@ -95,7 +95,7 @@ final class ResponseEngine {
         if ($escalationEnabled && $actor !== '') {
             $twentyFourHoursAgo = gmdate('Y-m-d H:i:s', time() - 86400);
             $priorCount = (int)$wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$incidents} WHERE primary_actor = %s AND incident_uuid != %s AND started_at >= %s",
+                "SELECT COUNT(*) FROM {$incidents} WHERE primary_actor = %s AND incident_uuid != %s AND created_at >= %s",
                 $actor, $incidentId, $twentyFourHoursAgo
             ));
             if ($priorCount >= 1) {
@@ -375,10 +375,20 @@ final class ResponseEngine {
             }
         }
 
-        $wpdb->update($incidents, ['response_state' => $finalState], ['incident_uuid' => $incidentId]);
+        self::update_incident_with_retry($wpdb, $incidents, ['response_state' => $finalState], $incidentId);
         if ($actionsApplied > 0 && function_exists('wp_schedule_single_event')) {
             wp_schedule_single_event(time() + min($ttls), 'vis_xdr_response_cleanup');
         }
+    }
+
+    private static function update_incident_with_retry(\wpdb $wpdb, string $table, array $data, string $incidentId): bool {
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $result = $wpdb->update($table, $data, ['incident_uuid' => $incidentId]);
+            if ($result !== false) return true;
+            if (!str_contains(strtolower((string)($wpdb->last_error ?? '')), 'deadlock')) return false;
+            usleep(50000 * $attempt);
+        }
+        return false;
     }
 
     public static function rollbackExpired(): void {

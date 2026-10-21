@@ -2647,4 +2647,12 @@ return [
     'Vor %d Std.' => '%d ч. назад',
     'Vor %d T.' => '%d дн. назад',
     'Aktiv' => 'Активно',
+    'AEGIS DISTILLATE / AI EFFICIENCY' => 'ДИСТИЛЛЯТ AEGIS / ЭФФЕКТИВНОСТЬ ИИ',
+    'Local decisions before the model' => 'Локальные решения до модели',
+    'Oracle policy matrix resolved locally, AI only for ambiguous sensitive routes.' => 'Матрица политик Oracle решается локально; ИИ только для неоднозначных чувствительных маршрутов.',
+    'Local decisions' => 'Локальные решения',
+    'AI consultations' => 'Обращения к ИИ',
+    'AI ratio' => 'Доля ИИ',
+    'of all filter decisions' => 'всех решений фильтра',
+    'Today: %s' => 'Сегодня: %s',
 ];
