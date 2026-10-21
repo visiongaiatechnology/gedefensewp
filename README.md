@@ -6,7 +6,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.3.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.3.0)
+[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.4.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.0)
 
 </div>
 
@@ -21,7 +21,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.3.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -47,6 +47,8 @@
 > - 🇷🇺 **Русский**: [📕 GeDefense_WP_Handbuch_8.1.0_RU.pdf](GeDefense_WP_Handbuch_8.1.0_RU.pdf)
 >
 > *Note: The handbook provides comprehensive, hands-on guidance on configuration, threat analysis, and sovereign system hardening for all user groups.*
+>
+> **Archived baseline:** The linked PDF handbooks document the 8.1.0 generation. Current release documentation: this README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`Next.md`](Next.md).
 
 ---
 
@@ -54,7 +56,18 @@
 
 ---
 
-# 🚀 What's New in GeDefense WP 8.1.0
+# 🚀 What's New in GeDefense WP 8.4.0
+
+> **Release 8.4.0** delivers the PHP upload-progress mitigation, the redesigned ThroneGuard auth surface and LoginPager viewport centering. Full detail in [`CHANGELOG.md`](CHANGELOG.md).
+
+- **Security:** `session.upload_progress.enabled = Off` is enforced through the Zeus `.user.ini` manager, verified against the effective web SAPI and surfaced in the security health dashboard (regression-covered). It does not replace the official PHP update.
+- **ThroneGuard:** branded, viewport-centered lock surface with safe-area, reduced-motion and accessible error states.
+- **LoginPager:** `#login` is viewport-centered with `translate(-50%, -50%)`, immune to later `body.login` overrides.
+- **Release:** `8.4.0` across entrypoint, `VIS_VERSION`, WAF compiler and module manifest/trust anchor.
+
+---
+
+# 🧱 Platform Deep Dive — 8.1.0 baseline (ZEUS NextGen, TRINITY XDR, Dashboard)
 
 > **Changelog Overview**: Version 8.1.0 represents a massive architectural leap, introducing the **ZEUS Next Generation Pre-Boot Admission Kernel**, the **TRINITY Autonomous Closed-Loop XDR Fabric**, formalized **TITAN Assurance Lifecycles**, and comprehensive **Strict-Typing and Localization Refactoring** across the entire platform.
 
@@ -222,7 +235,7 @@ The core is designed to remain **fully functional as an independent open-source 
 ## Table of Contents
 
 - [Documentation & Handbooks](#-official-documentation--handbooks)
-- [What's New in GeDefense WP 8.1.0](#-whats-new-in-gedefense-wp-810)
+- [What's New in GeDefense WP 8.4.0](#-whats-new-in-gedefense-wp-840)
 - [Security Architecture & Technical Specification](#-security-architecture--technical-specification)
 - [Multi-Phase Ignition Protocol](#multi-phase-ignition-protocol)
 - [Core Module Matrix](#core-module-matrix)
@@ -636,7 +649,7 @@ GeDefense WP strictly adheres to a zero-external-dependency architecture:
 
 # Performance
 
-| Metric | GeDefense WP 8.3.0 |
+| Metric | GeDefense WP 8.4.0 |
 |---|---:|
 | **L0 Pre-Boot Evaluation Latency** | `< 0.05 ms` |
 | **L0 Microbenchmark Throughput** | `150,000+ evals/sec` |
@@ -747,6 +760,13 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 # Changelog History
 
 > Complete version history is available in [`CHANGELOG.md`](CHANGELOG.md).
+
+## 8.4.0 — PHP Upload-Progress Hardening, ThroneGuard Auth Surface & LoginPager Centering
+
+- **PHP upload-progress hardening:** `session.upload_progress.enabled = Off` is enforced through the Zeus `.user.ini` manager, verified against the effective web SAPI, surfaced in the security health dashboard, and covered by a regression harness. Preventive defense-in-depth for the announced PHP upload-progress RCE class; it does not replace the official PHP security update.
+- **ThroneGuard lock surface redesigned:** branded auth screen using LoginPager tokens (accent, background, logo, title), viewport-fixed centering, safe-area and reduced-motion support, accessible error state, password reveal and logout.
+- **LoginPager centering fixed:** `#login` is viewport-centered with `translate(-50%, -50%)` and no longer depends on `body.login` flex rules that later stylesheets can override; responsive width and internal scrolling on short viewports.
+- **Release engineering:** version `8.4.0` across entrypoint, `VIS_VERSION`, WAF compiler and module manifest/trust anchor; changelog and handover updated.
 
 ## 8.3.0 — Glass 2100 Sovereign Threat Map, Dynamic 4-Way Tooltips & Zero-Simulation Real-Time Telemetry
 - **VGT Glass 2100 Sovereign Design System**:
@@ -939,7 +959,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.3.0 — Open Core
+## GeDefense WP 8.4.0 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

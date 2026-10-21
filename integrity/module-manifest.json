@@ -9,19 +9,19 @@
         },
         "assets": {
             "files": 12,
-            "root_hash": "dc5ab3558182ecb8481794540b06d4c7369d166c2009d63c66837771f033334f"
+            "root_hash": "428d26ec6e19fe5ff34cc0ac8ade516af45afc041a7435770060052be2614cf2"
         },
         "compatibility": {
             "files": 4,
             "root_hash": "178ff34fc8b19b5617b1fad47671e0308a613b8c94566ebcda40b13f751130b9"
         },
         "core": {
-            "files": 14,
-            "root_hash": "f4e20cef28f057128ab8b766d3e9cd954f79af0f2c5a723bc1e0ae736bbc0415"
+            "files": 15,
+            "root_hash": "6c114558befafb9135b20179f99cb5cdc881d9826919e7b0c8f46152cd9afd81"
         },
         "dashboard": {
-            "files": 85,
-            "root_hash": "93f4d56d0995e92a3617e3c0417eab04d0d136ce37d4b20724c56d708799805f"
+            "files": 87,
+            "root_hash": "07430ce74ad1ca67284d17bee4611805b8b47136cce2934110508e0920269aed"
         },
         "xdr": {
             "files": 9,
@@ -93,11 +93,11 @@
         },
         "throneguard": {
             "files": 1,
-            "root_hash": "b17e69a8689581d1134334dc3da1370eee9bee64b1d63dac4cc63797f5cdf90e"
+            "root_hash": "86e789b482fe684c1e7cd7c69d27b357ae730d0e0b006cda283a2c38afea22df"
         },
         "loginpager": {
             "files": 1,
-            "root_hash": "28e46e6a478d5f55dd63fca4588dcda72c4299b0f53443d2828c37e192496bfc"
+            "root_hash": "982c915a547f444277418d73f7e7db3debdddc7c155d3b163535f6ef7e6e53c5"
         },
         "trap": {
             "files": 4,
@@ -109,7 +109,7 @@
         },
         "zeus": {
             "files": 16,
-            "root_hash": "3b6fa35f78dbf881ad762cc1ba69f4f63e35773ae554cbd2fe10c6cc0b0acd5e"
+            "root_hash": "7d2e37f9cfbc1d81642c4427fdbd249c8e9e5121a3ad688d1175e5bcec93096c"
         }
     }
 }

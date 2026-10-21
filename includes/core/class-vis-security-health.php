@@ -23,6 +23,7 @@ final class VIS_Security_Health {
             self::pattern_present('throneguard_core', __('ThroneGuard privilege boundary active', 'vgt-sentinel'), '/final\s+class\s+VIS_Throne_Guard/i', 9, VIS_PATH . 'includes/modules/throneguard/class-vis-throne-guard.php'),
             self::pattern_present('loginpager_core', __('LoginPager gateway active', 'vgt-sentinel'), '/final\s+class\s+VIS_LoginPager/i', 6, VIS_PATH . 'includes/modules/loginpager/class-vis-loginpager.php'),
             self::legacy_gorgon_inactive(),
+            self::php_upload_progress_hardening(),
         ];
 
         return $checks;
@@ -42,6 +43,44 @@ final class VIS_Security_Health {
         }
 
         return $total > 0 ? (int)floor(($passed / $total) * 100) : 0;
+    }
+
+
+    /**
+     * Live proof that the PHP upload-progress handler is off in the web SAPI that serves this site.
+     * The configuration claim alone is not enough: the check reads the effective ini value and the
+     * .user.ini state, and reports a blocked or pending state as a failure so an operator sees it.
+     */
+    private static function php_upload_progress_hardening(): array {
+        $label = __('PHP upload-progress handler disabled', 'vgt-sentinel');
+        $env_file = VIS_PATH . 'includes/modules/zeus/src/class-zeus-env.php';
+        if (!class_exists('VIS_Zeus_Env') && is_readable($env_file)) {
+            require_once $env_file;
+        }
+        if (!class_exists('VIS_Zeus_Env')) {
+            return [
+                'id' => 'php_upload_progress_hardening',
+                'label' => $label,
+                'status' => 'fail',
+                'severity' => 10,
+                'detail' => __('Zeus environment inspector is unavailable.', 'vgt-sentinel'),
+            ];
+        }
+
+        $status = \VisionGaia\GeDefense\Modules\Zeus\VIS_Zeus_Env::upload_progress_hardening_status(ABSPATH);
+        $effective = $status['effective'] === null ? 'unknown' : ($status['effective'] ? 'enabled' : 'disabled');
+        return [
+            'id' => 'php_upload_progress_hardening',
+            'label' => $label,
+            'status' => ($status['state'] ?? '') === 'protected' ? 'pass' : 'fail',
+            'severity' => 10,
+            'detail' => sprintf(
+                __('%1$s (state %2$s, effective %3$s)', 'vgt-sentinel'),
+                (string) ($status['detail'] ?? ''),
+                (string) ($status['state'] ?? 'unknown'),
+                $effective
+            ),
+        ];
     }
 
     private static function pattern_absent(string $id, string $label, string $pattern, int $severity): array {

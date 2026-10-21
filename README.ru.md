@@ -6,7 +6,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇷🇺 К журналу изменений (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Релиз на GitHub v8.3.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.3.0)
+[**🇷🇺 К журналу изменений (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Релиз на GitHub v8.4.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.0)
 
 </div>
 
@@ -20,7 +20,7 @@
 
 ### Суверенная архитектура безопасности WordPress и ядро Pre-Boot допуска
 
-[![Version](https://img.shields.io/badge/version-8.3.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -46,10 +46,23 @@
 > - 🇬🇧 **English**: [📗 GeDefense_WP_Handbook_8.1.0_EN.pdf](GeDefense_WP_Handbook_8.1.0_EN.pdf)
 >
 > *Примечание: Руководство содержит подробные пошаговые инструкции по настройке, анализу угроз и укреплению периметра.*
+>
+> **Архивная база:** PDF-руководства описывают поколение 8.1.0. Актуальная документация: этот README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) и [`Next.md`](Next.md).
 
 ---
 
-# 🚀 Что нового в GeDefense WP
+# 🚀 Что нового в GeDefense WP 8.4.0
+
+> **Релиз 8.4.0**: защита PHP upload_progress, новый экран авторизации ThroneGuard и центрирование LoginPager. Подробности в [`CHANGELOG.md`](CHANGELOG.md).
+
+- **Безопасность:** `session.upload_progress.enabled = Off` принудительно задаётся через менеджер `.user.ini` Zeus, проверяется по фактическому веб-SAPI и отображается в панели безопасности (покрыто регрессией). Не заменяет официальное обновление PHP.
+- **ThroneGuard:** фирменная, центрированная по viewport поверхность блокировки с safe-area, reduced-motion и доступными состояниями ошибок.
+- **LoginPager:** `#login` центрируется через `translate(-50%, -50%)` и устойчив к последующим переопределениям `body.login`.
+- **Релиз:** `8.4.0` в точке входа, `VIS_VERSION`, WAF-компиляторе и модульном манифесте/якоре доверия.
+
+---
+
+# 🧱 Глубокое погружение в платформу — базовая линия 8.1.0 (ZEUS NextGen, TRINITY XDR, Dashboard)
 
 > **Обзор**: GeDefense WP представляет собой фундаментальный технологический прорыв благодаря **ядру Pre-Boot допуска ZEUS Next Generation**, **автономной замкнутой XDR-фабрике TRINITY**, стандартизированным **жизненным циклам защиты TITAN**, а также строгой типизации и локализации всей платформы.
 
@@ -83,7 +96,7 @@
 ## Содержание
 
 - [Документация и руководства](#-официальная-документация-и-руководства)
-- [Что нового в GeDefense WP](#-что-нового-в-gedefense-wp)
+- [Что нового в GeDefense WP 8.4.0](#-что-нового-в-gedefense-wp-840)
 - [Архитектура безопасности и техническая спецификация](#-архитектура-безопасности-и-техническая-спецификация)
 - [Многофазный протокол запуска](#многофазный-протокол-запуска)
 - [Матрица базовых модулей](#матрица-базовых-модулей)
@@ -317,7 +330,7 @@ GeDefense WP Open Core функционирует на **100% автономно
 
 # Производительность и тесты
 
-| Метрика | GeDefense WP 8.3.0 |
+| Метрика | GeDefense WP 8.4.0 |
 |---|---:|
 | **Задержка оценки Pre-Boot (L0)** | `< 0.05 мс` |
 | **Пропускная способность (Microbenchmark)** | `150 000+ опер/сек` |
@@ -348,6 +361,13 @@ GeDefense WP Open Core распространяется по лицензии **
 # История изменений
 
 > Полная история всех выпусков приведена в файле [`CHANGELOG.md`](CHANGELOG.md).
+
+## 8.4.0 — Защита PHP upload_progress, экран ThroneGuard и центрирование LoginPager
+
+- **Защита PHP upload_progress:** `session.upload_progress.enabled = Off` принудительно задаётся через менеджер `.user.ini` Zeus, проверяется по фактическому веб-SAPI, отображается в панели безопасности и покрывается регрессией. Превентивная эшелонированная защита для объявленного класса RCE в PHP upload-progress; не заменяет официальное обновление PHP.
+- **Новый экран блокировки ThroneGuard:** фирменная поверхность авторизации с токенами LoginPager (акцент, фон, логотип, заголовок), фиксированным центрированием, поддержкой safe-area/reduced-motion, доступным состоянием ошибки, показом пароля и выходом.
+- **Исправлено центрирование LoginPager:** `#login` центрируется через `translate(-50%, -50%)` и больше не зависит от flex-правил `body.login`, которые могут переопределять более поздние стили; адаптивная ширина и внутренняя прокрутка при малой высоте.
+- **Релиз:** версия `8.4.0` в точке входа, `VIS_VERSION`, WAF-компиляторе и модульном манифесте/якоре доверия; обновлены changelog и handover.
 
 ## 8.3.0 — Дизайн Glass 2100, карта угроз реального времени, 4-позиционные тултипы и 100% локализация
 - **Дизайн-система VGT Glass 2100**:
@@ -401,7 +421,7 @@ GeDefense WP Open Core распространяется по лицензии **
 
 <div align="center">
 
-## GeDefense WP 8.3.0 — Open Core
+## GeDefense WP 8.4.0 — Open Core
 
 **СУВЕРЕННАЯ БЕЗОПАСНОСТЬ WORDPRESS**
 

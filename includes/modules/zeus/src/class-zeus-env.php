@@ -18,6 +18,9 @@ class VIS_Zeus_Env {
     private string $waf_file;
     private array $config;
 
+    private const PHP_HARDENING_MARKER = '; VGT PHP UPLOAD-PROGRESS HARDENING';
+    private const PHP_HARDENING_DIRECTIVE = 'session.upload_progress.enabled = Off';
+
     public function __construct( string $vault_dir, string $waf_file, array $config ) {
         $this->vault_dir = $vault_dir;
         $this->waf_file  = $waf_file;
@@ -111,10 +114,19 @@ class VIS_Zeus_Env {
         $content = preg_replace( '/^auto_prepend_file\s*=\s*".*zeus-waf\.php".*$/m', '', $content );
         $content = preg_replace( '/^auto_prepend_file\s*=\s*".*wp-security-firewall\.php".*$/m', '', $content );
         $content = trim( $content );
+        // The hardening line is owned by this plugin, so an old value is replaced, never accumulated.
+        $content = preg_replace( '/;\s*VGT PHP UPLOAD-PROGRESS HARDENING[\r\n]*/s', '', $content );
+        $content = preg_replace( '/^\s*session\.upload_progress\.enabled\s*=.*$/m', '', $content );
+        $content = trim( $content );
 
         if (!empty($this->config['zeus_enabled'])) {
             $content = ($content !== '' ? $content . "\n\n" : '') . "; VGT ZEUS WAF\n" . $directive . "\n";
         }
+
+        // Upload-progress hardening is independent of the WAF switch: it closes the PHP handler
+        // that runs before application code, so it stays in place even when ZEUS itself is off.
+        $hardening = self::PHP_HARDENING_MARKER . "\n" . self::PHP_HARDENING_DIRECTIVE;
+        $content = ($content !== '' ? $content . "\n\n" : '') . $hardening . "\n";
 
         if ($content === '' && is_file($ini_file)) {
             @unlink($ini_file);
@@ -194,6 +206,105 @@ class VIS_Zeus_Env {
             return (bool)$updated;
         }
         return false;
+    }
+
+
+    /**
+     * Ensure the per-directory hardening directive exists without touching the rest of the file.
+     * This runs from the request bootstrap; it reads one small file and writes only when the
+     * directive is missing, so an already hardened site pays no write.
+     */
+    public function ensure_upload_progress_hardening(): bool {
+        $ini_file = ABSPATH . '.user.ini';
+        $content  = is_readable($ini_file) ? (string) file_get_contents($ini_file) : '';
+        if (self::user_ini_has_upload_progress_hardening($content)) {
+            return true;
+        }
+        if (!self::user_ini_writable($ini_file)) {
+            // Hosting platforms may pin the file read-only and immutable. That is a reported
+            // state, not a per-request error: the security health check shows it as blocked.
+            return false;
+        }
+        $content = $content !== '' ? rtrim($content) . "\n\n" : '';
+        $content .= self::PHP_HARDENING_MARKER . "\n" . self::PHP_HARDENING_DIRECTIVE . "\n";
+        $temporary = $ini_file . '.tmp.' . bin2hex(random_bytes(16));
+        $mode = is_file($ini_file) ? fileperms($ini_file) : false;
+        $this->atomic_replace($ini_file, $content, $mode === false ? 0600 : ($mode & 0777), $temporary);
+        return true;
+    }
+
+    /** @return array{state:string,configured:bool,effective:?bool,user_ini:bool,writable:bool,path:string,detail:string} */
+    public function upload_progress_status(): array {
+        return self::upload_progress_hardening_status(ABSPATH);
+    }
+
+    /**
+     * Inspect the effective web-SAPI value of session.upload_progress.enabled together with the
+     * per-directory directive. The effective value is the authority: a global Off protects the site
+     * even when the host refuses .user.ini writes, and a written directive that the running SAPI has
+     * not picked up yet is reported as pending, not as protected.
+     *
+     * @return array{state:string,configured:bool,effective:?bool,user_ini:bool,writable:bool,path:string,detail:string}
+     */
+    public static function upload_progress_hardening_status( string $root ): array {
+        $ini_file = rtrim( $root, '/\\' ) . DIRECTORY_SEPARATOR . '.user.ini';
+        $content  = is_readable( $ini_file ) ? (string) file_get_contents( $ini_file ) : '';
+        $configured = self::user_ini_has_upload_progress_hardening( $content );
+
+        $user_ini_name = ini_get( 'user_ini.filename' );
+        $user_ini      = $user_ini_name !== false && trim( (string) $user_ini_name ) !== '';
+
+        $raw       = ini_get( 'session.upload_progress.enabled' );
+        $effective = $raw === false ? null : (bool) filter_var( $raw, FILTER_VALIDATE_BOOLEAN );
+        $writable  = self::user_ini_writable( $ini_file );
+
+        $state = self::classify_upload_progress_state( $configured, $user_ini, $writable, $effective );
+        $detail = match ( $state ) {
+            'protected'   => 'Session upload progress is disabled in the effective PHP SAPI.',
+            'pending'     => 'The hardening directive is written; the running PHP SAPI still reports the upload-progress handler until the next request or cache expiry.',
+            'blocked'     => 'The .user.ini is managed by the hosting platform; GeDefense cannot write the hardening directive there.',
+            'unsupported' => 'This PHP SAPI ignores .user.ini overrides; enforce session.upload_progress.enabled = Off in the pool configuration.',
+            default       => 'The effective upload-progress value could not be read, so the hardening cannot be verified.',
+        };
+
+        return [
+            'state'      => $state,
+            'configured' => $configured,
+            'effective'  => $effective,
+            'user_ini'   => $user_ini,
+            'writable'   => $writable,
+            'path'       => $ini_file,
+            'detail'     => $detail,
+        ];
+    }
+
+    /**
+     * Pure state classifier, exercised directly by the regression script.
+     */
+    public static function classify_upload_progress_state( bool $configured, bool $user_ini, bool $writable, ?bool $effective ): string {
+        if ( $effective === false ) {
+            return 'protected';
+        }
+        if ( ! $user_ini ) {
+            return 'unsupported';
+        }
+        if ( ! $writable ) {
+            return 'blocked';
+        }
+        if ( ! $configured ) {
+            return 'pending';
+        }
+        return $effective === true ? 'pending' : 'unverified';
+    }
+
+    private static function user_ini_has_upload_progress_hardening( string $content ): bool {
+        return $content !== ''
+            && preg_match( '/^\s*session\.upload_progress\.enabled\s*=\s*Off\s*$/mi', $content ) === 1;
+    }
+
+    private static function user_ini_writable( string $ini_file ): bool {
+        return ( is_file( $ini_file ) && is_writable( $ini_file ) )
+            || ( ! is_file( $ini_file ) && is_writable( ABSPATH ) );
     }
 
     private function atomic_replace(string $destination, string $content, int $mode, ?string $temporary = null): void {

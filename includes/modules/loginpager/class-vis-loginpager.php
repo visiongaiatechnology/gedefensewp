@@ -43,7 +43,7 @@ final class VIS_LoginPager {
 
         $logoRule = $logo === ''
             ? ""
-            : "background-image: url('{$logo}') !important; background-size: contain !important; background-repeat: no-repeat !important; background-position: center !important; width: 100% !important; height: 80px !important;";
+            : "background-image: url('{$logo}') !important; background-size: contain !important; background-repeat: no-repeat !important; background-position: center !important; width: 100% !important; height: 80px !important; text-indent: -9999px !important; overflow: hidden !important; display: block !important;";
 
         $css = "
 :root {
@@ -53,10 +53,10 @@ final class VIS_LoginPager {
 }
 body.login {
     {$backgroundRule}
-    display: flex;
-    align-items: center;
-    justify-content: center;
     min-height: 100vh;
+    min-height: 100dvh;
+    padding: 0 !important;
+    margin: 0 !important;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #f8fafc;
     position: relative;
@@ -74,15 +74,26 @@ body.login::before {
     z-index: 0;
 }
 .login #login {
-    width: min(420px, calc(100vw - 32px));
-    padding: 0;
-    position: relative;
-    z-index: 1;
-    animation: tgFadeIn 0.4s ease-out;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: min(420px, calc(100vw - 32px)) !important;
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    animation: tgFadeIn 0.4s ease-out both;
 }
 @keyframes tgFadeIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translate(-50%, -46%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .login #login { animation: none; }
 }
 .login h1 {
     margin-bottom: 24px;

@@ -744,200 +744,339 @@ final class VIS_Throne_Guard {
         status_header(401);
         nocache_headers();
         $auth_error = isset($_GET['auth_error']);
+
+        // The auth surface follows the operator's LoginPager branding so login and lock screen read as
+        // one product instead of two unrelated screens.
+        $accent = sanitize_hex_color((string) ($this->config['loginpager_accent'] ?? '')) ?: '#c9a227';
+        $surface = sanitize_hex_color((string) ($this->config['loginpager_bg_color'] ?? '')) ?: '#0b0c0f';
+        $logo = esc_url((string) ($this->config['loginpager_logo'] ?? ''));
+        $brand = trim((string) ($this->config['loginpager_title'] ?? '')) !== ''
+            ? (string) $this->config['loginpager_title']
+            : 'GeDefense';
+        [$accentR, $accentG, $accentB] = self::hex_to_rgb($accent);
+        $accentLuma = (0.2126 * $accentR + 0.7152 * $accentG + 0.0722 * $accentB) / 255;
+        $onAccent = $accentLuma > 0.55 ? '#111014' : '#ffffff';
         ?><!doctype html>
 <html lang="de">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>ThroneGuard — Zero-Trust Lockdown | GeDefense</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>ThroneGuard &middot; Master-Session gesperrt</title>
     <style>
-        :root {
-            --tg-bg: #020617;
-            --tg-card: #0b1329;
-            --tg-border: rgba(99, 102, 241, 0.3);
-            --tg-glow: rgba(99, 102, 241, 0.2);
-            --tg-accent: #6366f1;
-            --tg-cyan: #00f0ff;
-            --tg-emerald: #10b981;
-            --tg-crimson: #ef4444;
-            --tg-text: #f8fafc;
-            --tg-muted: #94a3b8;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
         body {
-            background-color: var(--tg-bg);
-            background-image: 
-                radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15), transparent 60%),
-                radial-gradient(circle at 80% 80%, rgba(0, 240, 255, 0.08), transparent 50%),
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
-            color: var(--tg-text);
             min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            color: #edeae3;
+            background: <?php echo esc_attr($surface); ?>;
+            background-image:
+                radial-gradient(1100px 560px at 82% -12%, rgba(<?php echo (int) $accentR; ?>,<?php echo (int) $accentG; ?>,<?php echo (int) $accentB; ?>, 0.16), transparent 62%),
+                radial-gradient(820px 520px at -12% 112%, rgba(<?php echo (int) $accentR; ?>,<?php echo (int) $accentG; ?>,<?php echo (int) $accentB; ?>, 0.08), transparent 60%);
+            background-attachment: fixed;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color-scheme: dark;
+        }
+        .tg-auth-shell {
+            position: fixed;
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: clamp(16px, 4vw, 40px);
+            padding-top: max(16px, env(safe-area-inset-top));
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
+            overflow: auto;
         }
-        .tg-container {
-            width: 100%;
-            max-width: 440px;
-            background: var(--tg-card);
-            border: 1px solid var(--tg-border);
-            border-radius: 16px;
-            padding: 36px 32px;
-            box-shadow: 0 0 50px var(--tg-glow), 0 25px 60px rgba(0, 0, 0, 0.8);
+        .tg-auth-card {
             position: relative;
-            backdrop-filter: blur(12px);
-            animation: fadeIn 0.4s ease-out;
+            flex: 0 0 auto;
+            width: min(460px, calc(100vw - 32px));
+            max-width: calc(100vw - 32px);
+            margin: 0 auto;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 18px;
+            padding: clamp(24px, 4.5vw, 38px);
+            box-shadow: 0 40px 90px -48px rgba(0, 0, 0, 0.95);
+            animation: tg-auth-in 460ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .tg-header { text-align: center; margin-bottom: 28px; }
-        .tg-icon-shield {
-            width: 64px;
-            height: 64px;
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--tg-cyan);
-            margin-bottom: 16px;
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
-            animation: pulseGlow 3s infinite ease-in-out;
-        }
-        @keyframes pulseGlow { 0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 240, 255, 0.2); } 50% { transform: scale(1.05); box-shadow: 0 0 35px rgba(99, 102, 241, 0.4); } }
-        .tg-title {
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: #fff;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }
-        .tg-title span { color: var(--tg-cyan); }
-        .tg-subtitle { font-size: 13px; color: var(--tg-muted); line-height: 1.5; }
-        .tg-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
-            border-radius: 99px;
-            font-size: 11px;
-            font-family: monospace;
-            letter-spacing: 1px;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #f87171;
-            margin-top: 10px;
-        }
-        .tg-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 8px #ef4444; }
-        .tg-form { margin-top: 24px; }
-        .tg-label { display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
-        .tg-input-wrapper { position: relative; margin-bottom: 20px; }
-        .tg-input {
-            width: 100%;
-            background: rgba(2, 6, 23, 0.8);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 8px;
-            padding: 14px 44px 14px 16px;
-            color: #fff;
-            font-size: 15px;
-            outline: none;
-            transition: all 0.2s;
-        }
-        .tg-input:focus { border-color: var(--tg-cyan); box-shadow: 0 0 15px rgba(0, 240, 255, 0.25); }
-        .tg-toggle-btn {
+        .tg-auth-card::before {
+            content: "";
             position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: var(--tg-muted);
-            cursor: pointer;
-            padding: 4px;
+            top: -1px;
+            left: 26px;
+            right: 26px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, <?php echo esc_attr($accent); ?>, transparent);
+            opacity: 0.7;
+        }
+        @keyframes tg-auth-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tg-brand {
             display: flex;
             align-items: center;
+            gap: 10px;
+            min-height: 26px;
+            margin-bottom: 30px;
         }
-        .tg-toggle-btn:hover { color: #fff; }
-        .tg-btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
+        .tg-logo { display: block; height: 26px; width: auto; max-width: 180px; object-fit: contain; }
+        .tg-wordmark {
+            font-size: 12px;
             font-weight: 700;
-            letter-spacing: 1.5px;
+            letter-spacing: 0.16em;
             text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
-            transition: all 0.2s;
+            color: #f5f2ea;
         }
-        .tg-btn-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 25px rgba(6, 182, 212, 0.5); }
-        .tg-error {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-bottom: 18px;
-            display: flex;
+        .tg-brand-sep { width: 1px; height: 14px; background: rgba(255, 255, 255, 0.16); }
+        .tg-product {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: rgba(237, 234, 227, 0.46);
+        }
+        .tg-title {
+            margin: 0 0 12px;
+            font-size: clamp(24px, 4.6vw, 30px);
+            font-weight: 650;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            color: #f7f4ec;
+        }
+        .tg-lead {
+            margin: 0 0 20px;
+            font-size: 14.5px;
+            line-height: 1.6;
+            color: rgba(237, 234, 227, 0.64);
+            max-width: 38ch;
+        }
+        .tg-status {
+            display: inline-flex;
             align-items: center;
             gap: 8px;
+            margin-bottom: 26px;
+            font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(237, 234, 227, 0.55);
         }
-        .tg-footer { margin-top: 24px; text-align: center; font-size: 11px; color: #64748b; font-family: monospace; }
+        .tg-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: <?php echo esc_attr($accent); ?>;
+            box-shadow: 0 0 0 3px rgba(<?php echo (int) $accentR; ?>,<?php echo (int) $accentG; ?>,<?php echo (int) $accentB; ?>, 0.14);
+        }
+        .tg-error {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 12px 14px;
+            font-size: 13.5px;
+            line-height: 1.45;
+            color: #fecaca;
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.22);
+            border-left: 2px solid #f87171;
+            border-radius: 10px;
+        }
+        .tg-error-mark {
+            flex: none;
+            width: 6px;
+            height: 6px;
+            margin-top: 7px;
+            border-radius: 50%;
+            background: #f87171;
+        }
+        .tg-field { margin-bottom: 18px; }
+        .tg-label {
+            display: block;
+            margin-bottom: 9px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(237, 234, 227, 0.6);
+        }
+        .tg-input-row { position: relative; }
+        .tg-input {
+            width: 100%;
+            height: 52px;
+            padding: 0 52px 0 15px;
+            font-size: 16px;
+            color: #f7f4ec;
+            background: rgba(5, 6, 8, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 140ms ease, box-shadow 140ms ease;
+        }
+        .tg-input::placeholder { color: rgba(237, 234, 227, 0.32); }
+        .tg-input:focus {
+            border-color: <?php echo esc_attr($accent); ?>;
+            box-shadow: 0 0 0 3px rgba(<?php echo (int) $accentR; ?>,<?php echo (int) $accentG; ?>,<?php echo (int) $accentB; ?>, 0.16);
+        }
+        .tg-reveal {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50px;
+            height: 52px;
+            display: grid;
+            place-items: center;
+            color: rgba(237, 234, 227, 0.5);
+            background: none;
+            border: 0;
+            border-radius: 0 10px 10px 0;
+            cursor: pointer;
+        }
+        .tg-reveal:hover { color: #f7f4ec; }
+        .tg-reveal:focus-visible { outline: 2px solid <?php echo esc_attr($accent); ?>; outline-offset: -3px; }
+        .tg-hint {
+            margin: 10px 0 0;
+            font-size: 12px;
+            line-height: 1.5;
+            color: rgba(237, 234, 227, 0.4);
+        }
+        .tg-submit {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            min-height: 52px;
+            margin-top: 6px;
+            padding: 0 18px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: <?php echo esc_attr($onAccent); ?>;
+            background: <?php echo esc_attr($accent); ?>;
+            border: 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: filter 140ms ease, transform 140ms ease;
+        }
+        .tg-submit:hover { filter: brightness(1.06); }
+        .tg-submit:active { transform: translateY(1px); }
+        .tg-submit:focus-visible { outline: 2px solid #f7f4ec; outline-offset: 3px; }
+        .tg-submit svg { flex: none; }
+        .tg-auth-foot {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px 14px;
+            margin-top: 26px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+            font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+            font-size: 9.5px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(237, 234, 227, 0.34);
+        }
+        .tg-logout {
+            color: rgba(237, 234, 227, 0.62);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(237, 234, 227, 0.22);
+        }
+        .tg-logout:hover { color: #f7f4ec; }
+        .tg-logout:focus-visible { outline: 2px solid <?php echo esc_attr($accent); ?>; outline-offset: 2px; }
+        .tg-cipher { margin-left: auto; }
+        @media (max-width: 520px) {
+            .tg-auth-card { border-radius: 16px; }
+            .tg-brand { margin-bottom: 24px; }
+            .tg-auth-foot { font-size: 9px; }
+            .tg-cipher { margin-left: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .tg-auth-card { animation: none; }
+            * { transition: none !important; }
+        }
     </style>
 </head>
 <body>
-    <main class="tg-container">
-        <div class="tg-header">
-            <div class="tg-icon-shield">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                    <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5L3 7z"/>
-                </svg>
+    <div class="tg-auth-shell">
+        <main class="tg-auth-card" aria-labelledby="tg-auth-title">
+            <div class="tg-brand">
+                <?php if ($logo !== ''): ?>
+                    <img class="tg-logo" src="<?php echo $logo; ?>" alt="<?php echo esc_attr($brand); ?>">
+                <?php else: ?>
+                    <span class="tg-wordmark"><?php echo esc_html($brand); ?></span>
+                <?php endif; ?>
+                <span class="tg-brand-sep" aria-hidden="true"></span>
+                <span class="tg-product">ThroneGuard</span>
             </div>
-            <h1 class="tg-title">THRONE<span>GUARD</span></h1>
-            <p class="tg-subtitle">Master Privilege Boundary & Sovereign Lockdown aktiv. Superkey erforderlich zur Freigabe.</p>
-            <div class="tg-badge">
-                <span class="tg-badge-dot"></span>
-                <span>ZERO-TRUST SESSION LOCKED</span>
-            </div>
-        </div>
 
-        <?php if ($auth_error): ?>
-            <div class="tg-error">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Ungültiger Superkey. Zugriff abgewiesen.
-            </div>
-        <?php endif; ?>
+            <h1 class="tg-title" id="tg-auth-title">Master-Session gesperrt</h1>
+            <p class="tg-lead">Zero-Trust-Schutz aktiv. Die Master-Rechte dieser Sitzung sind gesperrt, bis der Superkey verifiziert wurde.</p>
+            <div class="tg-status"><span class="tg-status-dot" aria-hidden="true"></span><span>Zero-Trust &middot; Session locked</span></div>
 
-        <form class="tg-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-            <?php wp_nonce_field('vis_throneguard_unlock'); ?>
-            <input type="hidden" name="action" value="vis_throneguard_unlock">
-            
-            <label class="tg-label" for="tg-superkey">ThroneGuard Superkey</label>
-            <div class="tg-input-wrapper">
-                <input class="tg-input" id="tg-superkey" type="password" name="superkey" required autocomplete="current-password" placeholder="Superkey eingeben...">
-                <button type="button" class="tg-toggle-btn" onclick="const f=document.getElementById('tg-superkey');f.type=f.type==='password'?'text':'password';">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <?php if ($auth_error): ?>
+                <div class="tg-error" role="alert"><span class="tg-error-mark" aria-hidden="true"></span><span>Der Superkey wurde nicht akzeptiert. Bitte erneut eingeben.</span></div>
+            <?php endif; ?>
+
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <?php wp_nonce_field('vis_throneguard_unlock'); ?>
+                <input type="hidden" name="action" value="vis_throneguard_unlock">
+                <div class="tg-field">
+                    <label class="tg-label" for="tg-superkey">ThroneGuard-Superkey</label>
+                    <div class="tg-input-row">
+                        <input class="tg-input" id="tg-superkey" type="password" name="superkey" required autocomplete="current-password" maxlength="256" aria-describedby="tg-hint">
+                        <button class="tg-reveal" id="tg-reveal" type="button" aria-label="Superkey anzeigen" aria-pressed="false">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 12s3.8-7.5 10.5-7.5S22.5 12 22.5 12s-3.8 7.5-10.5 7.5S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                    <p class="tg-hint" id="tg-hint">Der Superkey wird lokal gepr&uuml;ft. Nach der Freigabe wird die IP f&uuml;r 12 Stunden in AEGIS, PROMETHEUS und ZEUS gewhitelistet.</p>
+                </div>
+                <button class="tg-submit" type="submit">
+                    <span>Master-Session entsperren</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
                 </button>
-            </div>
+            </form>
 
-            <button type="submit" class="tg-btn-submit">Master-Session Entsperren &rarr;</button>
-        </form>
-
-        <div class="tg-footer">
-            GEDEFENSE WP // APEX SOVEREIGNTY // CIPHER: SHA-256 HMAC
-        </div>
-    </main>
+            <footer class="tg-auth-foot">
+                <span>GeDefense WP &middot; ThroneGuard</span>
+                <a class="tg-logout" href="<?php echo esc_url(wp_logout_url(wp_login_url())); ?>">Abmelden</a>
+                <span class="tg-cipher">SHA-256 HMAC</span>
+            </footer>
+        </main>
+    </div>
+    <script>
+        (function () {
+            var input = document.getElementById('tg-superkey');
+            var button = document.getElementById('tg-reveal');
+            if (!input || !button) { return; }
+            button.addEventListener('click', function () {
+                var reveal = input.type === 'password';
+                input.type = reveal ? 'text' : 'password';
+                button.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+                button.setAttribute('aria-label', reveal ? 'Superkey verbergen' : 'Superkey anzeigen');
+                input.focus();
+            });
+        })();
+    </script>
 </body>
 </html><?php
+    }
+
+    /** @return array{0:int,1:int,2:int} */
+    private static function hex_to_rgb(string $hex): array {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        return [(int) hexdec(substr($hex, 0, 2)), (int) hexdec(substr($hex, 2, 2)), (int) hexdec(substr($hex, 4, 2))];
     }
 
     private function is_session_unlocked(): bool {

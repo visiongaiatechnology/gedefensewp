@@ -6,7 +6,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.3.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.3.0)
+[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.4.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.0)
 
 </div>
 
@@ -20,7 +20,7 @@
 
 ### 主权级 WordPress 安全架构与 Pre-Boot 引导前准入内核
 
-[![Version](https://img.shields.io/badge/version-8.3.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
@@ -46,10 +46,23 @@
 > - 🇬🇧 **English**: [📗 GeDefense_WP_Handbook_8.1.0_EN.pdf](GeDefense_WP_Handbook_8.1.0_EN.pdf)
 >
 > *提示：技术手册为管理员、安全审计员及开发者提供了详尽的配置、威胁研判及安全加固实战指南。*
+>
+> **归档基线：** 链接的 PDF 手册记录 8.1.0 世代。当前发布文档：本 README、[`CHANGELOG.md`](CHANGELOG.md)、[`ARCHITECTURE.md`](ARCHITECTURE.md) 与 [`Next.md`](Next.md)。
 
 ---
 
-# 🚀 GeDefense WP 新特性
+# 🚀 GeDefense WP 8.4.0 新特性
+
+> **8.4.0 发布**：PHP 上传进度加固、全新 ThroneGuard 认证界面与 LoginPager 视口居中。详情见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+- **安全：** 通过 Zeus `.user.ini` 管理器强制 `session.upload_progress.enabled = Off`，按实际 Web SAPI 校验并在安全健康面板展示（回归覆盖）。不替代官方 PHP 更新。
+- **ThroneGuard：** 品牌化、视口居中的锁定界面，支持安全区域、减少动画与可访问错误状态。
+- **LoginPager：** `#login` 通过 `translate(-50%, -50%)` 在视口中居中，不受后续 `body.login` 覆盖影响。
+- **发布：** 入口、`VIS_VERSION`、WAF 编译器及模块清单/信任锚均升级至 `8.4.0`。
+
+---
+
+# 🧱 平台深度解析 — 8.1.0 基线（ZEUS NextGen、TRINITY XDR、Dashboard）
 
 > **架构概览**: GeDefense WP 实现了底层防御的跨越式演进，搭载 **ZEUS NextGen Pre-Boot 引导前准入控制内核**、**TRINITY 自主闭环 XDR 扩展检测与响应中枢**、标准化 **TITAN 安全保证生命周期**，并在全平台实现了严苛的类型约束和多语言原生支持。
 
@@ -83,7 +96,7 @@
 ## 目录
 
 - [官方文档与技术手册](#-官方文档与技术手册)
-- [GeDefense WP 新特性](#-gedefense-wp-新特性)
+- [GeDefense WP 8.4.0 新特性](#-gedefense-wp-840-新特性)
 - [安全架构与技术规范](#-安全架构与技术规范)
 - [多阶段点火引导协议](#多阶段点火引导协议)
 - [核心模块矩阵](#核心模块矩阵)
@@ -317,7 +330,7 @@ GeDefense WP Open Core 坚持 **100% 完全自主独立** 运行，绝不引入 
 
 # 性能指标与基准测试
 
-| 评估指标 | GeDefense WP 8.3.0 |
+| 评估指标 | GeDefense WP 8.4.0 |
 |---|---:|
 | **L0 引导前准入审查延迟** | `< 0.05 ms` |
 | **L0 微基准吞吐性能** | `150,000+ 次/秒` |
@@ -348,6 +361,13 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 # 版本变更历史
 
 > 完整的版本演进记录请见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+## 8.4.0 — PHP 上传进度加固、ThroneGuard 认证界面与 LoginPager 居中
+
+- **PHP 上传进度加固**：通过 Zeus `.user.ini` 管理器强制 `session.upload_progress.enabled = Off`，按实际 Web SAPI 校验，在安全健康面板展示，并由回归脚本覆盖。针对已公布的 PHP 上传进度 RCE 类漏洞的预防性纵深防御，不替代官方 PHP 安全更新。
+- **ThroneGuard 锁定界面重构**：使用 LoginPager 令牌（强调色、背景、Logo、标题）的品牌化认证界面，视口固定居中，支持安全区域/减少动画、可访问错误状态、密码显示与退出。
+- **修复 LoginPager 居中**：`#login` 通过 `translate(-50%, -50%)` 在视口中居中，不再依赖可能被后续样式表覆盖的 `body.login` flex 规则；响应式宽度与短视口内部滚动。
+- **发布工程**：入口、`VIS_VERSION`、WAF 编译器及模块清单/信任锚均升级至 `8.4.0`；更新 changelog 与交接文档。
 
 ## 8.3.0 — Glass 2100 设计系统、全幅实时威胁态势地图、4向动态气泡定位与100%多语言支持
 - **VGT Glass 2100 设计系统**:
@@ -401,7 +421,7 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 
 <div align="center">
 
-## GeDefense WP 8.3.0 — Open Core
+## GeDefense WP 8.4.0 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

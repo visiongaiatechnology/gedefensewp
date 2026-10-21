@@ -22,6 +22,8 @@ class VIS_Zeus {
     private $compiler;
     private $shield;
 
+    private static bool $php_hardening_checked = false;
+
     public function __construct() {
         $this->load_dependencies();
 
@@ -35,6 +37,24 @@ class VIS_Zeus {
         $this->swarm_ip  = $this->get_swarm_ip($this->client_ip);
 
         $this->init_modules();
+        $this->ensure_php_upload_progress_hardening();
+    }
+
+    /**
+     * The mitigation must reach existing installations without waiting for an operator to save
+     * the shield again. One content check per request bootstraps it; the environment manager only
+     * writes when the directive is missing.
+     */
+    private function ensure_php_upload_progress_hardening(): void {
+        if ( self::$php_hardening_checked ) {
+            return;
+        }
+        self::$php_hardening_checked = true;
+        try {
+            $this->env_manager->ensure_upload_progress_hardening();
+        } catch ( \Throwable $e ) {
+            error_log( '[ZEUS PHP HARDENING] ' . $e->getMessage() );
+        }
     }
 
     public static function getDefaultConfig(): array {

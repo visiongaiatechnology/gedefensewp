@@ -1,5 +1,10 @@
 # Architecture
 
+> **Current release: 8.4.0** (2026-10-21). Security and login-surface changes in this release:
+> PHP upload-progress mitigation, ThroneGuard auth-surface redesign and LoginPager viewport centering.
+> See [CHANGELOG.md](CHANGELOG.md) for details.
+
+
 ## Architekturindex
 - [Systemübersicht](#systemübersicht)
 - [1. Globaler Architekturbaum](#1-globaler-architekturbaum)

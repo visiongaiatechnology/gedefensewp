@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.4.0] — 2026-10-21
+
+### Security
+- **PHP upload-progress hardening (`session.upload_progress`)**:
+  - The Zeus environment manager enforces `session.upload_progress.enabled = Off` in the site `.user.ini`
+    (idempotent, preserves foreign directives, independent of the WAF switch; immutable host files are
+    reported as `blocked` instead of throwing on every request).
+  - The security health dashboard verifies the **effective web-SAPI value** plus the `.user.ini` state;
+    `blocked`/`pending` are reported as failures instead of a silent configuration claim.
+  - `scripts/php-upload-progress-hardening-regression.php` covers rewrite, idempotency, WAF-off,
+    state classification and health integration.
+  - Preventive defense-in-depth for the announced PHP upload-progress RCE class; it does not replace
+    the official PHP security update.
+- **Login surface hardening**: the LoginPager logo mode hides the fallback title text
+  (`text-indent`) so assistive technology and the visible surface only announce one brand name.
+
+### Changed
+- **ThroneGuard lock surface redesigned**:
+  - Branded auth surface reusing LoginPager tokens (accent, background, logo, title).
+  - Viewport-fixed centering, `min(460px, calc(100vw - 32px))` width, safe-area and
+    `prefers-reduced-motion` support.
+  - Clear session status, accessible error (`role="alert"`), password reveal, logout link,
+    stronger focus states and 16px mobile inputs.
+- **LoginPager centering fixed**:
+  - `#login` is centered with fixed viewport positioning and `translate(-50%, -50%)`, so later
+    stylesheets overriding `body.login` flex rules can no longer push the form to the top edge.
+  - Logo mode hides the fallback title text to prevent double rendering.
+  - Mobile: viewport-relative width, viewport-height cap and internal scrolling on short screens.
+
+### Version
+- Version bumped to `8.4.0` in the plugin entrypoint, `VIS_VERSION`, the WAF compiler
+  (`COMPILER_VERSION`) and distribution documentation; module manifest and trust anchor regenerated.
+
+---
+
 ## [8.3.0] — 2026-10-17
 
 ### Added & Enhanced

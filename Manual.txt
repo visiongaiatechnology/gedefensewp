@@ -1,3 +1,5 @@
+HINWEIS: Dieses Manual dokumentiert die Legacy-V7-Generation. Aktueller Release: 8.4.0 (2026-10-21) — siehe README.md, CHANGELOG.md und Next.md.
+
 VGT Dokumentation
 DEPLOYMENT MANUAL: GEDEFENSE WP V7 (ZERO-TRUST WAF)
 
