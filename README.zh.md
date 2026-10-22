@@ -1,7 +1,7 @@
 > [!WARNING]
 > **公开测试版 / 发布候选 — 禁止在无人值守的生产环境中使用**
 >
-> **VGT GeDefense WP 8.4.2 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
+> **VGT GeDefense WP 8.4.3 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
 
 <div align="center">
 
@@ -11,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.4.2**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.2)
+[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.4.3**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.3)
 
 </div>
 
@@ -25,7 +25,7 @@
 
 ### 主权级 WordPress 安全架构与 Pre-Boot 引导前准入内核
 
-[![Version](https://img.shields.io/badge/version-8.4.2_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.3_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)

@@ -1,7 +1,7 @@
 > [!WARNING]
 > **PUBLIC BETA / RELEASE CANDIDATE — NOT FOR UNSUPERVISED PRODUCTION USE**
 >
-> **VGT GeDefense WP 8.4.2 Open Core is a public beta / release candidate, not a GA release.** Hooks, policies, detection rules, configuration formats and security behavior may change without notice. Validate every build in a staging environment, start in **observe mode**, keep tested backups and out-of-band recovery access, and do not use it for unsupervised production. Provided **as-is**, without warranty, under AGPL-3.0-or-later. See [`CHANGELOG.md`](CHANGELOG.md) and the [GitHub releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.4.3 Open Core is a public beta / release candidate, not a GA release.** Hooks, policies, detection rules, configuration formats and security behavior may change without notice. Validate every build in a staging environment, start in **observe mode**, keep tested backups and out-of-band recovery access, and do not use it for unsupervised production. Provided **as-is**, without warranty, under AGPL-3.0-or-later. See [`CHANGELOG.md`](CHANGELOG.md) and the [GitHub releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 <div align="center">
 
@@ -11,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.4.2**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.2)
+[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.4.3**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.3)
 
 </div>
 
@@ -26,7 +26,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.4.2_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.3_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
