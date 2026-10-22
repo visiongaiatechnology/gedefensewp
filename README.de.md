@@ -57,15 +57,17 @@
 
 ---
 
-# 🚀 Neu in GeDefense WP 8.4.1
+# 🚀 Neu in GeDefense WP 8.4.3
 
-> **Release 8.4.1** härtet die operative Ebene aus den Produktionsaudits: Oracle-Policy-Distillation in AEGIS, ein begrenztes AI-Gate, Cerberus-Loopback-Schutz, XDR-Deadlock-Retries, Log-Retention und ein Live-Panel für AI-Effizienz. Details in [`CHANGELOG.md`](CHANGELOG.md).
+> **Release 8.4.3** liefert ein umfassendes Sicherheits- und Härtungsupdate nach vollständigem VGT-100-Tiefenaudit: Abwehr von Reverse-Proxy-IP-Spoofing in Zeus, Beseitigung von Stored DOM-XSS im Threat Radar, Härtung des kryptographischen Key Vaults und Schutz vor Timing-Angriffen im Hades-Gateway. Vollständige Details in [`CHANGELOG.md`](CHANGELOG.md).
 
-- **Oracle-Distillate / AI-Gate:** KI ist jetzt die Ausnahme; 78,6 % der historischen Oracle-Blocks werden lokal vor einem Modellaufruf entschieden.
-- **Sicherheit:** `session.upload_progress.enabled = Off` wird über den Zeus-`.user.ini`-Manager erzwungen, gegen die effektive Web-SAPI verifiziert und im Security-Health-Dashboard angezeigt (regressionsgetestet). Es ersetzt nicht das offizielle PHP-Update.
-- **ThroneGuard:** gebrandete, viewport-zentrierte Lock-Oberfläche mit Safe-Area-, Reduced-Motion- und barrierefreien Fehlerzuständen.
-- **LoginPager:** `#login` ist viewport-zentriert mit `translate(-50%, -50%)` und immun gegen spätere `body.login`-Overrides.
-- **Release:** `8.4.1` in Entrypoint, `VIS_VERSION`, Modul-Manifest und Trust-Anchor.
+- **Zeus WAF Reverse-Proxy IP-Validierung (VGT-049 / CWE-290):** `extract_deterministic_ip()` validiert Socket-IPs (`REMOTE_ADDR`) strikt gegen authentische Cloudflare-CIDRs, bevor Header wie `CF-Connecting-IP` akzeptiert werden — verhindert das Umgehen von Rate-Limits und IP-Bans.
+- **Zeus Preboot HTTPS Reverse-Proxy Erkennung (VGT-006 / VGT-031 / CWE-614):** Zulassungscookies prüfen `HTTP_X_FORWARDED_PROTO` und `HTTP_X_FORWARDED_SSL`, wodurch `Secure`-Flags hinter TLS-terminierenden Proxies/Load-Balancern garantiert gesetzt werden.
+- **Stored DOM-XSS im Live-Radar eliminiert (VGT-043 / CWE-79):** Dynamische Telemetrie-Felder (`path`, `ip`, `country`, `asn`, `module`, `action`) werden via `escapeHtml()` sicher maskiert, bevor sie in die Tabelle eingefügt werden.
+- **Hades Gateway Constant-Time Auth (VGT-048 / CWE-208):** Schutz vor Side-Channel-Timing-Angriffen auf den administrativen Zugangsparameter durch `hash_equals()` und strikte `is_string()`-Typprüfung.
+- **Key Vault Robustheit & UI-Fix (VGT-007 / CWE-636 / CWE-311):** Korrektur der Secret-Namen-Bindung im Dashboard (Löschung einzelner Secrets repariert), resilientes Fallback für unversionierte Keys und sichere automatische Migration unverschlüsselter Secrets.
+- **AEGIS Oracle Distillate Local Host Allowlist (8.4.2 Rollup):** Verhindert False-Positive `remote_asset_hijack`-Blocks auf legitime lokale URLs (`wp-login.php`, `wp-admin/`, Redirects).
+- **Release:** `8.4.3` in allen Entrypoints, `VIS_VERSION`, Modul-Manifest (`b6ecacdf...`) und Trust-Anchor.
 
 ---
 
@@ -103,7 +105,7 @@
 ## Inhaltsverzeichnis
 
 - [Dokumentation & Handbücher](#-offizielle-dokumentation--handbücher)
-- [Neu in GeDefense WP 8.4.1](#-neu-in-gedefense-wp-841)
+- [Neu in GeDefense WP 8.4.3](#-neu-in-gedefense-wp-843)
 - [Sicherheitsarchitektur & Technische Spezifikation](#-sicherheitsarchitektur--technische-spezifikation)
 - [Multi-Phase Zündungsprotokoll](#multi-phase-zündungsprotokoll)
 - [Kernmodul-Matrix](#kernmodul-matrix)
@@ -423,7 +425,7 @@ GeDefense WP Open Core steht unter der **GNU Affero General Public License v3.0 
 
 <div align="center">
 
-## GeDefense WP 8.4.1 — Open Core
+## GeDefense WP 8.4.3 — Open Core
 
 **SOUVERÄNE WORDPRESS SICHERHEIT**
 

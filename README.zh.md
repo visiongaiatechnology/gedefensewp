@@ -57,15 +57,17 @@
 
 ---
 
-# 🚀 GeDefense WP 8.4.1 新特性
+# 🚀 GeDefense WP 8.4.3 新特性
 
-> **8.4.1 发布**：基于生产审计强化运行层，包括 AEGIS 内的 Oracle 策略蒸馏、受限 AI 网关、Cerberus 回环保护、XDR 死锁重试、日志保留以及实时 AI 效率面板。详情见 [`CHANGELOG.md`](CHANGELOG.md)。
+> **8.4.3 发布**：根据 VGT-100 深度安全审计标准带来全面的底层安全加固：解决 Zeus WAF 反向代理 IP 伪造漏洞、彻底清除 Threat Radar 中的 Stored DOM-XSS 隐患、提升 Key Vault 密钥库健壮性，并在 Hades 管理网关中实现恒定时间身份认证。详情见 [`CHANGELOG.md`](CHANGELOG.md)。
 
-- **Oracle 蒸馏 / AI 网关：** AI 现为例外；78.6% 的历史 Oracle 拦截在调用模型前已在本地判定。
-- **安全：** 通过 Zeus `.user.ini` 管理器强制 `session.upload_progress.enabled = Off`，并针对实际 Web SAPI 验证、在安全健康仪表盘展示（已覆盖回归测试）。不能替代官方 PHP 更新。
-- **ThroneGuard：** 品牌化、视口居中的锁定界面，支持安全区域、减少动态效果和无障碍错误状态。
-- **LoginPager：** `#login` 通过 `translate(-50%, -50%)` 视口居中，不受后续 `body.login` 覆盖影响。
-- **发布：** 入口、`VIS_VERSION`、模块清单和信任锚均升级至 `8.4.1`。
+- **Zeus WAF 反向代理真实 IP 验证 (VGT-049 / CWE-290)：** `extract_deterministic_ip()` 在信任 `CF-Connecting-IP` 前严格验证套接字 IP (`REMOTE_ADDR`) 是否属于 Cloudflare 官方 CIDR 掩码，杜绝伪造请求头绕过访问限制与 IP 封禁。
+- **Zeus Preboot 反向代理 HTTPS Cookie 识别 (VGT-006 / VGT-031 / CWE-614)：** 准入 Cookie 检查 `HTTP_X_FORWARDED_PROTO` 与 `HTTP_X_FORWARDED_SSL`，确保在 TLS 卸载的反向代理与负载均衡器后依然强制添加 `Secure` 安全标记。
+- **清除 Threat Radar 实时遥测中的 Stored DOM-XSS (VGT-043 / CWE-79)：** 动态事件字段（`path`、`ip`、`country`、`asn`、`module`、`action`）在插入 DOM 表格前全部经过 `escapeHtml()` 实体转义，彻底阻断恶意 URI 注入。
+- **Hades 管理网关防侧信道时序攻击 (VGT-048 / CWE-208)：** 严格进行 `is_string()` 类型检查并通过 `hash_equals()` 进行恒定时间字符串比较，防止针对管理员隐蔽入口的旁路时序推测。
+- **Key Vault 健壮性提升与 UI 修复 (VGT-007 / CWE-636 / CWE-311)：** 修复仪表盘密钥列表迭代索引绑定问题（恢复单个密钥删除），实现未版本化密钥的弹性回退与纯文本配置自动迁移加密。
+- **AEGIS Oracle 策略蒸馏本地主机白名单 (8.4.2 Rollup)：** 杜绝本地合法 URL（如 `wp-login.php`、`wp-admin/` 及内部重定向）被误判为 `remote_asset_hijack`。
+- **发布：** 入口、`VIS_VERSION`、模块清单 (`b6ecacdf...`) 和信任锚均升级至 `8.4.3`。
 
 ---
 
@@ -103,7 +105,7 @@
 ## 目录
 
 - [官方文档与技术手册](#-官方文档与技术手册)
-- [GeDefense WP 8.4.1 新特性](#-gedefense-wp-841-新特性)
+- [GeDefense WP 8.4.3 新特性](#-gedefense-wp-843-新特性)
 - [安全架构与技术规范](#-安全架构与技术规范)
 - [多阶段点火引导协议](#多阶段点火引导协议)
 - [核心模块矩阵](#核心模块矩阵)
@@ -428,7 +430,7 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 
 <div align="center">
 
-## GeDefense WP 8.4.1 — Open Core
+## GeDefense WP 8.4.3 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 
