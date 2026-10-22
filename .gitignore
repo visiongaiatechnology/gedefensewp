@@ -42,3 +42,9 @@ test_scan_uploads/
 Next.md
 code_cartography.md
 scratch/
+
+[Nn]ext.md
+[Nn]ext.*
+audit_matrix.json
+*AUDIT*.md
+*ATTACK*.md
