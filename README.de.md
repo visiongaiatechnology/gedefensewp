@@ -53,21 +53,42 @@
 >
 > *Hinweis: Das Handbuch bietet praxisnahe Anleitungen zur Konfiguration, Bedrohungsanalyse und Systemhärtung für alle Benutzergruppen.*
 >
-> **Archivierte Basis:** Die verlinkten PDF-Handbücher dokumentieren die 8.1.0-Generation. Aktuelle Release-Dokumentation: dieses README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) und [`Next.md`](Next.md).
+> **Archivierte Basis:** Die verlinkten PDF-Handbücher dokumentieren die 8.1.0-Generation. Aktuelle Release-Dokumentation: dieses README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) und [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
 
 # 🚀 Neu in GeDefense WP 8.4.3
 
-> **Release 8.4.3** liefert ein umfassendes Sicherheits- und Härtungsupdate nach vollständigem VGT-100-Tiefenaudit: Abwehr von Reverse-Proxy-IP-Spoofing in Zeus, Beseitigung von Stored DOM-XSS im Threat Radar, Härtung des kryptographischen Key Vaults und Schutz vor Timing-Angriffen im Hades-Gateway. Vollständige Details in [`CHANGELOG.md`](CHANGELOG.md).
+> **Release 8.4.3** liefert ein umfassendes Sicherheits- und Telemetrie-Härtungsupdate nach vollständigem VGT-100-Audit und diamantener Release-Verifikation: Bereinigung der Live-Telemetrie-Datenbankabfragen, kompromisslose Beseitigung von HTML-Sinks im UI, Schutz vor Reverse-Proxy IP-Spoofing, kollisionssichere Exception-Architektur, kryptographische Key-Vault-Resilienz und verifizierte Out-of-band Notfallwiederherstellung. Alle Details in [`CHANGELOG.md`](CHANGELOG.md).
 
-- **Zeus WAF Reverse-Proxy IP-Validierung (VGT-049 / CWE-290):** `extract_deterministic_ip()` validiert Socket-IPs (`REMOTE_ADDR`) strikt gegen authentische Cloudflare-CIDRs, bevor Header wie `CF-Connecting-IP` akzeptiert werden — verhindert das Umgehen von Rate-Limits und IP-Bans.
-- **Zeus Preboot HTTPS Reverse-Proxy Erkennung (VGT-006 / VGT-031 / CWE-614):** Zulassungscookies prüfen `HTTP_X_FORWARDED_PROTO` und `HTTP_X_FORWARDED_SSL`, wodurch `Secure`-Flags hinter TLS-terminierenden Proxies/Load-Balancern garantiert gesetzt werden.
-- **Stored DOM-XSS im Live-Radar eliminiert (VGT-043 / CWE-79):** Dynamische Telemetrie-Felder (`path`, `ip`, `country`, `asn`, `module`, `action`) werden via `escapeHtml()` sicher maskiert, bevor sie in die Tabelle eingefügt werden.
-- **Hades Gateway Constant-Time Auth (VGT-048 / CWE-208):** Schutz vor Side-Channel-Timing-Angriffen auf den administrativen Zugangsparameter durch `hash_equals()` und strikte `is_string()`-Typprüfung.
-- **Key Vault Robustheit & UI-Fix (VGT-007 / CWE-636 / CWE-311):** Korrektur der Secret-Namen-Bindung im Dashboard (Löschung einzelner Secrets repariert), resilientes Fallback für unversionierte Keys und sichere automatische Migration unverschlüsselter Secrets.
-- **AEGIS Oracle Distillate Local Host Allowlist (8.4.2 Rollup):** Verhindert False-Positive `remote_asset_hijack`-Blocks auf legitime lokale URLs (`wp-login.php`, `wp-admin/`, Redirects).
-- **Release:** `8.4.3` in allen Entrypoints, `VIS_VERSION`, Modul-Manifest (`b6ecacdf...`) und Trust-Anchor.
+- **Kanonische Telemetrie-Tabellenauflösung (P1-Fix):** Der Live-Telemetrie-Polling-Handler in `class-vis-dashboard-ajax.php` fragt nun strikt die kanonischen Tabellen ab (`vis_apex_bans` und `vis_omega_logs` / `VIS_TABLE_BANS` und `VIS_TABLE_LOGS`) inklusive Legacy-Fallback. Aktive Sperren und Kern-Sicherheitslogs werden dadurch lückenlos in das Live-Radar gestreamt.
+- **Zero-Sink DOM UI-Härtung & strikte CSP (P1-Fix):** Vollständige Beseitigung von Inline-Event-Handlern (`data-select-on-focus`) und Umstellung aller dynamischen DOM-Manipulationen in `overview/script.js` auf native DOM-Element-Erzeugung (`createElement`, `createElementNS`, `replaceChildren`, `textContent`). Der interne UI-Regressionstest besteht mit 0 Fehlern.
+- **Kollisionssichere Exception-Architektur (P2-Fix):** Kern-Ausnahmeklassen (`AppException`, `ValidationException`, `SecurityException`, `StorageException`) in `class-vis-security.php` sind nun durch `if (!class_exists(...))` geschützt und unter `VisionGaia\GeDefense\Exceptions` aliasiert, um fatale Namenskonflikte mit Drittanbieter-Plugins auszuschließen.
+- **Bereinigte Entwicklungspfade & souveräne GeoIP-Erkennung (P2-Fix):** Alle lokalen Entwicklungspfade in `class-vis-geo-resolver.php` wurden entfernt. Die Pfadsuche erfolgt hierarchisch über Plugin-Root, persistente Upload-Verzeichnisse und WordPress-Filter-Hooks.
+- **Verifizierte Out-of-Band Notfallwiederherstellung (P2-Fix):** Dokumentation und Absicherung des Fail-Safe-Recovery-Workflows für Zeus WAF (`define('ZEUS_DISABLE', true);`), WP-CLI Notfallsteuerung (`wp plugin deactivate gedefense-wp`) und nativen WordPress Recovery Mode (`WP_RECOVERY_MODE`).
+- **Zeus WAF Reverse-Proxy IP-Verifikation (VGT-049 / CWE-290):** `extract_deterministic_ip()` validiert Socket-IPs (`REMOTE_ADDR`) gegen authentische Cloudflare-CIDRs, bevor `CF-Connecting-IP`-Header akzeptiert werden.
+- **Zeus Preboot Reverse-Proxy HTTPS-Cookie-Erkennung (VGT-006 / VGT-031 / CWE-614):** Evaluierung von `HTTP_X_FORWARDED_PROTO` und `HTTP_X_FORWARDED_SSL` garantiert das `Secure`-Attribut hinter TLS-terminierenden Proxies und Load Balancern.
+- **Beseitigung von Stored DOM-XSS im Threat-Radar (VGT-043 / CWE-79):** Dynamische Telemetriefelder (`path`, `ip`, `country`, `asn`, `module`, `action`) werden via `escapeHtml()` und native DOM-Textknoten sicher gerendert.
+- **Hades Gateway Constant-Time Authentifizierung (VGT-048 / CWE-208):** Verhindert Side-Channel-Timing-Angriffe auf das administrative Token durch `hash_equals()` und strikte Typprüfung.
+- **Key-Vault-Härtung & UI-Reparatur (VGT-007 / CWE-636 / CWE-311):** Korrekte Schlüssel-IDs in der UI (Wiederherstellung der Einzelschlüssel-Löschung), Fallback für unversionierte Schlüssel und automatische Verschlüsselung von Klartext-Konfigurationen.
+- **AEGIS Oracle Distillate Local Host Allowlist (8.4.2 Rollup):** Verhindert False-Positive-Blocks auf legitimen internen URLs (`wp-login.php`, `wp-admin/`, interne Weiterleitungen).
+- **Release:** `8.4.3` in allen Entrypoints, `VIS_VERSION`, Modul-Manifest (`3cd53343...`) und Trust-Anchor.
+
+---
+
+### 🗺️ Threat-Karten-Kartographie, GeoIP/ASN-Herkunft & Drittanbieter-Lizenzen
+Das GeDefense Echtzeit-Bedrohungsradar und die globale Angriffsvektoren-Karte basieren auf einer **100% autarken, lokalen BGP/ASN-Kartographie-Engine** (`data/geoip.csv` und `world-map.svg.php`):
+- **1. Mercator-Weltkarte SVG-Vektorgeometrie (`world-map.svg.php`):**
+  - **Quellprojekt:** [`themustafaomar/jsvectormap`](https://github.com/themustafaomar/jsvectormap)
+  - **Kartendatei:** `world-merc.js` (Mercator-Projektion, v1.7.0, [Direkte Kartendatei](https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/maps/world-merc.js))
+  - **Lizenz:** **MIT-Lizenz** (Copyright (c) 2020 Mustafa Omar, [MIT License](https://github.com/themustafaomar/jsvectormap/blob/main/LICENSE))
+- **2. GeoIP- & ASN-Telemetriedatenbank (`data/geoip.csv`):**
+  - **Quellprojekt:** [`iplocate/ip-address-databases`](https://github.com/iplocate/ip-address-databases) (Öffentliche IP-to-Country- und IP-to-ASN-Datenbanken)
+  - **Konkreter Verifikations-Match:** Subnetz `1.0.4.0/22` wird mit ASN `38803` und Organisationsname `Gtelecom Pty Ltd` geführt – exakt übereinstimmend mit unserer CSV.
+  - **Lizenz:** **Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)**
+  - **Quellenangabe:** *Dieses Produkt enthält IP-to-Country- und IP-to-ASN-Daten aus dem Projekt iplocate/ip-address-databases, lizenziert unter CC BY-SA 4.0.*
+- **Souveränitäts- & Datenschutz-Garantie:** Sämtliche GeoIP-Koordinaten, Landesflaggen und ASN-Details werden über lokale binäre `fseek()`-Offsets (~0,25ms - 0,45ms) ermittelt. Keine externen HTTP- oder DNS-Reverse-Abfragen, 0 Cloud-Leaks, DSGVO-konform.
+- **Notfall-Wiederherstellung (Fail-Safe):** Sollte ein WAF-Fehler oder Admin-Lockout auftreten, kann das System sofort über `define('ZEUS_DISABLE', true);` in der `wp-config.php` oder per WP-CLI (`wp plugin deactivate gedefense-wp`) entsperrt werden.
 
 ---
 

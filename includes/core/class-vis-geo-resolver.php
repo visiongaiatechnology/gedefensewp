@@ -177,10 +177,16 @@ final class GeoResolver {
     public static function get_csv_path(): ?string {
         $paths = [
             defined('VIS_PATH') ? VIS_PATH . 'data/geoip.csv' : '',
+            dirname(__DIR__, 2) . '/data/geoip.csv',
             defined('WP_CONTENT_DIR') ? WP_CONTENT_DIR . '/uploads/gedefense/geoip.csv' : '',
-            'C:/Users/Masterboard/Downloads/GeDefense-4.1.0-KINETIC-REWORK-RC/geoip.csv',
-            'C:/Users/Masterboard/Downloads/visiongaia-integrity/data/geoip.csv',
         ];
+
+        if (function_exists('wp_upload_dir')) {
+            $uploads = wp_upload_dir();
+            if (!empty($uploads['basedir'])) {
+                $paths[] = $uploads['basedir'] . '/gedefense/geoip.csv';
+            }
+        }
 
         if (function_exists('apply_filters')) {
             $paths = (array)apply_filters('vis_geoip_csv_paths', $paths);

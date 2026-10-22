@@ -4,10 +4,26 @@ declare(strict_types=1);
 if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
 // STATUS: PLATIN
-class AppException        extends Exception {}
-class ValidationException extends AppException {}
-class SecurityException   extends AppException {}
-class StorageException    extends AppException {}
+if (!class_exists('AppException')) {
+    class AppException extends Exception {}
+}
+if (!class_exists('ValidationException')) {
+    class ValidationException extends AppException {}
+}
+if (!class_exists('SecurityException')) {
+    class SecurityException extends AppException {}
+}
+if (!class_exists('StorageException')) {
+    class StorageException extends AppException {}
+}
+
+// Namespaced aliases for zero collision risk across external plugins/libraries
+if (!class_exists('VisionGaia\\GeDefense\\Exceptions\\SecurityException')) {
+    class_alias('SecurityException', 'VisionGaia\\GeDefense\\Exceptions\\SecurityException');
+    class_alias('StorageException', 'VisionGaia\\GeDefense\\Exceptions\\StorageException');
+    class_alias('ValidationException', 'VisionGaia\\GeDefense\\Exceptions\\ValidationException');
+    class_alias('AppException', 'VisionGaia\\GeDefense\\Exceptions\\AppException');
+}
 
 final class VIS_Security {
 

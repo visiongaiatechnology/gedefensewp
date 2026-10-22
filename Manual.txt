@@ -1,4 +1,4 @@
-HINWEIS: Dieses Manual dokumentiert die Legacy-V7-Generation. Aktueller Release: 8.4.0 (2026-10-21) — siehe README.md, CHANGELOG.md und Next.md.
+HINWEIS: Dieses Manual dokumentiert die V7/V8-Architektur. Aktueller Release: 8.4.3 (2026-10-22) — siehe README.md, CHANGELOG.md und Next.md.
 
 VGT Dokumentation
 DEPLOYMENT MANUAL: GEDEFENSE WP V7 (ZERO-TRUST WAF)
@@ -254,3 +254,58 @@ Herkömmliche Tracking-Systeme (wie Google Analytics) verletzen das Zero-Trust-P
                * Kryptographische Isolation: Jeder Besucher, der über den Consent-Banner seine Zustimmung erteilt, wird getrackt – jedoch vollkommen anonymisiert. Die Telemetry Vault speichert niemals Klartext-IP-Adressen oder identifizierbare Hardware-Signaturen. Alle Datenpunkte werden vor dem Schreiben auf die Festplatte via AES-Verschlüsselung unkenntlich gemacht.
                * Verifizierte Entitäten & Flow-Analyse: Das Dashboard entschlüsselt die Datenströme nur aggregiert und visualisiert den echten Wert: Wie interagieren Nutzer mit dem System? Sie sehen exakt, welche URIs aufgerufen wurden, wie hoch die Verweildauer ist und wie viele verifizierte Entitäten (eindeutige, anonymisierte Nutzer-Cluster) in das System eingetreten sind.
                * Compliance Export: Für Datenschutzbeauftragte (DPOs) oder juristische Audits (z.B. im Rahmen von DSGVO-Auskunftsersuchen) bietet die Vault einen sofortigen Export-Mechanismus. Die sauberen, IP-freien Metriken können mit einem Klick als strukturierte CSV-Datei oder als revisionssicheres PDF-Dokument extrahiert werden.
+
+================================================================================
+PHASE 4: OUT-OF-BAND DISASTER RECOVERY & NOTFALL-WIEDERHERSTELLUNG (FAIL-SAFE)
+================================================================================
+GeDefense WP nutzt für sicherheitskritische Kernmodule (Zeus WAF, Morpheus, Aegis)
+eine Fail-Close-Architektur, um Angreifer bei Systemfehlern nicht ungeprüft passieren
+zu lassen. Für den unwahrscheinlichen Fall einer Fehlkonfiguration, eines defekten WAF-
+Artefakts oder versehentlichen Administrator-Aussperrens existieren dokumentierte
+und verifizierte Out-of-band-Wiederherstellungswege:
+
+1. Zeus WAF Notabschaltung via wp-config.php:
+   Definieren Sie in Ihrer wp-config.php die Konstante:
+   define('ZEUS_DISABLE', true);
+   Dadurch wird der Pre-Boot-Filter von Zeus sofort überbrückt, ohne dass Dateien
+   gelöscht werden müssen.
+
+2. Physische Deaktivierung des Pre-Boot-Skripts (Dateisystem-Ebene):
+   Löschen oder benennen Sie die Datei wp-content/zeus-waf.php bzw. das Direktiven-
+   Skript in .user.ini / php.ini (auto_prepend_file) um. WordPress startet danach
+   ohne vorgelagerten WAF-Preloader.
+
+3. WP-CLI Notfall-Befehle:
+   - Plugin temporär deaktivieren:
+     wp plugin deactivate gedefense-wp
+   - Bans und Sperrtabellen leeren:
+     wp db query "TRUNCATE TABLE wp_vis_apex_bans;"
+   - Aegis temporär in Learning Mode versetzen:
+     wp option update vis_aegis_mode "learning"
+
+4. Native WordPress-Recovery:
+   GeDefense WP unterstützt den nativen WordPress Recovery Mode (WP_RECOVERY_MODE),
+   sodass bei fatalen PHP-Fehlern ein temporärer Admin-Zugangslink per E-Mail erzeugt
+   wird.
+
+================================================================================
+PHASE 5: GEOIP- & ASN-KARTOGRAPHIE: HERKUNFT, VERSION & LIZENZANGABEN
+================================================================================
+Das GeDefense Threat-Dashboard und die Geo-Matrix (threat-map.php / world-map.svg.php)
+nutzen für die Echtzeit-Attribution von Angriffen eine 100% lokale BGP/ASN-Datenbank
+sowie eine native Mercator-Vektorkarte:
+
+1. Mercator-Weltkarte (SVG-Vektorgeometrie in includes/dashboard/views/overview/world-map.svg.php):
+   - Quelle: jsVectorMap (world-merc.js, Version 1.7.0) von Mustafa Omar.
+   - GitHub: https://github.com/themustafaomar/jsvectormap
+   - Kartendatei: https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/maps/world-merc.js
+   - Lizenz: MIT License (https://github.com/themustafaomar/jsvectormap/blob/main/LICENSE)
+
+2. BGP/ASN- & GeoIP-Datenbank (data/geoip.csv):
+   - Primäre Quelle: iplocate/ip-address-databases (Öffentliche IP-to-Country- und IP-to-ASN-Datenbanken)
+   - GitHub: https://github.com/iplocate/ip-address-databases
+   - Konkreter Verifikations-Match: Subnetz 1.0.4.0/22 wird mit ASN 38803 und Organisationsname
+     "Gtelecom Pty Ltd" geführt.
+   - Lizenz: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+   - Attribution: Dieses Produkt enthält IP- und ASN-Daten von iplocate/ip-address-databases (CC BY-SA 4.0).
+   - Souveränitäts-Garantie: 100% offline, 0 Cloud-Leaks, keine externen API-Aufrufe, keine DNS-Leaks, DSGVO-konform.

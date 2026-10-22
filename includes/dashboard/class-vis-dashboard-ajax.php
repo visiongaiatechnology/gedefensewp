@@ -650,9 +650,23 @@ final class VIS_Dashboard_Ajax {
         }
 
         global $wpdb;
-        $table_bans = $wpdb->prefix . 'vis_bans';
-        $stable = $wpdb->prefix . 'vis_sentinel_logs';
-        $ptable = $wpdb->prefix . 'vis_prometheus_logs';
+        $canonical_bans = defined('VIS_TABLE_BANS') ? $wpdb->prefix . VIS_TABLE_BANS : $wpdb->prefix . 'vis_apex_bans';
+        $canonical_logs = defined('VIS_TABLE_LOGS') ? $wpdb->prefix . VIS_TABLE_LOGS : $wpdb->prefix . 'vis_omega_logs';
+
+        $suppress = $wpdb->suppress_errors(true);
+        $table_bans = ($wpdb->get_var("SHOW TABLES LIKE '{$canonical_bans}'") === $canonical_bans)
+            ? $canonical_bans
+            : (($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}vis_bans'") === "{$wpdb->prefix}vis_bans") ? "{$wpdb->prefix}vis_bans" : null);
+
+        $stable = ($wpdb->get_var("SHOW TABLES LIKE '{$canonical_logs}'") === $canonical_logs)
+            ? $canonical_logs
+            : (($wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}vis_sentinel_logs'") === "{$wpdb->prefix}vis_sentinel_logs") ? "{$wpdb->prefix}vis_sentinel_logs" : null);
+
+        $ptables = [
+            $wpdb->prefix . 'vis_prometheus_logs',
+            $wpdb->prefix . 'vgt_prometheus_logs',
+            $wpdb->prefix . 'prometheus_logs'
+        ];
 
         $threat_events = [];
         $seen_ips = [];
@@ -673,9 +687,8 @@ final class VIS_Dashboard_Ajax {
             return $str;
         };
 
-        // 1. Genuine bans from local database
-        $suppress = $wpdb->suppress_errors(true);
-        if ($wpdb->get_var("SHOW TABLES LIKE '{$table_bans}'") === $table_bans) {
+        // 1. Genuine bans from local database (canonical vis_apex_bans or fallback vis_bans)
+        if ($table_bans !== null) {
             $bans = $wpdb->get_results("SELECT * FROM {$table_bans} ORDER BY id DESC LIMIT 25");
             if ($bans) {
                 foreach ($bans as $b) {
@@ -689,9 +702,9 @@ final class VIS_Dashboard_Ajax {
                     $countries[$cc] = ($countries[$cc] ?? 0) + 1;
                     $blocked++;
 
-                    $path = '/wp-login.php';
+                    $path = !empty($b->request_uri) ? (string)$b->request_uri : '/wp-login.php';
                     $reason = (string)($b->reason ?? '');
-                    if (preg_match('#(/[a-zA-Z0-9_\-\.\/]+(?:\.[a-zA-Z0-9]+|\?[\w\=\&\-]+)?)#', $reason, $m)) {
+                    if (empty($b->request_uri) && preg_match('#(/[a-zA-Z0-9_\-\.\/]+(?:\.[a-zA-Z0-9]+|\?[\w\=\&\-]+)?)#', $reason, $m)) {
                         $path = $m[1];
                     }
 
@@ -715,32 +728,39 @@ final class VIS_Dashboard_Ajax {
             }
         }
 
-        // 2. Genuine logs from Sentinel and Prometheus
+        // 2. Genuine logs from Omega/Sentinel and Prometheus
         $logs = [];
-        if ($wpdb->get_var("SHOW TABLES LIKE '{$stable}'") === $stable) {
+        if ($stable !== null) {
             $raw_s = $wpdb->get_results("SELECT * FROM {$stable} ORDER BY id DESC LIMIT 25");
             if ($raw_s) {
                 foreach ($raw_s as $r) {
                     $logs[] = (object)[
-                        'timestamp' => $r->timestamp,
-                        'module'    => $r->module,
-                        'ip'        => !empty($r->ip_address) ? $r->ip_address : (!empty($r->ip) ? $r->ip : ''),
-                        'message'   => !empty($r->details) ? $r->details : (!empty($r->message) ? $r->message : $r->type),
+                        'timestamp' => $r->timestamp ?? '',
+                        'module'    => $r->module ?? 'KERNEL',
+                        'type'      => $r->type ?? '',
+                        'severity'  => $r->severity ?? 1,
+                        'ip'        => !empty($r->ip) ? $r->ip : (!empty($r->ip_address) ? $r->ip_address : ''),
+                        'message'   => !empty($r->message) ? $r->message : (!empty($r->details) ? $r->details : ($r->type ?? '')),
                     ];
                 }
             }
         }
-        if ($wpdb->get_var("SHOW TABLES LIKE '{$ptable}'") === $ptable) {
-            $raw_p = $wpdb->get_results("SELECT * FROM {$ptable} ORDER BY id DESC LIMIT 25");
-            if ($raw_p) {
-                foreach ($raw_p as $r) {
-                    $logs[] = (object)[
-                        'timestamp' => $r->timestamp,
-                        'module'    => 'PROMETHEUS',
-                        'ip'        => !empty($r->ip_address) ? $r->ip_address : '',
-                        'message'   => !empty($r->details) ? $r->details : $r->type,
-                    ];
+        foreach ($ptables as $ptable) {
+            if ($wpdb->get_var("SHOW TABLES LIKE '{$ptable}'") === $ptable) {
+                $raw_p = $wpdb->get_results("SELECT * FROM {$ptable} ORDER BY id DESC LIMIT 25");
+                if ($raw_p) {
+                    foreach ($raw_p as $r) {
+                        $logs[] = (object)[
+                            'timestamp' => $r->timestamp ?? '',
+                            'module'    => 'PROMETHEUS',
+                            'type'      => $r->type ?? 'ANOMALY',
+                            'severity'  => 2,
+                            'ip'        => !empty($r->ip_address) ? $r->ip_address : (!empty($r->ip) ? $r->ip : ''),
+                            'message'   => !empty($r->details) ? $r->details : (!empty($r->message) ? $r->message : ($r->type ?? '')),
+                        ];
+                    }
                 }
+                break;
             }
         }
         $wpdb->suppress_errors($suppress);

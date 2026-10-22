@@ -151,7 +151,7 @@ $messages = [
                             <span style="font-family: ui-monospace, monospace; font-weight: 750; color: #ffffff;"><?php echo esc_html((string)(int)$record->download_count); ?></span>
                         </td>
                         <td style="padding: 12px 14px;">
-                            <input type="text" readonly value="<?php echo esc_attr($url); ?>" style="font-size: 11px; font-family: ui-monospace, monospace;" onfocus="this.select()">
+                            <input type="text" readonly value="<?php echo esc_attr($url); ?>" class="vis-copyable-url" data-select-on-focus style="font-size: 11px; font-family: ui-monospace, monospace;">
                         </td>
                         <td style="padding: 12px 14px; text-align: right;">
                             <div style="display: inline-flex; gap: 8px; align-items: center;">

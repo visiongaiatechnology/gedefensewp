@@ -37,3 +37,8 @@ test_scan_uploads/
 .user.ini
 *.tmp
 *.lkg.php
+
+# Agent & Scratch Files (Never commit to public core)
+Next.md
+code_cartography.md
+scratch/

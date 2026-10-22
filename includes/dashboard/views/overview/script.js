@@ -458,27 +458,67 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (ttRowModule) ttRowModule.style.display = 'none';
 
                     if (ttClusterBody) {
-                        let itemsHtml = `<div class="vis-tt-cluster-header"><span>${i18n.attacked_paths_modules || 'ANGEGRIFFENE PFADE & MODULE'} (${count})</span></div><div class="vis-tt-cluster-items">`;
+                        ttClusterBody.replaceChildren();
+                        const headerDiv = document.createElement('div');
+                        headerDiv.className = 'vis-tt-cluster-header';
+                        const headerSpan = document.createElement('span');
+                        headerSpan.textContent = `${i18n.attacked_paths_modules || 'ANGEGRIFFENE PFADE & MODULE'} (${count})`;
+                        headerDiv.appendChild(headerSpan);
+                        ttClusterBody.appendChild(headerDiv);
+
+                        const itemsDiv = document.createElement('div');
+                        itemsDiv.className = 'vis-tt-cluster-items';
+
                         clusterEvents.forEach(item => {
                             const isBl = item.severity === 'blocked';
                             const isSu = item.severity === 'suspicious';
                             const badgeColorClass = isBl ? 'is-blocked' : (isSu ? 'is-suspicious' : 'is-tracked');
                             const actText = (item.action || 'INTERCEPT').split(' ')[0];
-                            itemsHtml += `
-                                <div class="vis-tt-cluster-row">
-                                    <div class="vis-tt-cr-left">
-                                        <span class="vis-tt-cr-path" title="${escapeHtml(item.path || '/wp-login.php')}">${escapeHtml(item.path || '/wp-login.php')}</span>
-                                        <span style="font-size: 9px; color: #64748b; font-family: monospace;">IP: ${escapeHtml(item.ip || '')}</span>
-                                    </div>
-                                    <div class="vis-tt-cr-right">
-                                        <span class="vis-module-chip" style="font-size: 8.5px; padding: 2px 5px;">${escapeHtml(item.module || 'Kernel')}</span>
-                                        <span class="vis-badge ${badgeColorClass}" style="font-size: 8px; padding: 1px 4px;">${escapeHtml(actText)}</span>
-                                    </div>
-                                </div>
-                            `;
+
+                            const row = document.createElement('div');
+                            row.className = 'vis-tt-cluster-row';
+
+                            const left = document.createElement('div');
+                            left.className = 'vis-tt-cr-left';
+
+                            const pathSpan = document.createElement('span');
+                            pathSpan.className = 'vis-tt-cr-path';
+                            const pText = item.path || '/wp-login.php';
+                            pathSpan.title = pText;
+                            pathSpan.textContent = pText;
+
+                            const ipSpan = document.createElement('span');
+                            ipSpan.style.fontSize = '9px';
+                            ipSpan.style.color = '#64748b';
+                            ipSpan.style.fontFamily = 'monospace';
+                            ipSpan.textContent = `IP: ${item.ip || ''}`;
+
+                            left.appendChild(pathSpan);
+                            left.appendChild(ipSpan);
+
+                            const right = document.createElement('div');
+                            right.className = 'vis-tt-cr-right';
+
+                            const modChip = document.createElement('span');
+                            modChip.className = 'vis-module-chip';
+                            modChip.style.fontSize = '8.5px';
+                            modChip.style.padding = '2px 5px';
+                            modChip.textContent = item.module || 'Kernel';
+
+                            const actBadge = document.createElement('span');
+                            actBadge.className = `vis-badge ${badgeColorClass}`;
+                            actBadge.style.fontSize = '8px';
+                            actBadge.style.padding = '1px 4px';
+                            actBadge.textContent = actText;
+
+                            right.appendChild(modChip);
+                            right.appendChild(actBadge);
+
+                            row.appendChild(left);
+                            row.appendChild(right);
+                            itemsDiv.appendChild(row);
                         });
-                        itemsHtml += '</div>';
-                        ttClusterBody.innerHTML = itemsHtml;
+                        ttClusterBody.appendChild(itemsDiv);
                         ttClusterBody.style.display = 'flex';
                     }
                 } else {
@@ -505,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     if (ttClusterBody) {
                         ttClusterBody.style.display = 'none';
-                        ttClusterBody.innerHTML = '';
+                        ttClusterBody.replaceChildren();
                     }
                 }
 
@@ -556,7 +596,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (ttRowModule) ttRowModule.style.display = 'flex';
                 if (ttClusterBody) {
                     ttClusterBody.style.display = 'none';
-                    ttClusterBody.innerHTML = '';
+                    ttClusterBody.replaceChildren();
                 }
 
                 if (ttFlag) ttFlag.textContent = code;
@@ -758,33 +798,79 @@ document.addEventListener('DOMContentLoaded', function() {
                         tr.dataset.ip = ev.ip || '';
                         tr.dataset.severity = safeSeverity;
 
-                        tr.innerHTML = `
-                            <td class="vis-col-time">
-                                <span class="vis-time-pulse"></span>
-                                <span class="vis-time-txt">${escapeHtml(ev.time)}</span>
-                            </td>
-                            <td class="vis-col-ip">
-                                <div class="vis-ip-cell">
-                                    <span class="vis-country-flag" title="${escapeHtml(ev.country_name)}">${escapeHtml(ev.country)}</span>
-                                    <code class="vis-ip-code">${escapeHtml(ev.ip)}</code>
-                                </div>
-                            </td>
-                            <td class="vis-col-path">
-                                <code class="vis-path-code" title="${escapeHtml(ev.path)}">${escapeHtml(ev.path)}</code>
-                            </td>
-                            <td class="vis-col-module">
-                                <span class="vis-module-chip">${escapeHtml(ev.module)}</span>
-                            </td>
-                            <td class="vis-col-action">
-                                <span class="vis-badge ${badgeClass}">${escapeHtml(ev.action)}</span>
-                            </td>
-                            <td class="vis-col-asn">
-                                <div class="vis-asn-cell" title="${escapeHtml(ev.asn)} · ${escapeHtml(ev.as_name)}">
-                                    <strong class="vis-asn-num">${escapeHtml(ev.asn)}</strong>
-                                    <span class="vis-as-name">${escapeHtml(ev.as_name)}</span>
-                                </div>
-                            </td>
-                        `;
+                        // col 1: Time
+                        const tdTime = document.createElement('td');
+                        tdTime.className = 'vis-col-time';
+                        const timePulse = document.createElement('span');
+                        timePulse.className = 'vis-time-pulse';
+                        const timeTxt = document.createElement('span');
+                        timeTxt.className = 'vis-time-txt';
+                        timeTxt.textContent = ev.time || '';
+                        tdTime.appendChild(timePulse);
+                        tdTime.appendChild(timeTxt);
+                        tr.appendChild(tdTime);
+
+                        // col 2: IP
+                        const tdIp = document.createElement('td');
+                        tdIp.className = 'vis-col-ip';
+                        const ipCell = document.createElement('div');
+                        ipCell.className = 'vis-ip-cell';
+                        const flagSpan = document.createElement('span');
+                        flagSpan.className = 'vis-country-flag';
+                        flagSpan.title = ev.country_name || '';
+                        flagSpan.textContent = ev.country || '';
+                        const ipCode = document.createElement('code');
+                        ipCode.className = 'vis-ip-code';
+                        ipCode.textContent = ev.ip || '';
+                        ipCell.appendChild(flagSpan);
+                        ipCell.appendChild(ipCode);
+                        tdIp.appendChild(ipCell);
+                        tr.appendChild(tdIp);
+
+                        // col 3: Path
+                        const tdPath = document.createElement('td');
+                        tdPath.className = 'vis-col-path';
+                        const pathCode = document.createElement('code');
+                        pathCode.className = 'vis-path-code';
+                        pathCode.title = escapeHtml(ev.path);
+                        pathCode.textContent = escapeHtml(ev.path);
+                        tdPath.appendChild(pathCode);
+                        tr.appendChild(tdPath);
+
+                        // col 4: Module
+                        const tdMod = document.createElement('td');
+                        tdMod.className = 'vis-col-module';
+                        const modSpan = document.createElement('span');
+                        modSpan.className = 'vis-module-chip';
+                        modSpan.textContent = ev.module || '';
+                        tdMod.appendChild(modSpan);
+                        tr.appendChild(tdMod);
+
+                        // col 5: Action
+                        const tdAct = document.createElement('td');
+                        tdAct.className = 'vis-col-action';
+                        const actSpan = document.createElement('span');
+                        actSpan.className = `vis-badge ${badgeClass}`;
+                        actSpan.textContent = ev.action || '';
+                        tdAct.appendChild(actSpan);
+                        tr.appendChild(tdAct);
+
+                        // col 6: ASN
+                        const tdAsn = document.createElement('td');
+                        tdAsn.className = 'vis-col-asn';
+                        const asnCell = document.createElement('div');
+                        asnCell.className = 'vis-asn-cell';
+                        asnCell.title = `${ev.asn || ''} · ${ev.as_name || ''}`;
+                        const asnNum = document.createElement('strong');
+                        asnNum.className = 'vis-asn-num';
+                        asnNum.textContent = ev.asn || '';
+                        const asName = document.createElement('span');
+                        asName.className = 'vis-as-name';
+                        asName.textContent = ev.as_name || '';
+                        asnCell.appendChild(asnNum);
+                        asnCell.appendChild(asName);
+                        tdAsn.appendChild(asnCell);
+                        tr.appendChild(tdAsn);
                         streamBody.insertBefore(tr, streamBody.firstChild);
                     }
 
@@ -824,12 +910,27 @@ document.addEventListener('DOMContentLoaded', function() {
                             arcG.setAttribute('class', 'vis-arc-item');
                             arcG.dataset.ip = ev.ip;
                             arcG.dataset.severity = ev.severity;
-                            arcG.innerHTML = `
-                                <path class="vis-threat-arc ${isBl ? 'is-blocked' : (isSu ? 'is-suspicious' : 'is-tracked')}" d="${arcD}" stroke="${strokeGrad}" fill="none" />
-                                <circle class="vis-threat-projectile" r="2.2" fill="${coreColor}" filter="${glowFilter}">
-                                    <animateMotion path="${arcD}" dur="2.4s" repeatCount="indefinite" />
-                                </circle>
-                            `;
+                            const svgNS = 'http://www.w3.org/2000/svg';
+                            const arcPath = document.createElementNS(svgNS, 'path');
+                            arcPath.setAttribute('class', `vis-threat-arc ${isBl ? 'is-blocked' : (isSu ? 'is-suspicious' : 'is-tracked')}`);
+                            arcPath.setAttribute('d', arcD);
+                            arcPath.setAttribute('stroke', strokeGrad);
+                            arcPath.setAttribute('fill', 'none');
+                            arcG.appendChild(arcPath);
+
+                            const projCircle = document.createElementNS(svgNS, 'circle');
+                            projCircle.setAttribute('class', 'vis-threat-projectile');
+                            projCircle.setAttribute('r', '2.2');
+                            projCircle.setAttribute('fill', coreColor);
+                            projCircle.setAttribute('filter', glowFilter);
+
+                            const animMotion = document.createElementNS(svgNS, 'animateMotion');
+                            animMotion.setAttribute('path', arcD);
+                            animMotion.setAttribute('dur', '2.4s');
+                            animMotion.setAttribute('repeatCount', 'indefinite');
+                            projCircle.appendChild(animMotion);
+
+                            arcG.appendChild(projCircle);
                             arcsGroup.appendChild(arcG);
 
                             // Marker element (supports dynamic clustering)
@@ -858,12 +959,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
                                 existingMarker.setAttribute('class', `vis-threat-marker is-cluster is-${clusterSev}`);
                                 existingMarker.dataset.severity = clusterSev;
-                                existingMarker.innerHTML = `
-                                    <circle class="vis-sonar-pulse" r="13" fill="${cColor}" opacity="0.3"></circle>
-                                    <circle class="vis-cluster-ring-outer" r="8.5" fill="rgba(6, 14, 26, 0.9)" stroke="${cColor}" stroke-width="1.4"></circle>
-                                    <circle class="vis-marker-core" r="4.2" fill="${cColor}" filter="${gFilter}"></circle>
-                                    <text class="vis-cluster-badge-text" x="0" y="2.8" text-anchor="middle">${newCount}</text>
-                                `;
+                                const svgNS = 'http://www.w3.org/2000/svg';
+                                existingMarker.replaceChildren();
+
+                                const pulse = document.createElementNS(svgNS, 'circle');
+                                pulse.setAttribute('class', 'vis-sonar-pulse');
+                                pulse.setAttribute('r', '13');
+                                pulse.setAttribute('fill', cColor);
+                                pulse.setAttribute('opacity', '0.3');
+                                existingMarker.appendChild(pulse);
+
+                                const ring = document.createElementNS(svgNS, 'circle');
+                                ring.setAttribute('class', 'vis-cluster-ring-outer');
+                                ring.setAttribute('r', '8.5');
+                                ring.setAttribute('fill', 'rgba(6, 14, 26, 0.9)');
+                                ring.setAttribute('stroke', cColor);
+                                ring.setAttribute('stroke-width', '1.4');
+                                existingMarker.appendChild(ring);
+
+                                const core = document.createElementNS(svgNS, 'circle');
+                                core.setAttribute('class', 'vis-marker-core');
+                                core.setAttribute('r', '4.2');
+                                core.setAttribute('fill', cColor);
+                                core.setAttribute('filter', gFilter);
+                                existingMarker.appendChild(core);
+
+                                const txt = document.createElementNS(svgNS, 'text');
+                                txt.setAttribute('class', 'vis-cluster-badge-text');
+                                txt.setAttribute('x', '0');
+                                txt.setAttribute('y', '2.8');
+                                txt.setAttribute('text-anchor', 'middle');
+                                txt.textContent = String(newCount);
+                                existingMarker.appendChild(txt);
                             } else {
                                 const markerG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                                 markerG.setAttribute('class', `vis-threat-marker ${isBl ? 'is-blocked' : (isSu ? 'is-suspicious' : 'is-tracked')}`);
@@ -881,11 +1008,28 @@ document.addEventListener('DOMContentLoaded', function() {
                                 markerG.dataset.severity = ev.severity;
                                 markerG.dataset.cluster = JSON.stringify([ev]);
                                 markerG.setAttribute('transform', `translate(${x1.toFixed(2)}, ${y1.toFixed(2)})`);
-                                markerG.innerHTML = `
-                                    <circle class="vis-sonar-pulse" r="9" fill="${coreColor}" opacity="0.3"></circle>
-                                    <circle class="vis-marker-ring" r="5" fill="none" stroke="${coreColor}" stroke-width="1.2"></circle>
-                                    <circle class="vis-marker-core" r="3.2" fill="${coreColor}" filter="${glowFilter}"></circle>
-                                `;
+                                const svgNS = 'http://www.w3.org/2000/svg';
+                                const pulse = document.createElementNS(svgNS, 'circle');
+                                pulse.setAttribute('class', 'vis-sonar-pulse');
+                                pulse.setAttribute('r', '9');
+                                pulse.setAttribute('fill', coreColor);
+                                pulse.setAttribute('opacity', '0.3');
+                                markerG.appendChild(pulse);
+
+                                const ring = document.createElementNS(svgNS, 'circle');
+                                ring.setAttribute('class', 'vis-marker-ring');
+                                ring.setAttribute('r', '5');
+                                ring.setAttribute('fill', 'none');
+                                ring.setAttribute('stroke', coreColor);
+                                ring.setAttribute('stroke-width', '1.2');
+                                markerG.appendChild(ring);
+
+                                const core = document.createElementNS(svgNS, 'circle');
+                                core.setAttribute('class', 'vis-marker-core');
+                                core.setAttribute('r', '3.2');
+                                core.setAttribute('fill', coreColor);
+                                core.setAttribute('filter', glowFilter);
+                                markerG.appendChild(core);
                                 markersGroup.appendChild(markerG);
                             }
                         }

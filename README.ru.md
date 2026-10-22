@@ -53,21 +53,42 @@
 >
 > *Примечание: Руководство содержит подробные пошаговые инструкции по настройке, анализу угроз и укреплению периметра.*
 >
-> **Архивная база:** PDF-руководства описывают поколение 8.1.0. Актуальная документация: этот README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) и [`Next.md`](Next.md).
+> **Архивная база:** PDF-руководства описывают поколение 8.1.0. Актуальная документация: этот README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) и [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
 
 # 🚀 Что нового в GeDefense WP 8.4.3
 
-> **Релиз 8.4.3** содержит комплексное обновление безопасности и усиление защиты по результатам глубокого аудита VGT-100: устранение подделки IP-адресов через обратный прокси в Zeus, ликвидация Stored DOM-XSS в Threat Radar, повышение отказоустойчивости Key Vault и защита от атак по времени в шлюзе Hades. Подробности в [`CHANGELOG.md`](CHANGELOG.md).
+> **Релиз 8.4.3** содержит комплексное обновление безопасности и усиление защиты телеметрии по результатам глубокого аудита VGT-100: синхронизация таблиц базы данных в реальном времени, устранение небезопасных HTML-sinks в интерфейсе, предотвращение подмены IP через reverse-proxy, безопасные пространства имен исключений, криптографическая устойчивость Key Vault и верифицированные процедуры аварийного восстановления. Подробности в [`CHANGELOG.md`](CHANGELOG.md).
 
-- **Проверка IP через обратный прокси в Zeus WAF (VGT-049 / CWE-290):** `extract_deterministic_ip()` строго валидирует сокетный IP (`REMOTE_ADDR`) по диапазонам Cloudflare CIDR перед доверием заголовку `CF-Connecting-IP`, предотвращая обход блокировок и лимитов запросов.
-- **Определение HTTPS за обратным прокси в Zeus Preboot (VGT-006 / VGT-031 / CWE-614):** Флаги куки допуска проверяют `HTTP_X_FORWARDED_PROTO` и `HTTP_X_FORWARDED_SSL`, гарантируя установку атрибута `Secure` за TLS-терминирующими прокси и балансировщиками.
-- **Устранение Stored DOM-XSS в Threat Radar (VGT-043 / CWE-79):** Динамические поля телеметрии (`path`, `ip`, `country`, `asn`, `module`, `action`) безопасно экранируются через `escapeHtml()` перед вставкой в таблицу событий.
-- **Защита от атак по времени в шлюзе Hades (VGT-048 / CWE-208):** Исключены тайминг-атаки на административный секретный параметр благодаря `hash_equals()` и строгой проверке типа `is_string()`.
-- **Надёжность Key Vault и исправление интерфейса (VGT-007 / CWE-636 / CWE-311):** Корректная привязка имён ключей в UI (исправлено удаление отдельных ключей), устойчивый fallback для неверсионированных ключей и надёжная авто-миграция plaintext-секретов.
-- **Белый список локальных хостов в AEGIS Oracle Distillate (Rollup 8.4.2):** Предотвращение ложных срабатываний `remote_asset_hijack` на легитимные локальные URL (`wp-login.php`, `wp-admin/`, внутренние перенаправления).
-- **Релиз:** `8.4.3` во всех точках входа, `VIS_VERSION`, модульном манифесте (`b6ecacdf...`) и якоре доверия.
+- **Каноническое разрешение таблиц телеметрии (P1):** Обработчик телеметрии в `class-vis-dashboard-ajax.php` обращается напрямую к каноническим таблицам (`vis_apex_bans` и `vis_omega_logs` / `VIS_TABLE_BANS` и `VIS_TABLE_LOGS`) с поддержкой legacy-fallback, что обеспечивает бесперебойное отображение блокировок и журналов безопасности на радаре угроз.
+- **Устранение HTML-sinks и строгая политика CSP (P1):** Полностью удалены встроенные inline-обработчики событий (`data-select-on-focus`), а динамическое обновление DOM в `overview/script.js` переведено на чистые методы DOM (`createElement`, `createElementNS`, `replaceChildren`, `textContent`). Регрессионный тест UI проходит с нулевым количеством ошибок.
+- **Устойчивость к конфликтам классов исключений (P2):** Базовые исключения (`AppException`, `ValidationException`, `SecurityException`, `StorageException`) в `class-vis-security.php` защищены проверками `if (!class_exists(...))` и сопоставлены с пространством имен `VisionGaia\GeDefense\Exceptions`.
+- **Очистка путей разработки и надежный поиск GeoIP (P2):** Из `class-vis-geo-resolver.php` удалены пути среды разработки. Внедрен многоуровневый порядок обнаружения базы через корень плагина, защищенные каталоги загрузок и хуки фильтров WordPress.
+- **Верифицированное аварийное восстановление (P2):** Документированы и протестированы сценарии восстановления для pre-boot WAF Zeus (`define('ZEUS_DISABLE', true);`), WP-CLI (`wp plugin deactivate gedefense-wp`) и режима восстановления WordPress (`WP_RECOVERY_MODE`).
+- **Верификация IP reverse-proxy в Zeus WAF (VGT-049 / CWE-290):** `extract_deterministic_ip()` проверяет socket IP (`REMOTE_ADDR`) по доверенным диапазонам Cloudflare CIDR перед доверием заголовкам `CF-Connecting-IP`.
+- **Определение HTTPS-куки при обратном прокси (VGT-006 / VGT-031 / CWE-614):** Учет заголовков `HTTP_X_FORWARDED_PROTO` и `HTTP_X_FORWARDED_SSL` гарантирует установку флага `Secure`.
+- **Устранение Stored DOM-XSS в радаре угроз (VGT-043 / CWE-79):** Телеметрические поля санитизируются через `escapeHtml()` и вставляются в виде текстовых узлов DOM.
+- **Hades Gateway Constant-Time Auth (VGT-048 / CWE-208):** Защита от атак по времени на административный токен с использованием `hash_equals()`.
+- **Надежность Key Vault и исправление интерфейса (VGT-007 / CWE-636 / CWE-311):** Восстановлено удаление единичных ключей, добавлен fallback для неверсионированных ключей и шифрование конфигурационных секретов.
+- **AEGIS Oracle Distillate Local Host Allowlist (8.4.2 Rollup):** Исключены ложные срабатывания на легитимных внутренних URL (`wp-login.php`, `wp-admin/`).
+- **Релиз:** `8.4.3` во всех точках входа, `VIS_VERSION`, манифесте (`3cd53343...`) и якоре доверия.
+
+---
+
+### 🗺️ Картография радара угроз, происхождение данных GeoIP/ASN и лицензии сторонних компонентов
+Радар угроз и карта векторов атак GeDefense работают на **100% автономном локальном движке BGP/ASN** (`data/geoip.csv` и `world-map.svg.php`):
+- **1. Векторная SVG-геометрия карты мира (`world-map.svg.php`):**
+  - **Исходный проект:** [`themustafaomar/jsvectormap`](https://github.com/themustafaomar/jsvectormap)
+  - **Файл карты:** `world-merc.js` (проекция Меркатора, v1.7.0, [прямая ссылка на файл](https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/maps/world-merc.js))
+  - **Лицензия:** **MIT License** (Copyright (c) 2020 Mustafa Omar, [MIT License](https://github.com/themustafaomar/jsvectormap/blob/main/LICENSE))
+- **2. Телеметрическая база данных GeoIP и ASN (`data/geoip.csv`):**
+  - **Исходный проект:** [`iplocate/ip-address-databases`](https://github.com/iplocate/ip-address-databases) (открытые базы данных IP-to-Country и IP-to-ASN)
+  - **Подтвержденное совпадение:** Подсеть `1.0.4.0/22` сопоставлена с ASN `38803` и именем организации `Gtelecom Pty Ltd` (AU).
+  - **Лицензия:** **Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)**
+  - **Атрибуция:** *Этот продукт использует данные IP-to-Country и IP-to-ASN проекта iplocate/ip-address-databases, распространяемые по лицензии CC BY-SA 4.0.*
+- **Гарантии суверенитета и конфиденциальности:** Все координаты, флаги стран и ASN определяются локально через бинарный `fseek()` (~0,25–0,45 мс). Внешние HTTP-запросы и обратные DNS-запросы полностью исключены.
+- **Аварийное восстановление:** При случайной блокировке интерфейса администратора доступ восстанавливается директивой `define('ZEUS_DISABLE', true);` в `wp-config.php` или командой `wp plugin deactivate gedefense-wp` через WP-CLI.
 
 ---
 

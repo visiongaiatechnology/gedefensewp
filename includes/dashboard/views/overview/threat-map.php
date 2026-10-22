@@ -417,6 +417,19 @@ if (!defined('ABSPATH')) {
                 </tbody>
             </table>
         </div>
+
+        <!-- Data Provenance & Sovereign Cartography Attestation -->
+        <div class="vis-threat-provenance-bar" style="margin-top: 14px; padding: 10px 14px; border-radius: 6px; background: rgba(5, 14, 28, 0.6); border: 1px solid rgba(0, 243, 255, 0.15); display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #94a3b8; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #00f3ff; box-shadow: 0 0 6px #00f3ff;"></span>
+                <span><strong><?php esc_html_e('Karten- & ASN-Herkunft:', 'vgt-sentinel'); ?></strong> <?php esc_html_e('Weltkarte: jsVectorMap world-merc (MIT) · ASN-Daten: iplocate/ip-address-databases (CC BY-SA 4.0)', 'vgt-sentinel'); ?></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; font-family: ui-monospace, monospace; font-size: 10px;">
+                <span title="<?php esc_attr_e('Keine externen API-Aufrufe, keine DNS-Leaks, DSGVO-konform', 'vgt-sentinel'); ?>" style="color: #10b981;">● <?php esc_html_e('0 CLOUD LEAKS · ZERO EXTERNAL APIS', 'vgt-sentinel'); ?></span>
+                <span style="color: #64748b;">|</span>
+                <span style="color: #94a3b8;"><?php esc_html_e('Version: 2025.Q1 BGP Baseline', 'vgt-sentinel'); ?></span>
+            </div>
+        </div>
     </div>
 </div>
 

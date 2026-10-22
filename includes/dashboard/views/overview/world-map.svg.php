@@ -1,4 +1,15 @@
-<?php if (!defined("ABSPATH")) exit("VGT_ACCESS_DENIED"); ?>
+<?php
+/**
+ * GEODEFENSE SVG WORLD MAP PROJECTION (Mercator)
+ * 
+ * Source: jsVectorMap (world-merc.js, v1.7.0)
+ * Repository: https://github.com/themustafaomar/jsvectormap
+ * Map Data: https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/maps/world-merc.js
+ * License: MIT License (https://github.com/themustafaomar/jsvectormap/blob/main/LICENSE)
+ * Copyright (c) 2020 Mustafa Omar
+ */
+if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
+?>
 <svg id="visThreatMapSvg" class="vis-threat-map-svg" viewBox="0 0 900 583" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
   <defs>
     <filter id="visGlowCyan" x="-20%" y="-20%" width="140%" height="140%">

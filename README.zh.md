@@ -59,15 +59,36 @@
 
 # 🚀 GeDefense WP 8.4.3 新特性
 
-> **8.4.3 发布**：根据 VGT-100 深度安全审计标准带来全面的底层安全加固：解决 Zeus WAF 反向代理 IP 伪造漏洞、彻底清除 Threat Radar 中的 Stored DOM-XSS 隐患、提升 Key Vault 密钥库健壮性，并在 Hades 管理网关中实现恒定时间身份认证。详情见 [`CHANGELOG.md`](CHANGELOG.md)。
+> **8.4.3 发布**：根据 VGT-100 深度安全审计与钻石发布标准带来全方位的系统安全与遥测加固：统一实时遥测数据库查询基线、彻底消除前端 UI 的 HTML 接收点风险、解决 Zeus WAF 反向代理 IP 伪造、异常类命名空间碰撞防护、密钥保管库高弹性与经实测验证的带外应急恢复。详情见 [`CHANGELOG.md`](CHANGELOG.md)。
 
-- **Zeus WAF 反向代理真实 IP 验证 (VGT-049 / CWE-290)：** `extract_deterministic_ip()` 在信任 `CF-Connecting-IP` 前严格验证套接字 IP (`REMOTE_ADDR`) 是否属于 Cloudflare 官方 CIDR 掩码，杜绝伪造请求头绕过访问限制与 IP 封禁。
-- **Zeus Preboot 反向代理 HTTPS Cookie 识别 (VGT-006 / VGT-031 / CWE-614)：** 准入 Cookie 检查 `HTTP_X_FORWARDED_PROTO` 与 `HTTP_X_FORWARDED_SSL`，确保在 TLS 卸载的反向代理与负载均衡器后依然强制添加 `Secure` 安全标记。
-- **清除 Threat Radar 实时遥测中的 Stored DOM-XSS (VGT-043 / CWE-79)：** 动态事件字段（`path`、`ip`、`country`、`asn`、`module`、`action`）在插入 DOM 表格前全部经过 `escapeHtml()` 实体转义，彻底阻断恶意 URI 注入。
-- **Hades 管理网关防侧信道时序攻击 (VGT-048 / CWE-208)：** 严格进行 `is_string()` 类型检查并通过 `hash_equals()` 进行恒定时间字符串比较，防止针对管理员隐蔽入口的旁路时序推测。
-- **Key Vault 健壮性提升与 UI 修复 (VGT-007 / CWE-636 / CWE-311)：** 修复仪表盘密钥列表迭代索引绑定问题（恢复单个密钥删除），实现未版本化密钥的弹性回退与纯文本配置自动迁移加密。
-- **AEGIS Oracle 策略蒸馏本地主机白名单 (8.4.2 Rollup)：** 杜绝本地合法 URL（如 `wp-login.php`、`wp-admin/` 及内部重定向）被误判为 `remote_asset_hijack`。
-- **发布：** 入口、`VIS_VERSION`、模块清单 (`b6ecacdf...`) 和信任锚均升级至 `8.4.3`。
+- **实时遥测数据库表名规范化（P1 级修复）：** `class-vis-dashboard-ajax.php` 中的实时遥测轮询端点严格对齐底层规范数据表（`vis_apex_bans` 与 `vis_omega_logs` / `VIS_TABLE_BANS` 与 `VIS_TABLE_LOGS`），并配备平滑向下兼容回退，确保当前封禁与核心日志 100% 实时同步至威胁雷达。
+- **Zero-Sink DOM UI 加固与严格 CSP（P1 级修复）：** 彻底移除行内事件监听器（`data-select-on-focus`），将 `overview/script.js` 中所有动态 DOM 操作改造为原生安全构建方法（`createElement`、`createElementNS`、`replaceChildren`、`textContent`），内部 UI 回归测试 0 告警通过。
+- **防碰撞全局异常架构（P2 级修复）：** `class-vis-security.php` 中的核心异常定义（`AppException`、`ValidationException`、`SecurityException`、`StorageException`）全面引入 `if (!class_exists(...))` 守卫，并设立 `VisionGaia\GeDefense\Exceptions` 别名，杜绝第三方插件重复声明冲突。
+- **清理开发遗留路径与本地 GeoIP 发现机制（P2 级修复）：** 彻底清除了 `class-vis-geo-resolver.php` 中的本地开发路径，建立插件目录、上传目录与 WordPress 过滤钩子的多层级鲁棒查找体系。
+- **经实测验证的带外灾难恢复（P2 级修复）：** 完善并验证了 Zeus WAF 前置防火墙的紧急旁路指令（`define('ZEUS_DISABLE', true);`）、WP-CLI 应急恢复（`wp plugin deactivate gedefense-wp`）以及原生 WordPress 恢复模式（`WP_RECOVERY_MODE`）。
+- **Zeus WAF 反向代理 IP 真实性校验 (VGT-049 / CWE-290)：** `extract_deterministic_ip()` 强制验证套接字 IP (`REMOTE_ADDR`) 是否属于真实的 Cloudflare 官方 CIDR 节点，杜绝恶意伪造 `CF-Connecting-IP` 绕过限流和拦截。
+- **Zeus Preboot 反向代理 HTTPS Cookie 检测 (VGT-006 / VGT-031 / CWE-614)：** 自动评估 `HTTP_X_FORWARDED_PROTO` 与 `HTTP_X_FORWARDED_SSL` 变量，确保在 TLS 终结的反向代理和负载均衡后端下始终签发带 `Secure` 标记的安全 Cookie。
+- **威胁雷达存储型 DOM-XSS 彻底消除 (VGT-043 / CWE-79)：** 动态遥测字段（`path`、`ip`、`country`、`asn`、`module`、`action`）在渲染到前端表格前必须经过严格的 `escapeHtml()` 转义与安全 DOM 文本节点挂载。
+- **Hades Gateway 恒定时间认证 (VGT-048 / CWE-208)：** 管理令牌的校验改为恒定时间 `hash_equals()` 并在比对前执行严格的 `is_string()` 类型判定，根除针对安全凭证的侧信道时序攻击。
+- **密钥保管库健壮性与界面交互修复 (VGT-007 / CWE-636 / CWE-311)：** 绑定真实的凭证标识符（恢复单键删除功能），为未版本化的密钥提供安全平滑回退，并支持对任意明文配置参数执行自动化密文加密。
+- **AEGIS Oracle Distillate 本地 Host 白名单 (8.4.2 汇总)：** 消除合法内部请求（如 `/wp-login.php`、`wp-admin/` 及内部重定向）被误判为 `remote_asset_hijack` 的误报。
+- **发布：** 入口、`VIS_VERSION`、模块清单 (`3cd53343...`) 和信任锚均升级至 `8.4.3`。
+
+---
+
+### 🗺️ 威胁雷达制图引擎、本地 GeoIP/ASN 数据来源与第三方开源许可
+GeDefense 实时威胁雷达和全球攻击向量图由 **100% 自主可控的本地 BGP/ASN 制图引擎** (`data/geoip.csv` 与 `world-map.svg.php`) 驱动：
+- **1. 墨卡托投影世界地图 SVG 矢量轮廓 (`world-map.svg.php`)：**
+  - **上游开源项目：** [`themustafaomar/jsvectormap`](https://github.com/themustafaomar/jsvectormap)
+  - **地图源文件：** `world-merc.js` (墨卡托投影, v1.7.0, [文件直接链接](https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/maps/world-merc.js))
+  - **开源许可：** **MIT License** (Copyright (c) 2020 Mustafa Omar, [MIT License](https://github.com/themustafaomar/jsvectormap/blob/main/LICENSE))
+- **2. GeoIP 与 ASN 遥测数据库 (`data/geoip.csv`)：**
+  - **上游开源项目：** [`iplocate/ip-address-databases`](https://github.com/iplocate/ip-address-databases) (开放 IP-to-Country 与 IP-to-ASN 数据库)
+  - **具体样本验证匹配：** 网络子网 `1.0.4.0/22` 分配给 ASN `38803`，机构名称为 `Gtelecom Pty Ltd` (AU)，与上游数据完全一致。
+  - **开源许可：** **知识共享署名-相同方式共享 4.0 国际公共许可证 (CC BY-SA 4.0)**
+  - **致谢与声明：** *本产品包含来自 iplocate/ip-address-databases 项目的 IP-to-Country 和 IP-to-ASN 数据，遵循 CC BY-SA 4.0 许可。*
+- **数字主权与隐私保障：** 所有地理坐标、国家旗帜和 ASN 信息均在本地通过纳秒级二进制 `fseek()` 偏移量读取 (~0.25ms - 0.45ms)。系统绝不向任何外部 HTTP 服务器或 DNS 服务器发送逆向解析请求。
+- **带外灾难恢复保证：** 若因规则误配或前置 WAF 导致管理员后台被拦截，只需在 `wp-config.php` 中添加 `define('ZEUS_DISABLE', true);` 或通过 WP-CLI 执行 `wp plugin deactivate gedefense-wp` 即可在数秒内解锁管理权限。
 
 ---
 

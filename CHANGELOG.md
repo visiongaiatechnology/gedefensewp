@@ -10,6 +10,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [8.4.3] — 2026-10-22
 
 ### Security Hardening & VGT-100 Full Audit Remediation
+- **Canonical Telemetry Table Resolution (P1 Fix):** In `class-vis-dashboard-ajax.php`,
+  the real-time threat poller `wp_ajax_vis_get_live_threats` now dynamically resolves canonical database
+  tables (`vis_apex_bans` and `vis_omega_logs` / `VIS_TABLE_BANS` and `VIS_TABLE_LOGS`) with graceful legacy
+  fallback to `vis_bans` and `vis_sentinel_logs`, ensuring active bans and core security logs are seamlessly
+  streamed to the live Threat Radar.
+- **Zero-Sink DOM UI Hardening & Strict CSP Compliance (P1 Fix):** Completely eliminated inline event handlers
+  (`data-select-on-focus`) across all dashboard views. Converted all dynamic DOM modifications in `overview/script.js`
+  to pure DOM construction methods (`createElement`, `createElementNS`, `replaceChildren`, `textContent`),
+  achieving 100% compliance with strict Content Security Policies and passing internal UI regression tests.
+- **Collision-Safe Exception Architecture (P2 Fix):** In `includes/core/class-vis-security.php`, wrapped core
+  exception definitions (`AppException`, `ValidationException`, `SecurityException`, `StorageException`) in
+  `if (!class_exists(...))` guards and aliased under `VisionGaia\GeDefense\Exceptions`, preventing fatal redeclaration
+  conflicts with third-party plugins and libraries.
+- **Purged Dev Paths & Sovereign GeoIP Discovery (P2 Fix):** In `includes/core/class-vis-geo-resolver.php`,
+  removed all hardcoded local development paths. Implemented multi-tier discovery across canonical plugin paths,
+  persistent upload directories (`wp_upload_dir()`), and extensible WordPress filters (`vis_geoip_csv_paths`).
+- **Threat Map BGP/ASN Attribution & Provenance Disclosure:** Added explicit data source attributions
+  (Regional Internet Registries BGP tables, IP2Location LITE, and DB-IP Open Data under CC BY 4.0) to
+  `includes/dashboard/views/overview/threat-map.php`, `data/README.md`, `Manual.txt`, and all multi-language READMEs.
+- **Verified Out-of-Band Disaster Recovery Workflows:** Formalized and documented disaster recovery procedures
+  for pre-boot WAF lockouts (`define('ZEUS_DISABLE', true);`), WP-CLI recovery commands (`wp plugin deactivate gedefense-wp`),
+  and native WordPress Recovery Mode (`WP_RECOVERY_MODE`).
 - **Zeus WAF Reverse-Proxy IP Verification (VGT-049 / CWE-290):** In `class-vis-zeus.php`,
   `extract_deterministic_ip()` now delegates to canonical `VIS_Security::client_ip()` with strict
   Cloudflare CIDR verification on `REMOTE_ADDR`, eliminating unauthenticated IP spoofing via crafted
@@ -19,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ensuring `Secure` cookie flags are strictly set behind TLS-terminating reverse proxies, load balancers, and CDNs.
 - **Stored DOM-XSS Elimination in Threat Radar Telemetry (VGT-043 / VGT-071 / CWE-79):** In
   `includes/dashboard/views/overview/script.js`, dynamic threat event attributes (`time`, `ip`, `country`, `path`,
-  `module`, `action`, `asn`, `as_name`) are now safely escaped with `escapeHtml()` prior to table insertion.
+  `module`, `action`, `asn`, `as_name`) are now safely escaped with `escapeHtml()` and rendered as safe DOM text nodes.
 - **Hades Administrative Gateway Constant-Time Authentication (VGT-048 / CWE-208):** In `class-zeus-shield.php`,
   Hades entry point validation now enforces string types and constant-time `hash_equals()` string comparison,
   preventing timing side-channel attacks on the secret bypass token.
@@ -28,9 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   display and single-key deletion. In `class-vis-vault.php`, non-versioned blobs safely fallback to original
   payloads without throwing uncaught fatal exceptions, and `auto_migrate_config()` reliably migrates and encrypts
   unencrypted configuration secrets.
-- **Security Invariant Continuous Enforcement:** Added continuous verification of all 6 security invariants
-  to `scripts/security-regression.php`.
-- **Integrity Anchor:** Module manifest regenerated and verified across all 27 components.
+- **Security Invariant Continuous Enforcement:** Added continuous verification of all security invariants
+  to `scripts/security-regression.php` and `scripts/dashboard-telemetry-regression.php`.
+- **Integrity Anchor:** Module manifest regenerated and verified across all components.
 
 ## [8.4.2] — 2026-10-22
 

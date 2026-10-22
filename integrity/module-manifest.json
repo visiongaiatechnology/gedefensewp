@@ -17,11 +17,11 @@
         },
         "core": {
             "files": 15,
-            "root_hash": "10885a11d9c916f48f51343e53510d1066fcc997addd70ca71e0c143b576cd0f"
+            "root_hash": "c138a85d57f3233e903eda99bd9a8d1413a9e7cbef4f7592660cffef2d135332"
         },
         "dashboard": {
             "files": 87,
-            "root_hash": "0e055fbd7f7aabd70ab0df85fdc9459d7165f81e6c4a84deaa6a5861d79011b2"
+            "root_hash": "8a929333dfc1b54e28839fbb1cbcd513e22bb3cff02a6648f55e2f912d70d82f"
         },
         "xdr": {
             "files": 9,
