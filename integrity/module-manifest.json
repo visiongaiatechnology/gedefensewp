@@ -5,7 +5,7 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "dc218a5a80bb40d417a8cec9d7711254d9b84bea4045519e3cc580d3eb734037"
+            "root_hash": "a3d43544ee2a9f3f63c96eeec8001318cd1845c848b262b865d11dbd735d2582"
         },
         "assets": {
             "files": 12,
@@ -21,7 +21,7 @@
         },
         "dashboard": {
             "files": 87,
-            "root_hash": "2ef03c21752249583aabce50d1a70b841be05f82a7a41014e09c69735c7c403a"
+            "root_hash": "0e055fbd7f7aabd70ab0df85fdc9459d7165f81e6c4a84deaa6a5861d79011b2"
         },
         "xdr": {
             "files": 9,
@@ -109,7 +109,7 @@
         },
         "zeus": {
             "files": 16,
-            "root_hash": "7d2e37f9cfbc1d81642c4427fdbd249c8e9e5121a3ad688d1175e5bcec93096c"
+            "root_hash": "ab414be7ef6c13f61b1c72a29cb07abb22c26179cea2fd4ee129f8973b48a177"
         }
     }
 }

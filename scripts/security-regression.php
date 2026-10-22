@@ -183,6 +183,24 @@ $required = [
         'supported URI API' => 'assess_uri(',
         'failing process exit' => 'exit($runner->run() ? 0 : 1);',
     ],
+    'includes/modules/zeus/class-vis-zeus.php' => [
+        'canonical client identity in zeus' => "class_exists('VIS_Security') && method_exists('VIS_Security', 'client_ip')",
+    ],
+    'includes/modules/zeus/src/class-zeus-shield.php' => [
+        'constant-time hades gate secret comparison' => "hash_equals((string)\$hades_secret, (string)\$_GET[\$hades_param])",
+    ],
+    'includes/modules/zeus/src/class-zeus-compiler.php' => [
+        'reverse proxy HTTPS cookie awareness' => 'HTTP_X_FORWARDED_PROTO',
+    ],
+    'class-vis-vault.php' => [
+        'non-versioned vault decrypt fallback' => 'return $encoded_blob;',
+    ],
+    'includes/dashboard/views/overview/script.js' => [
+        'stream telemetry DOM-XSS escaping' => 'escapeHtml(ev.path)',
+    ],
+    'includes/dashboard/views/view-vault.php' => [
+        'vault key identifier parameter' => '$clean_k_name',
+    ],
 ];
 
 foreach ($required as $relative => $invariants) {

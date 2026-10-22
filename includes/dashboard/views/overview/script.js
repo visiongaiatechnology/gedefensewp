@@ -753,34 +753,35 @@ document.addEventListener('DOMContentLoaded', function() {
                         const badgeClass = isBlocked ? 'vis-badge-danger' : (isSuspicious ? 'vis-badge-warning' : 'vis-badge-info');
 
                         const tr = document.createElement('tr');
-                        tr.className = `vis-stream-row ${ev.severity}`;
-                        tr.dataset.ip = ev.ip;
-                        tr.dataset.severity = ev.severity;
+                        const safeSeverity = ['blocked', 'suspicious', 'monitored'].includes(ev.severity) ? ev.severity : 'monitored';
+                        tr.className = `vis-stream-row ${safeSeverity}`;
+                        tr.dataset.ip = ev.ip || '';
+                        tr.dataset.severity = safeSeverity;
 
                         tr.innerHTML = `
                             <td class="vis-col-time">
                                 <span class="vis-time-pulse"></span>
-                                <span class="vis-time-txt">${ev.time}</span>
+                                <span class="vis-time-txt">${escapeHtml(ev.time)}</span>
                             </td>
                             <td class="vis-col-ip">
                                 <div class="vis-ip-cell">
-                                    <span class="vis-country-flag" title="${ev.country_name}">${ev.country}</span>
-                                    <code class="vis-ip-code">${ev.ip}</code>
+                                    <span class="vis-country-flag" title="${escapeHtml(ev.country_name)}">${escapeHtml(ev.country)}</span>
+                                    <code class="vis-ip-code">${escapeHtml(ev.ip)}</code>
                                 </div>
                             </td>
                             <td class="vis-col-path">
-                                <code class="vis-path-code" title="${ev.path}">${ev.path}</code>
+                                <code class="vis-path-code" title="${escapeHtml(ev.path)}">${escapeHtml(ev.path)}</code>
                             </td>
                             <td class="vis-col-module">
-                                <span class="vis-module-chip">${ev.module}</span>
+                                <span class="vis-module-chip">${escapeHtml(ev.module)}</span>
                             </td>
                             <td class="vis-col-action">
-                                <span class="vis-badge ${badgeClass}">${ev.action}</span>
+                                <span class="vis-badge ${badgeClass}">${escapeHtml(ev.action)}</span>
                             </td>
                             <td class="vis-col-asn">
-                                <div class="vis-asn-cell" title="${ev.asn} · ${ev.as_name}">
-                                    <strong class="vis-asn-num">${ev.asn}</strong>
-                                    <span class="vis-as-name">${ev.as_name}</span>
+                                <div class="vis-asn-cell" title="${escapeHtml(ev.asn)} · ${escapeHtml(ev.as_name)}">
+                                    <strong class="vis-asn-num">${escapeHtml(ev.asn)}</strong>
+                                    <span class="vis-as-name">${escapeHtml(ev.as_name)}</span>
                                 </div>
                             </td>
                         `;

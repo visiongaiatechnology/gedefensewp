@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.4.3] — 2026-10-22
+
+### Security Hardening & VGT-100 Full Audit Remediation
+- **Zeus WAF Reverse-Proxy IP Verification (VGT-049 / CWE-290):** In `class-vis-zeus.php`,
+  `extract_deterministic_ip()` now delegates to canonical `VIS_Security::client_ip()` with strict
+  Cloudflare CIDR verification on `REMOTE_ADDR`, eliminating unauthenticated IP spoofing via crafted
+  `CF-Connecting-IP` headers to evade rate limits and lockouts.
+- **Zeus Preboot Reverse-Proxy HTTPS Cookie Detection (VGT-006 / VGT-031 / CWE-614):** In `class-zeus-compiler.php`,
+  preboot admission cookie generation now accounts for `HTTP_X_FORWARDED_PROTO` and `HTTP_X_FORWARDED_SSL`,
+  ensuring `Secure` cookie flags are strictly set behind TLS-terminating reverse proxies, load balancers, and CDNs.
+- **Stored DOM-XSS Elimination in Threat Radar Telemetry (VGT-043 / VGT-071 / CWE-79):** In
+  `includes/dashboard/views/overview/script.js`, dynamic threat event attributes (`time`, `ip`, `country`, `path`,
+  `module`, `action`, `asn`, `as_name`) are now safely escaped with `escapeHtml()` prior to table insertion.
+- **Hades Administrative Gateway Constant-Time Authentication (VGT-048 / CWE-208):** In `class-zeus-shield.php`,
+  Hades entry point validation now enforces string types and constant-time `hash_equals()` string comparison,
+  preventing timing side-channel attacks on the secret bypass token.
+- **Key Vault Robustness & UI Resolution (VGT-007 / CWE-636 / CWE-311):** In `includes/dashboard/views/view-vault.php`,
+  corrected array iteration to bind secret key identifiers instead of numeric indices, restoring UI name
+  display and single-key deletion. In `class-vis-vault.php`, non-versioned blobs safely fallback to original
+  payloads without throwing uncaught fatal exceptions, and `auto_migrate_config()` reliably migrates and encrypts
+  unencrypted configuration secrets.
+- **Security Invariant Continuous Enforcement:** Added continuous verification of all 6 security invariants
+  to `scripts/security-regression.php`.
+- **Integrity Anchor:** Module manifest regenerated and verified across all 27 components.
+
 ## [8.4.2] — 2026-10-22
 
 ### Security / False-Positive Hotfix

@@ -69,6 +69,7 @@ final class VIS_Vault {
             if ($plaintext !== false) {
                 return $plaintext;
             }
+            return $encoded_blob;
         }
 
         error_log('[VGT VAULT] Decrypt rejected invalid vault payload.');
@@ -138,7 +139,7 @@ final class VIS_Vault {
                         continue;
                     }
 
-                    if (!preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $payload) || base64_decode($payload, true) === false) {
+                    if (!str_starts_with((string)$payload, self::PAYLOAD_PREFIX)) {
                         $config[$s_key] = self::encrypt($payload);
                         $migrated = true;
                     }
@@ -159,7 +160,7 @@ final class VIS_Vault {
                 $plaintext = self::core_decrypt($aegis_payload, self::get_legacy_key());
                 if ($plaintext !== false) {
                     update_option('vis_aegis_ai_key', self::encrypt($plaintext));
-                } elseif (!preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $aegis_key) || base64_decode($aegis_key, true) === false) {
+                } elseif (!str_starts_with($aegis_key, self::PAYLOAD_PREFIX)) {
                     update_option('vis_aegis_ai_key', self::encrypt($aegis_key));
                 }
             }

@@ -108,16 +108,18 @@ $prefill_key_id = isset($_GET['key_id']) && is_string($_GET['key_id']) ? sanitiz
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($registered_keys as $k_id => $k_data): ?>
+                        <?php foreach ($registered_keys as $k_name): 
+                            $clean_k_name = is_string($k_name) ? $k_name : (string)$k_name;
+                        ?>
                         <tr>
-                            <td><code><?php echo esc_html((string)$k_id); ?></code></td>
+                            <td><code><?php echo esc_html($clean_k_name); ?></code></td>
                             <td><code>AES-256-GCM</code></td>
                             <td><strong style="color: #5eead4;"><?php esc_html_e('SEALED', 'vgt-sentinel'); ?></strong></td>
                             <td style="text-align:right;">
                                 <form method="post" action="" class="vis-inline-form" data-confirm="<?php echo esc_attr__('Secret wirklich unwiderruflich löschen?', 'vgt-sentinel'); ?>">
                                     <?php wp_nonce_field('vis_vault_delete_action'); ?>
                                     <input type="hidden" name="action" value="vis_vault_delete">
-                                    <input type="hidden" name="key_identifier" value="<?php echo esc_attr((string)$k_id); ?>">
+                                    <input type="hidden" name="key_identifier" value="<?php echo esc_attr($clean_k_name); ?>">
                                     <button type="submit" style="background:rgba(251,113,133,0.1); border:1px solid #fb7185; color:#fecdd3; border-radius:6px; padding:6px 10px; cursor:pointer; font:700 10px monospace;">
                                         <?php esc_html_e('LÖSCHEN', 'vgt-sentinel'); ?>
                                     </button>

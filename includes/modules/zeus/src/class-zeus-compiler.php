@@ -477,7 +477,10 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
         \$sig = hash_hmac('sha256', 'vgt1.' . \$b64, \$admKey);
         \$sessToken = 'vgt1.' . \$b64 . '.' . \$sig;
 
-        \$isHttps = !empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off';
+        \$isHttps = (!empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off')
+            || (isset(\$_SERVER['SERVER_PORT']) && (string)\$_SERVER['SERVER_PORT'] === '443')
+            || (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)\$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+            || (isset(\$_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)\$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on');
         setcookie('vgt_zeus_adm', \$sessToken, [
             'expires'  => \$now + \$ttl,
             'path'     => '/',
@@ -847,7 +850,10 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
 
             // Clean URL Exchange: If token came via ?vgt_adm=..., set Secure HttpOnly cookie and 302 redirect
             if (isset(\$_GET['vgt_adm'])) {
-                \$secure = (!empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off') || (isset(\$_SERVER['SERVER_PORT']) && \$_SERVER['SERVER_PORT'] === '443');
+                \$secure = (!empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off')
+                    || (isset(\$_SERVER['SERVER_PORT']) && (string)\$_SERVER['SERVER_PORT'] === '443')
+                    || (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)\$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+                    || (isset(\$_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)\$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on');
                 setcookie('vgt_zeus_adm', \$admToken, [
                     'expires'  => (int)(\$res['payload']['exp'] ?? (time() + 300)),
                     'path'     => '/',

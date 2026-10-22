@@ -94,13 +94,13 @@ class VIS_Zeus_Shield {
         $hades_secret = $hades_config['hades_admin_secret'] ?? 'omega';
         
         $hades_cookie_valid = false;
-        if (isset($_COOKIE['vgt_hades_gate'])) {
-            $expected_hash = hash_hmac('sha256', $hades_secret, wp_salt('auth'));
-            if (hash_equals($expected_hash, $_COOKIE['vgt_hades_gate'])) {
+        if (isset($_COOKIE['vgt_hades_gate']) && is_string($_COOKIE['vgt_hades_gate'])) {
+            $expected_hash = hash_hmac('sha256', (string)$hades_secret, wp_salt('auth'));
+            if (hash_equals($expected_hash, (string)$_COOKIE['vgt_hades_gate'])) {
                 $hades_cookie_valid = true;
             }
         }
-        $has_hades_param = isset($_GET[$hades_param]) && $_GET[$hades_param] === $hades_secret;
+        $has_hades_param = isset($_GET[$hades_param]) && is_string($_GET[$hades_param]) && hash_equals((string)$hades_secret, (string)$_GET[$hades_param]);
 
         $hades_override = $hades_active && ($has_hades_param || $hades_cookie_valid);
 
