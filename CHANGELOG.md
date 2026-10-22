@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.4.2] — 2026-10-22
+
+### Security / False-Positive Hotfix
+- **AEGIS Oracle Distillate (Local Site / Self-Referer Allowlist):** Resolved false-positive
+  `remote_asset_hijack` blocks (confidence 90) on legitimate local URLs (e.g., login referers to
+  `wp-login.php`, `wp-admin/`, redirects, and admin-ajax). `archive_hijack_rule` now explicitly
+  verifies `$_SERVER['HTTP_HOST']`, `$_SERVER['SERVER_NAME']`, `home_url()`, `site_url()`, and
+  loopback (`localhost`, `127.0.0.1`, `::1`) before evaluating external asset hijacking.
+- **Oracle Distillate Engine:** Bumped `DISTILL_VERSION` to `1.0.1`.
+- **Integrity Anchor:** Module manifest regenerated (`c58ce45d...`) and verified across all 27 components.
+
 ## [8.4.1] — 2026-10-21
 
 ### Security / Reliability Hotfix

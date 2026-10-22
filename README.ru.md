@@ -1,7 +1,7 @@
 > [!WARNING]
 > **ПУБЛИЧНАЯ БЕТА / RELEASE CANDIDATE — НЕ ДЛЯ ПРОИЗВОДСТВЕННОЙ ЭКСПЛУАТАЦИИ БЕЗ НАБЛЮДЕНИЯ**
 >
-> **VGT GeDefense WP 8.4.1 Open Core — публичная бета / release candidate, а не GA-релиз.** Хуки, политики, правила обнаружения, форматы конфигурации и поведение безопасности могут меняться без предупреждения. Проверяйте каждую сборку в staging-среде, начинайте в **observe-режиме**, держите протестированные резервные копии и out-of-band доступ для восстановления; не используйте для производственной эксплуатации без наблюдения. Предоставляется **как есть**, без гарантий, по AGPL-3.0-or-later. См. [`CHANGELOG.md`](CHANGELOG.md) и [GitHub-релизы](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.4.2 Open Core — публичная бета / release candidate, а не GA-релиз.** Хуки, политики, правила обнаружения, форматы конфигурации и поведение безопасности могут меняться без предупреждения. Проверяйте каждую сборку в staging-среде, начинайте в **observe-режиме**, держите протестированные резервные копии и out-of-band доступ для восстановления; не используйте для производственной эксплуатации без наблюдения. Предоставляется **как есть**, без гарантий, по AGPL-3.0-or-later. См. [`CHANGELOG.md`](CHANGELOG.md) и [GitHub-релизы](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 <div align="center">
 
@@ -11,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇷🇺 К журналу изменений (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Релиз на GitHub v8.4.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.1)
+[**🇷🇺 К журналу изменений (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Релиз на GitHub v8.4.2**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.2)
 
 </div>
 
@@ -25,7 +25,7 @@
 
 ### Суверенная архитектура безопасности WordPress и ядро Pre-Boot допуска
 
-[![Version](https://img.shields.io/badge/version-8.4.1_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.2_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)

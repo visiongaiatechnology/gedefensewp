@@ -26,7 +26,7 @@ final class VIS_Aegis_Oracle {
     private const CIRCUIT_KEY = 'vis_oracle_circuit_v2';
     private const ALLOWED_CATEGORIES = ['Database Attack', 'Client-Side Attack', 'Remote Code Execution Attack', 'Reconnaissance', 'Obfuscation', 'Prompt Injection', 'Zero-Day', 'Safe'];
 
-    private const DISTILL_VERSION = '1.0.0';
+    private const DISTILL_VERSION = '1.0.1';
 
     /** Hosts that may legitimately serve archives/plugins to WordPress. */
     private const DISTILL_ARCHIVE_ALLOWLIST = [
@@ -449,6 +449,37 @@ EOT;
         foreach (self::DISTILL_ARCHIVE_ALLOWLIST as $allowed) {
             if ($host === $allowed || str_ends_with($host, '.' . $allowed)) {
                 return self::distill_result('SAFE', 92, 'Trusted Archive Host', 'safe_archive_host');
+            }
+        }
+
+        // Allow localhost and local loopbacks
+        if ($host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
+            return self::distill_result('SAFE', 95, 'Local Site Host', 'safe_local_host');
+        }
+
+        // Allow current site host (HTTP_HOST, SERVER_NAME, home_url, site_url)
+        $current_host = strtolower($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '');
+        $current_host = preg_replace('/:\d+$/', '', $current_host) ?? $current_host;
+        $current_host = ltrim(rtrim($current_host, '.]'), '[.]');
+        if ($current_host !== '' && ($host === $current_host || str_ends_with($host, '.' . $current_host))) {
+            return self::distill_result('SAFE', 95, 'Local Site Host', 'safe_local_host');
+        }
+
+        if (function_exists('home_url')) {
+            $home_host = strtolower((string)parse_url((string)home_url(), PHP_URL_HOST));
+            $home_host = preg_replace('/:\d+$/', '', $home_host) ?? $home_host;
+            $home_host = ltrim(rtrim($home_host, '.]'), '[.]');
+            if ($home_host !== '' && ($host === $home_host || str_ends_with($host, '.' . $home_host))) {
+                return self::distill_result('SAFE', 95, 'Local Site Host', 'safe_local_host');
+            }
+        }
+
+        if (function_exists('site_url')) {
+            $site_host = strtolower((string)parse_url((string)site_url(), PHP_URL_HOST));
+            $site_host = preg_replace('/:\d+$/', '', $site_host) ?? $site_host;
+            $site_host = ltrim(rtrim($site_host, '.]'), '[.]');
+            if ($site_host !== '' && ($host === $site_host || str_ends_with($host, '.' . $site_host))) {
+                return self::distill_result('SAFE', 95, 'Local Site Host', 'safe_local_host');
             }
         }
 

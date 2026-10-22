@@ -85,6 +85,29 @@ foreach ($safeCases as $payload) {
     expect('Legitimate payload was blocked: ' . substr($payload, 0, 80) . ' => ' . json_encode($v), $v['verdict'] !== 'BLOCK');
 }
 
+// 2b. Local site host and self-referers must never trigger remote asset hijacking.
+$_SERVER['HTTP_HOST'] = 'visiongaiatechnology.de';
+$localSiteCases = [
+    'https://visiongaiatechnology.de/wp-login.php?redirect_to=https%3A%2F%2Fvisiongaiatechnology.de%2Fwp-admin%2F',
+    'https://sub.visiongaiatechnology.de/wp-admin/admin-ajax.php',
+    'http://localhost/test.php',
+    'http://127.0.0.1:8080/wp-admin/load-scripts.php',
+];
+foreach ($localSiteCases as $payload) {
+    $v = verdict($payload);
+    expect('Local site payload was falsely blocked: ' . substr($payload, 0, 80) . ' => ' . json_encode($v), $v['verdict'] === 'SAFE' && $v['vector'] === 'safe_local_host');
+}
+
+// Adversarial test: domain spoofing / suffix attacks must still be blocked.
+$spoofedCases = [
+    'https://visiongaiatechnology.de.evil.com/shell.php',
+    'https://notvisiongaiatechnology.de/backdoor.php',
+];
+foreach ($spoofedCases as $payload) {
+    $v = verdict($payload);
+    expect('Spoofed host was not blocked: ' . substr($payload, 0, 80) . ' => ' . json_encode($v), $v['verdict'] === 'BLOCK');
+}
+
 // 3. API-outage fallback must be deterministic, not an unconditional block.
 $fallback = new ReflectionMethod(VIS_Aegis_Oracle::class, 'deterministic_fallback');
 
