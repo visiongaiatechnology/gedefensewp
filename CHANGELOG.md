@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.4.5] — 2026-10-23
+
+### Fixed
+
+- **PHP 8.1 compatibility defect.** Five value objects use `final readonly class`
+  and several verification scripts use the standalone `false` return type. Both
+  require **PHP 8.2**, so the declared `Requires PHP: 8.1` floor was not real:
+  on PHP 8.1 the plugin failed to parse. The defect was found by the new CI gate.
+- **Minimum runtime raised to PHP 8.2.** PHP 8.1 reached end of life in
+  December 2025. Header, runtime guard, README badges and the CI matrix
+  (8.2–8.4) are now aligned with the code.
+
+---
+
 ## [8.4.4] — 2026-10-23
 
 ### Security Hardening — Full Pass 1 (Open Core)

@@ -411,9 +411,9 @@ $assertContains($bootstrapSource, 'X-VGT-Incident', 'Fail-close response lacks a
 // 5. MAIN PLUGIN FILE — platform floor, secure defaults, cron lifecycle
 // =============================================================================
 $mainSource = (string)file_get_contents($root . '/gedefense-wp.php');
-$assertContains($mainSource, 'Requires PHP: 8.1', 'Plugin header lost the PHP requirement.');
+$assertContains($mainSource, 'Requires PHP: 8.2', 'Plugin header lost the PHP requirement.');
 $assertContains($mainSource, 'Requires at least: 6.0', 'Plugin header lost the WordPress requirement.');
-$assertContains($mainSource, 'PHP_VERSION_ID < 80100', 'Runtime PHP version guard missing.');
+$assertContains($mainSource, 'PHP_VERSION_ID < 80200', 'Runtime PHP version guard missing.');
 $assertContains($mainSource, '_get_cron_array', 'Deactivation does not sweep plugin cron events.');
 $assertMatches($mainSource, '/\$defaults = \[[\s\S]*?\'aegis_enabled\'\s*=>\s*1/', 'Secure activation default for aegis_enabled missing.');
 $assertMatches($mainSource, '/\$defaults = \[[\s\S]*?\'aegis_mode\'\s*=>\s*\'learning\'/', 'Safe onboarding mode (learning) missing.');

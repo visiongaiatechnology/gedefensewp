@@ -1,7 +1,7 @@
 > [!WARNING]
 > **ПУБЛИЧНАЯ БЕТА / RELEASE CANDIDATE — НЕ ДЛЯ ПРОИЗВОДСТВЕННОЙ ЭКСПЛУАТАЦИИ БЕЗ НАБЛЮДЕНИЯ**
 >
-> **VGT GeDefense WP 8.4.4 Open Core — публичная бета / release candidate, а не GA-релиз.** Хуки, политики, правила обнаружения, форматы конфигурации и поведение безопасности могут меняться без предупреждения. Проверяйте каждую сборку в staging-среде, начинайте в **observe-режиме**, держите протестированные резервные копии и out-of-band доступ для восстановления; не используйте для производственной эксплуатации без наблюдения. Предоставляется **как есть**, без гарантий, по AGPL-3.0-or-later. См. [`CHANGELOG.md`](CHANGELOG.md) и [GitHub-релизы](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.4.5 Open Core — публичная бета / release candidate, а не GA-релиз.** Хуки, политики, правила обнаружения, форматы конфигурации и поведение безопасности могут меняться без предупреждения. Проверяйте каждую сборку в staging-среде, начинайте в **observe-режиме**, держите протестированные резервные копии и out-of-band доступ для восстановления; не используйте для производственной эксплуатации без наблюдения. Предоставляется **как есть**, без гарантий, по AGPL-3.0-or-later. См. [`CHANGELOG.md`](CHANGELOG.md) и [GitHub-релизы](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 <div align="center">
 
@@ -11,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇷🇺 К журналу изменений (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Релиз на GitHub v8.4.4**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.4)
+[**🇷🇺 К журналу изменений (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Релиз на GitHub v8.4.5**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.5)
 
 </div>
 
@@ -25,10 +25,10 @@
 
 ### Суверенная архитектура безопасности WordPress и ядро Pre-Boot допуска
 
-[![Version](https://img.shields.io/badge/version-8.4.4_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.5_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
-[![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
+[![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B?style=for-the-badge&logo=wordpress&logoColor=white)](https://wordpress.org/)
 [![Dependencies](https://img.shields.io/badge/внешние_PHP_зависимости-0-2EA44F?style=for-the-badge)](#философия-нулевых-зависимостей)
 [![Modules](https://img.shields.io/badge/базовые_модули-19-111111?style=for-the-badge)](#матрица-базовых-модулей)
@@ -57,6 +57,10 @@
 
 ---
 
+# 🚀 Что нового в GeDefense WP 8.4.5
+
+> **Релиз 8.4.5** исправляет дефект совместимости с PHP 8.1, найденный новым CI-гейтом: пять value-объектов и несколько скриптов проверки используют возможности PHP 8.2, то есть заявленная нижняя граница 8.1 не соответствовала коду. Минимальная версия теперь **PHP 8.2** (поддержка PHP 8.1 завершилась в декабре 2025), матрица CI — 8.2–8.4. Подробности в [`CHANGELOG.md`](CHANGELOG.md).
+
 # 🚀 Что нового в GeDefense WP 8.4.4
 
 > **Релиз 8.4.4** — специализированный релиз безопасности поверх 8.4.3: криптография fail-closed, более строгая политика capabilities для WAF, nonce для переключения языка, карантин threat-фидов, ограниченные ресурсы и новый набор регрессионных тестов. Подробности в [`CHANGELOG.md`](CHANGELOG.md).
@@ -68,7 +72,7 @@
 - **Безопасные значения по умолчанию.** Активация включает AEGIS в режиме `learning`, а также Zeus и Morpheus, вместо пустой конфигурации.
 - **Усиление фидов.** Фиды загружаются через транспорт, устойчивый к DNS-rebinding, ограничены 300 000 записями, помещаются в карантин при аномальном росте; legacy-схема архивируется, а не удаляется.
 - **Ограниченные ресурсы.** Transient-кэш GeoIP ограничен FIFO, ответы исходящих POST — 256 КБ, ZIP-архивы отклоняют symlink-записи и получают deny-all `.htaccess`.
-- **Новый гейт верификации.** `scripts/hardening-regression.php` добавляет 72 утверждения (всего 29 наборов); `.github/workflows/hardening.yml` запускает lint, все наборы и trust anchor на PHP 8.1–8.4.
+- **Новый гейт верификации.** `scripts/hardening-regression.php` добавляет 72 утверждения (всего 29 наборов); `.github/workflows/hardening.yml` запускает lint, все наборы и trust anchor на PHP 8.2–8.4.
 
 # 🚀 Что нового в GeDefense WP 8.4.3
 
@@ -139,6 +143,7 @@
 ## Содержание
 
 - [Документация и руководства](#-официальная-документация-и-руководства)
+- [Что нового в GeDefense WP 8.4.5](#-что-нового-в-gedefense-wp-845)
 - [Что нового в GeDefense WP 8.4.4](#-что-нового-в-gedefense-wp-844)
 - [Что нового в GeDefense WP 8.4.3](#-что-нового-в-gedefense-wp-843)
 - [Архитектура безопасности и техническая спецификация](#-архитектура-безопасности-и-техническая-спецификация)
@@ -265,7 +270,7 @@ flowchart TD
 > GeDefense WP опирается на принцип неоспоримой доказательности. Все защитные механизмы, RASP-гипервизоры, правила DPI, фильтры Pre-Boot и манифесты Merkle валидируются **29 автономными наборами регрессионных тестов и бенчмарков**, запускаемыми через стандартный интерфейс PHP CLI на вашем сервере или в CI/CD.
 
 ### Неизменные инварианты проверки
-- **0 внешних зависимостей**: Все тесты выполняются напрямую в PHP 8.1–8.4 CLI без Composer, PHPUnit или веб-серверов.
+- **0 внешних зависимостей**: Все тесты выполняются напрямую в PHP 8.2–8.4 CLI без Composer, PHPUnit или веб-серверов.
 - **Герметичность и безопасность**: Тесты запускаются в оперативной памяти или на изолированных шаблонах, не изменяя рабочую базу данных.
 - **Коды возврата Fail-Secure**: Каждый тест возвращает код `0` при успехе и `1` при малейшем нарушении инвариантов.
 
@@ -390,7 +395,7 @@ GeDefense WP Open Core функционирует на **100% автономно
 
 | Компонент | Требование |
 |---|---|
-| **PHP** | 8.1 – 8.4 (рекомендуется: 8.2+) |
+| **PHP** | 8.2 – 8.4 |
 | **WordPress** | 6.0+ |
 | **Режим PHP** | Строгая типизация (`declare(strict_types=1);`) |
 | **Расширения** | `openssl`, `json`, `hash`, опционально: `sodium`, `apcu` |
@@ -466,7 +471,7 @@ GeDefense WP Open Core распространяется по лицензии **
 
 <div align="center">
 
-## GeDefense WP 8.4.4 — Open Core
+## GeDefense WP 8.4.5 — Open Core
 
 **СУВЕРЕННАЯ БЕЗОПАСНОСТЬ WORDPRESS**
 

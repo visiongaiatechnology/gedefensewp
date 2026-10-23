@@ -3,13 +3,13 @@
  * Plugin Name: GeDefense WP - Open Core
  * Plugin URI: https://github.com/visiongaiatechnology/gedefensewp
  * Description: OMEGA-CLASS Security Suite. High-Performance Integrity Monitoring, Active Defense & RASP Matrix.
- * Version: 8.4.4
+ * Version: 8.4.5
  * Author: VisionGaiaTechnology
  * Author URI: https://visiongaiatechnology.de
  * License: AGPL-3.0-or-later
  * License URI: https://www.gnu.org/licenses/agpl-3.0.html
  * Requires at least: 6.0
- * Requires PHP: 8.1
+ * Requires PHP: 8.2
  * 
  * GeDefense WP - Open Core is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,17 +22,17 @@ if (!defined('ABSPATH')) {
     exit('VGT_ACCESS_DENIED');
 }
 
-// Hard platform floor: the code base relies on PHP 8.1 language features
-// (readonly properties, first-class callable syntax, array_is_list()).
+// Hard platform floor: the code base relies on PHP 8.2 language features
+// (readonly classes, standalone false type, first-class callable syntax).
 // Without this guard WordPress would activate the plugin on an older runtime
 // and every request would die with a fatal error.
-if (PHP_VERSION_ID < 80100) {
+if (PHP_VERSION_ID < 80200) {
     if (function_exists('add_action')) {
         add_action('admin_notices', static function (): void {
             if (function_exists('current_user_can') && !current_user_can('activate_plugins')) {
                 return;
             }
-            echo '<div class="notice notice-error"><p>GeDefense WP requires PHP 8.1 or newer and stays inactive until the platform is upgraded.</p></div>';
+            echo '<div class="notice notice-error"><p>GeDefense WP requires PHP 8.2 or newer and stays inactive until the platform is upgraded.</p></div>';
         });
     }
 
@@ -44,8 +44,8 @@ if (defined('VIS_VERSION')) {
     return;
 }
 
-define('VIS_VERSION', '8.4.4 OPEN CORE');
-define('VIS_MANIFEST_DIGEST', '62665a8122b5ba78efcae444145baf7ddb4d116bfa6c97438fc8d2d2f9212c1d');
+define('VIS_VERSION', '8.4.5 OPEN CORE');
+define('VIS_MANIFEST_DIGEST', '3e1e189ab617c3572d558cdd4d6d27c74aabc5b423ad49f18676c5ca0885fefd');
 define('VIS_PRODUCT_NAME', 'GeDefense WP - Open Core');
 define('VIS_PATH', plugin_dir_path(__FILE__));
 define('VIS_URL', plugin_dir_url(__FILE__));
