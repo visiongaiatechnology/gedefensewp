@@ -919,6 +919,57 @@ final class VIS_Aegis {
         return $normalized;
     }
 
+    /**
+     * Capability policy for request-level WAF whitelisting.
+     *
+     * SECURITY: `edit_posts` is a content-authoring capability held by every
+     * Contributor/Author. Granting it a firewall bypass handed the most
+     * frequently compromised account class an inspection-free request path.
+     * Only administrative capabilities bypass the payload inspection now; the
+     * filter exists for audited, explicit extensions.
+     */
+    private const WHITELIST_CAPABILITIES = ['manage_options'];
+
+    /** @return array<int, string> */
+    private static function privileged_capabilities(): array {
+        $filtered = function_exists('apply_filters')
+            ? (array) apply_filters('vis_aegis_whitelist_capabilities', self::WHITELIST_CAPABILITIES)
+            : self::WHITELIST_CAPABILITIES;
+
+        $caps = [];
+        foreach ($filtered as $cap) {
+            if (is_string($cap) && $cap !== '') {
+                $caps[] = $cap;
+            }
+        }
+
+        return $caps === [] ? self::WHITELIST_CAPABILITIES : $caps;
+    }
+
+    private static function user_is_privileged(object $user): bool {
+        foreach (self::privileged_capabilities() as $cap) {
+            if ($user->has_cap($cap)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function user_id_is_privileged(int $user_id): bool {
+        if ($user_id <= 0 || !function_exists('user_can')) {
+            return false;
+        }
+
+        foreach (self::privileged_capabilities() as $cap) {
+            if (user_can($user_id, $cap)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function is_whitelisted(string $ip): bool {
         // VGT KERNEL: Cryptographic Admin Token Whitelisting (Hardened against Session Hijacking)
         $token = $_SERVER['HTTP_X_VGT_ADMIN_TOKEN'] ?? ($_POST['vgt_admin_token'] ?? ($_GET['vgt_admin_token'] ?? ''));
@@ -928,11 +979,11 @@ final class VIS_Aegis {
             }
         }
 
-        // Authenticated WordPress Administrator / Editor Whitelisting
-        if (function_exists('wp_parse_auth_cookie') && function_exists('wp_get_current_user')) {
+        // Authenticated administrator whitelisting (least privilege, fail-closed).
+        if (function_exists('wp_get_current_user')) {
             try {
                 $current_user = wp_get_current_user();
-                if ($current_user && $current_user->exists() && ($current_user->has_cap('edit_posts') || $current_user->has_cap('manage_options'))) {
+                if ($current_user && $current_user->exists() && self::user_is_privileged($current_user)) {
                     return true;
                 }
             } catch (\Throwable $e) {
@@ -946,7 +997,7 @@ final class VIS_Aegis {
                 foreach ($_COOKIE as $cookie_name => $cookie_val) {
                     if (str_starts_with($cookie_name, 'wordpress_logged_in_') && is_string($cookie_val)) {
                         $user_id = wp_validate_auth_cookie($cookie_val, 'logged_in');
-                        if ($user_id && function_exists('user_can') && (user_can($user_id, 'edit_posts') || user_can($user_id, 'manage_options'))) {
+                        if ($user_id && self::user_id_is_privileged((int)$user_id)) {
                             return true;
                         }
                     }

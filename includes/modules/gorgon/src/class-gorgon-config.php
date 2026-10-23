@@ -24,8 +24,10 @@ final class Gorgon_Config {
         $this->config = is_array( $raw_config ) ? $raw_config : [];
         $this->vault_active = class_exists( '\VIS_Vault' );
 
-        // Fallback salt logic ensures Node ID persists perfectly
-        $salt = defined( 'AUTH_SALT' ) ? AUTH_SALT : ( defined( 'SECURE_AUTH_KEY' ) ? SECURE_AUTH_KEY : 'vgt_omega_fallback_salt' );
+        // Per-installation key derivation; never a shared literal.
+        $salt = class_exists('VIS_Security')
+            ? VIS_Security::install_key('gorgon-node')
+            : (string)(function_exists('wp_salt') ? wp_salt('auth') : '');
         $this->node_id = hash_hmac( 'sha384', get_site_url(), $salt );
     }
 

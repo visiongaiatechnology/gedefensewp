@@ -35,6 +35,39 @@ final class GeoResolver {
     private const RADIUS = 6381372.0;
 
     /**
+     * Hard cap for the per-IP geo transient cache. Without a bound, every
+     * distinct spoofed source IP created a permanent wp_options row.
+     */
+    private const MAX_GEO_TRANSIENTS = 2000;
+
+    /**
+     * Cache a resolution and keep the transient index bounded (FIFO eviction).
+     *
+     * @param array<string, mixed> $value
+     */
+    private static function remember_geo_transient(string $key, array $value): void {
+        set_transient($key, $value, 7 * DAY_IN_SECONDS);
+
+        $index = get_option('vis_geo_cache_index', []);
+        if (!is_array($index)) {
+            $index = [];
+        }
+
+        if (!in_array($key, $index, true)) {
+            $index[] = $key;
+        }
+
+        while (count($index) > self::MAX_GEO_TRANSIENTS) {
+            $oldest = array_shift($index);
+            if (is_string($oldest) && $oldest !== '') {
+                delete_transient($oldest);
+            }
+        }
+
+        update_option('vis_geo_cache_index', $index, false);
+    }
+
+    /**
      * Resolve an IPv4 address to Country, Geo Coordinates, ASN, and Organization.
      *
      * @param string $ip
@@ -91,7 +124,7 @@ final class GeoResolver {
                     'is_private'   => false,
                     'known'        => true,
                 ];
-                set_transient($transient_key, $res, 7 * DAY_IN_SECONDS);
+                self::remember_geo_transient($transient_key, $res);
                 self::$memory_cache[$ip] = $res;
                 return $res;
             }

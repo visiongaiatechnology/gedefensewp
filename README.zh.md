@@ -1,7 +1,7 @@
 > [!WARNING]
 > **公开测试版 / 发布候选 — 禁止在无人值守的生产环境中使用**
 >
-> **VGT GeDefense WP 8.4.3 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
+> **VGT GeDefense WP 8.4.4 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
 
 <div align="center">
 
@@ -11,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.4.3**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.3)
+[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.4.4**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.4)
 
 </div>
 
@@ -25,7 +25,7 @@
 
 ### 主权级 WordPress 安全架构与 Pre-Boot 引导前准入内核
 
-[![Version](https://img.shields.io/badge/version-8.4.3_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.4_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -53,9 +53,22 @@
 >
 > *提示：技术手册为管理员、安全审计员及开发者提供了详尽的配置、威胁研判及安全加固实战指南。*
 >
-> **归档基线：** 链接的 PDF 手册记录 8.1.0 世代。当前发布文档：本 README、[`CHANGELOG.md`](CHANGELOG.md)、[`ARCHITECTURE.md`](ARCHITECTURE.md) 与 [`Next.md`](Next.md)。
+> **归档基线：** 链接的 PDF 手册记录 8.1.0 世代。当前发布文档：本 README、[`CHANGELOG.md`](CHANGELOG.md)、[`ARCHITECTURE.md`](ARCHITECTURE.md)。
 
 ---
+
+# 🚀 GeDefense WP 8.4.4 新特性
+
+> **8.4.4 发布**：在 8.4.3 基础上的专项安全加固版本：加密故障即关闭、更严格的 WAF 权限策略、语言切换强制 nonce、威胁情报源隔离、资源上限，以及新的零依赖加固测试套件。详见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+- **保险库加密故障即关闭。** 解密失败现在抛出安全异常，而不是返回原始数据；硬编码的旧密钥已移除。旧数据只能通过运维设置的 `VIS_VAULT_LEGACY_KEY` 迁移。
+- **移除内容作者的 WAF 绕过。** AEGIS 白名单不再信任 `edit_posts`；只有管理权限可绕过载荷检查（可通过 `vis_aegis_whitelist_capabilities` 扩展）。
+- **语言切换需要 nonce。** `?vis_lang=` 无法再通过普通 GET 持久化选项、用户元数据或 Cookie；Cookie 为 `HttpOnly` 且 `SameSite=Lax`。
+- **不透明失败与应急开关。** 503 页面仅返回事件编号；`VIS_DISABLE_FAIL_CLOSE` 提供有文档的恢复路径。
+- **安全默认值。** 激活时默认开启 AEGIS（`learning` 模式）、Zeus 与 Morpheus，而不是留空配置。
+- **威胁情报源加固。** 通过抗 DNS-rebinding 的传输下载，单源上限 300 000 条，异常增长进入隔离；旧表结构归档而不是删除。
+- **全面资源上限。** GeoIP 瞬态缓存采用 FIFO 上限，出站 POST 响应限制 256 KB，附加组件 ZIP 拒绝符号链接条目并写入 deny-all `.htaccess`。
+- **新增验证门。** `scripts/hardening-regression.php` 新增 72 项行为断言（共 29 套）；`.github/workflows/hardening.yml` 在 PHP 8.1–8.4 上运行 lint、全部测试套件与信任锚。
 
 # 🚀 GeDefense WP 8.4.3 新特性
 
@@ -126,6 +139,7 @@ GeDefense 实时威胁雷达和全球攻击向量图由 **100% 自主可控的�
 ## 目录
 
 - [官方文档与技术手册](#-官方文档与技术手册)
+- [GeDefense WP 8.4.4 新特性](#-gedefense-wp-844-新特性)
 - [GeDefense WP 8.4.3 新特性](#-gedefense-wp-843-新特性)
 - [安全架构与技术规范](#-安全架构与技术规范)
 - [多阶段点火引导协议](#多阶段点火引导协议)
@@ -248,14 +262,14 @@ flowchart TD
 
 > [!TIP]
 > **"Don't Trust, Verify" — 彻底透明与可复现性**
-> GeDefense WP 遵循零黑盒、强证据的安全工业标准。您完全无需对任何防护能力进行盲信：全部防御阵列、RASP 虚拟机、DPI 规则、Pre-Boot WAF、Merkle 校验树与 XDR 联动均通过 **28 套独立、零依赖自动化回归与基准测试套件** 予以 100% 覆盖，可在任意服务器或 CI/CD 环境中使用标准 PHP CLI 直接复现检验。
+> GeDefense WP 遵循零黑盒、强证据的安全工业标准。您完全无需对任何防护能力进行盲信：全部防御阵列、RASP 虚拟机、DPI 规则、Pre-Boot WAF、Merkle 校验树与 XDR 联动均通过 **29 套独立、零依赖自动化回归与基准测试套件** 予以 100% 覆盖，可在任意服务器或 CI/CD 环境中使用标准 PHP CLI 直接复现检验。
 
 ### 核心验证原则
 - **零外部依赖**: 所有的测试套件均原生运行于 PHP 8.1–8.4 CLI，不需要 Composer、PHPUnit 或外部 Web 服务器。
 - **纯内存安全隔离**: 测试过程完全在内存或临时沙盒中完成，绝不修改、污染您现有的 WordPress 生产数据库。
 - **故障即锁退码**: 凡有一项判定未达标，脚本即刻输出 Exit Code `1`；100% 完全通过时返回 Exit Code `0`。
 
-### 完整 28 套自动化测试矩阵
+### 完整 29 套自动化测试矩阵
 
 | # | 测试套件脚本 | 覆盖范围与受测子系统 | 测试量级与验证标准 |
 |---|---|---|---|
@@ -287,6 +301,7 @@ flowchart TD
 | **26** | `scripts/builder-live-preview-regression.php` | **页面构建器沙箱** | 验证可视化页面编辑器实时预览模式下的隔离机制，防范 iframe 嵌入绕过。 |
 | **27** | `scripts/seo-relevance-regression.php` | **元数据脱敏与爬虫通行** | 验证敏感技术参数清洗以及搜索引擎合法蜘蛛的准入放行。 |
 | **28** | `scripts/generate-module-manifest.php` | **信任锚点清单编译器** | 计算全量组件哈希并生成 `module-manifest.json`，同步更新插件入口固化摘要。 |
+| **29** | `scripts/hardening-regression.php` | **加固不变量（8.4.4）** | 72 项行为与源码断言：保险库 fail-closed 与旧密钥拒绝、WAF 权限策略、语言切换 nonce、不透明失败、安装密钥派生、受限 GeoIP 缓存、插件归档防护、情报源隔离与无损模式迁移。 |
 
 ### 如何运行测试
 
@@ -297,7 +312,7 @@ php scripts/dashboard-ui-regression.php
 php scripts/integrity-regression.php
 ```
 
-#### 2. 一键批量运行全部 28 项测试 (Windows PowerShell):
+#### 2. 一键批量运行全部 29 项测试 (Windows PowerShell):
 ```powershell
 Get-ChildItem scripts\*-regression.php | ForEach-Object {
     Write-Host "正在执行: $($_.Name)..." -ForegroundColor Cyan
@@ -306,7 +321,7 @@ Get-ChildItem scripts\*-regression.php | ForEach-Object {
 }
 php scripts/sentinel-threat-benchmark.php
 php scripts/threat-binary-swap-test.php
-Write-Host "全部 28 套测试套件验证通过 (100% PASS)" -ForegroundColor Green
+Write-Host "全部 29 套测试套件验证通过 (100% PASS)" -ForegroundColor Green
 ```
 
 #### 3. 一键批量运行全部 28 项测试 (Linux / macOS Bash):
@@ -451,7 +466,7 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 
 <div align="center">
 
-## GeDefense WP 8.4.3 — Open Core
+## GeDefense WP 8.4.4 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

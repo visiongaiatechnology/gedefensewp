@@ -1,0 +1,86 @@
+name: Hardening Gate
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hardening-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hardening:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.1", "8.2", "8.3", "8.4"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, sodium, openssl, zip, curl
+          coverage: none
+
+      - name: PHP version
+        run: php -v
+
+      - name: Lint every PHP file
+        run: |
+          set -euo pipefail
+          find . -name '*.php' -not -path './vendor/*' -print0 \
+            | xargs -0 -n1 -P4 php -l
+
+      - name: Dependency-free regression suites
+        run: |
+          set -euo pipefail
+          for suite in \
+            security \
+            hardening \
+            integrity \
+            aegis \
+            namespace \
+            dashboard-ui \
+            dashboard-telemetry \
+            cerberus-loopback-ban
+          do
+            echo "::group::${suite}-regression.php"
+            php "scripts/${suite}-regression.php"
+            echo "::endgroup::"
+          done
+
+      - name: Trust anchor freshness
+        run: |
+          set -euo pipefail
+          php scripts/integrity-regression.php
+
+  supply-chain:
+    name: Supply chain inventory
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify zero runtime dependencies
+        run: |
+          set -euo pipefail
+          if [ -f composer.json ]; then
+            echo "::error::composer.json exists; review the dependency inventory."
+            exit 1
+          fi
+          if [ -d vendor ]; then
+            echo "::error::vendor/ directory committed."
+            exit 1
+          fi
+          echo "Zero-dependency inventory confirmed."

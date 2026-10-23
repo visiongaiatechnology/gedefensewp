@@ -29,6 +29,39 @@ final class VIS_Security {
 
     private const PRIVATE_HOSTS = ['localhost', 'localhost.localdomain'];
 
+    /**
+     * Derive a per-installation key for a purpose.
+     *
+     * Uses the WordPress salts when present and falls back to a persisted
+     * random value. This replaces the former hard-coded literals ("fallback
+     * salts") that made every installation share the same key material.
+     */
+    public static function install_key(string $purpose): string {
+        $purpose = preg_replace('/[^a-z0-9_.-]/', '', strtolower($purpose)) ?: 'default';
+
+        $base = '';
+        if (function_exists('wp_salt')) {
+            $base = (string)wp_salt('auth');
+        }
+        if ($base === '' && defined('AUTH_KEY') && is_string(AUTH_KEY) && AUTH_KEY !== '' && AUTH_KEY !== 'put your unique phrase here') {
+            $base = (string)AUTH_KEY;
+        }
+        if ($base === '') {
+            $stored = (string)get_option('vis_install_entropy', '');
+            if (!preg_match('/^[a-f0-9]{64}$/', $stored)) {
+                $stored = bin2hex(random_bytes(32));
+                add_option('vis_install_entropy', $stored, '', false);
+                $persisted = (string)get_option('vis_install_entropy', '');
+                if (preg_match('/^[a-f0-9]{64}$/', $persisted)) {
+                    $stored = $persisted;
+                }
+            }
+            $base = $stored;
+        }
+
+        return hash_hmac('sha256', 'vgt-install-key|' . $purpose, $base, true);
+    }
+
     public static function normalize_relative_path(string $path): string {
         $path = wp_normalize_path(str_replace("\0", '', $path));
         $path = ltrim($path, '/\\');

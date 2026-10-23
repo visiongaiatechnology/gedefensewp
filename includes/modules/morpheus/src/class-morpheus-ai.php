@@ -224,6 +224,7 @@ EOT;
                 'User-Agent'    => 'VGT-Sentinel-Morpheus/7.4.0',
             ],
             'timeout'     => 30, // Timeout bleibt erhöht für absolute Resilienz
+            'limit_response_size' => 262144,
             'blocking'    => true,
             'sslverify'   => true,
             'redirection' => 0,

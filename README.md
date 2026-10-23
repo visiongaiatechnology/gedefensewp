@@ -1,7 +1,7 @@
 > [!WARNING]
 > **PUBLIC BETA / RELEASE CANDIDATE — NOT FOR UNSUPERVISED PRODUCTION USE**
 >
-> **VGT GeDefense WP 8.4.3 Open Core is a public beta / release candidate, not a GA release.** Hooks, policies, detection rules, configuration formats and security behavior may change without notice. Validate every build in a staging environment, start in **observe mode**, keep tested backups and out-of-band recovery access, and do not use it for unsupervised production. Provided **as-is**, without warranty, under AGPL-3.0-or-later. See [`CHANGELOG.md`](CHANGELOG.md) and the [GitHub releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.4.4 Open Core is a public beta / release candidate, not a GA release.** Hooks, policies, detection rules, configuration formats and security behavior may change without notice. Validate every build in a staging environment, start in **observe mode**, keep tested backups and out-of-band recovery access, and do not use it for unsupervised production. Provided **as-is**, without warranty, under AGPL-3.0-or-later. See [`CHANGELOG.md`](CHANGELOG.md) and the [GitHub releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 <div align="center">
 
@@ -11,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.4.3**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.3)
+[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.4.4**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.4)
 
 </div>
 
@@ -26,7 +26,7 @@
 
 ### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.4.3_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.4_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -61,6 +61,19 @@
 
 
 ---
+
+# 🚀 What's New in GeDefense WP 8.4.4
+
+> **Release 8.4.4** is a dedicated security-hardening release on top of 8.4.3: fail-closed cryptography, a stricter WAF capability policy, nonce-gated language switching, threat-feed quarantine, bounded resource limits and a new dependency-free hardening regression suite. Full details in [`CHANGELOG.md`](CHANGELOG.md).
+
+- **Vault crypto is fail-closed.** Decryption failures raise a security exception instead of returning the raw blob, and the hard-coded legacy key was removed. Legacy payloads can only be migrated with an operator-defined `VIS_VAULT_LEGACY_KEY`.
+- **WAF bypass for content authors removed.** The AEGIS whitelist no longer trusts `edit_posts`; only administrative capabilities bypass payload inspection (extensible via `vis_aegis_whitelist_capabilities`).
+- **Language switching requires a nonce.** `?vis_lang=` can no longer persist options, user meta or cookies on a bare GET; the cookie is `HttpOnly` and `SameSite=Lax`.
+- **Opaque fail-close with break-glass.** The 503 page returns an incident reference only, and `VIS_DISABLE_FAIL_CLOSE` provides a documented recovery path.
+- **Secure activation defaults.** Activation enables AEGIS in `learning` mode, Zeus and Morpheus instead of leaving the configuration empty.
+- **Threat-feed hardening.** Feeds are fetched through the DNS-rebinding-resistant transport, capped at 300,000 entries per feed, quarantined on anomalous growth, and the legacy schema is archived instead of dropped.
+- **Bounded resources everywhere.** GeoIP transients are FIFO-capped, outbound POST responses are limited to 256 KB, and add-on ZIP archives reject symlink entries and keep a deny-all `.htaccess`.
+- **New verification gate.** `scripts/hardening-regression.php` adds 72 behavioral assertions (29 suites total) and `.github/workflows/hardening.yml` runs lint, all suites and the trust anchor on PHP 8.1–8.4.
 
 # 🚀 What's New in GeDefense WP 8.4.3
 
@@ -265,6 +278,7 @@ The core is designed to remain **fully functional as an independent open-source 
 ## Table of Contents
 
 - [Documentation & Handbooks](#-official-documentation--handbooks)
+- [What's New in GeDefense WP 8.4.4](#-whats-new-in-gedefense-wp-844)
 - [What's New in GeDefense WP 8.4.3](#-whats-new-in-gedefense-wp-843)
 - [Security Architecture & Technical Specification](#-security-architecture--technical-specification)
 - [Multi-Phase Ignition Protocol](#multi-phase-ignition-protocol)
@@ -694,19 +708,19 @@ GeDefense WP strictly adheres to a zero-external-dependency architecture:
 
 > [!TIP]
 > **"Don't Trust, Verify" — Complete Transparency & Reproducibility**
-> GeDefense WP adheres to an uncompromising zero-blackbox, evidence-based security standard. You do not have to take our architectural claims on faith: the entire defense matrix, RASP hypervisor, DPI rules, pre-boot WAF, Merkle tree manifest, and XDR actuators are fully validated by **28 standalone, zero-dependency regression and benchmark suites** directly executable via the standard PHP CLI on your local server, staging environment, or CI/CD pipeline.
+> GeDefense WP adheres to an uncompromising zero-blackbox, evidence-based security standard. You do not have to take our architectural claims on faith: the entire defense matrix, RASP hypervisor, DPI rules, pre-boot WAF, Merkle tree manifest, and XDR actuators are fully validated by **29 standalone, zero-dependency regression and benchmark suites** directly executable via the standard PHP CLI on your local server, staging environment, or CI/CD pipeline.
 
 ### Independent Verification Invariants
 - **Zero External Dependencies**: All test suites execute natively in PHP 8.1–8.4 CLI without requiring Composer, PHPUnit, web servers, or mock frameworks.
 - **Hermetic & Non-Destructive**: Tests run safely in-memory or against isolated test fixtures without altering your production WordPress database.
 - **Fail-Secure Exit Codes**: Every script returns exit code `0` on 100% verification and exit code `1` on any invariant violation or regression.
 
-### Complete 28-Suite Test Matrix
+### Complete 29-Suite Test Matrix
 
 | # | Test Suite Script | Scope & Tested Subsystems | Test Volume & Verification Criteria |
 |---|---|---|---|
 | **01** | `scripts/dashboard-ui-regression.php` | **Dashboard UI & CSP** | Verifies HTML5 form de-nesting, absence of inline `<style>` and `<script>` blocks, presence of external CSS/JS handlers, and namespaced nonces. |
-| **02** | `scripts/security-regression.php` | **Static AST Security Audit** | Scans 185+ PHP files and 200+ source files, verifying 0 occurrences of dangerous sinks (`eval`, `exec`, `system`, `passthru`, `uniqid`, `error_reporting(0)`). |
+| **02** | `scripts/security-regression.php` | **Static AST Security Audit** | Scans 195+ PHP files and 216+ source files, verifying 0 occurrences of dangerous sinks (`eval`, `exec`, `system`, `passthru`, `uniqid`, `error_reporting(0)`). |
 | **03** | `scripts/integrity-regression.php` | **Merkle Tree Manifest** | Cryptographically verifies all 27 core components against the pinned `VIS_MANIFEST_DIGEST` trust anchor using SHA-256 Merkle root hashes. |
 | **04** | `scripts/integrity-baseline-regression.php` | **Baseline State Monitor** | Validates baseline hash stability across accepted modifications, legacy root migrations, and approved file updates. |
 | **05** | `scripts/zeus-live-waf-regression.php` | **Layer 0 Pre-Boot Live WAF** | **36 Subprocess Tests (100% Pass)**: Host-lock (421), double-encoding (%252f), null-bytes (%00), dot-segment traversals (..), HTTP verb filtering (405), body limits (413), route contracts, token admission replay, hard TTL, and binary CIDR whitelisting. |
@@ -733,6 +747,7 @@ GeDefense WP strictly adheres to a zero-external-dependency architecture:
 | **26** | `scripts/builder-live-preview-regression.php` | **Page Builder Sandboxing** | Tests live preview sandbox confinement, frame ancestor guards, and builder-specific bypass protection. |
 | **27** | `scripts/seo-relevance-regression.php` | **Metadata & Telemetry Scrubbing** | Verifies outbound metadata scrubbing, query parameter stripping, and search engine crawler admission. |
 | **28** | `scripts/generate-module-manifest.php` | **Trust Anchor Manifest Compiler** | Compiles all component hashes into `module-manifest.json` and updates the pinned entrypoint digest. |
+| **29** | `scripts/hardening-regression.php` | **Hardening Invariants (8.4.4)** | 59 behavioral and source assertions: vault fail-closed + legacy-secret rejection, WAF capability policy, nonce-gated language switch, opaque fail-close, per-installation key derivation, bounded geo cache, add-on archive guards, feed quarantine and non-destructive schema migration. |
 
 ### How to Run the Tests
 
@@ -752,7 +767,7 @@ Get-ChildItem scripts\*-regression.php | ForEach-Object {
 }
 php scripts/sentinel-threat-benchmark.php
 php scripts/threat-binary-swap-test.php
-Write-Host "ALL 28 SUITES VERIFIED PASS (100%)" -ForegroundColor Green
+Write-Host "ALL 29 SUITES VERIFIED PASS (100%)" -ForegroundColor Green
 ```
 
 #### 3. Run All Automated Regressions (Bash / Linux / macOS):
@@ -763,7 +778,7 @@ for test in scripts/*-regression.php; do
 done
 php scripts/sentinel-threat-benchmark.php || exit 1
 php scripts/threat-binary-swap-test.php || exit 1
-echo "ALL 28 SUITES VERIFIED PASS (100%)"
+echo "ALL 29 SUITES VERIFIED PASS (100%)"
 ```
 
 ---
@@ -989,7 +1004,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.4.3 — Open Core
+## GeDefense WP 8.4.4 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

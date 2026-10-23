@@ -73,6 +73,20 @@ final class VIS_Dashboard_Ajax {
         }
     }
 
+    /**
+     * Opaque failure response for unexpected (non-validation) errors.
+     * Internal details stay in the server log; the client gets a correlation id.
+     */
+    private static function opaque_failure(string $label, \Throwable $e, int $status = 500): void {
+        $incident = substr(hash('sha256', $label . '|' . $e->getMessage() . '|' . microtime(true)), 0, 12);
+        error_log(sprintf('[VGT DASHBOARD] %s [%s]: %s', $label, $incident, $e->getMessage()));
+
+        wp_send_json_error([
+            'message'  => 'The operation failed. Reference: ' . $incident,
+            'incident' => $incident,
+        ], $status);
+    }
+
     // ========================================================================
     // CORE & SCANNER HANDLER
     // ========================================================================
@@ -213,8 +227,7 @@ final class VIS_Dashboard_Ajax {
             $result = \VisionGaia\GeDefense\Modules\Zeus\Zeus_Benchmark::runMicrobenchmark($profile, $iterations);
             wp_send_json_success($result);
         } catch (Throwable $e) {
-            error_log('[ZEUS BENCHMARK] ' . $e->getMessage());
-            wp_send_json_error(['message' => 'Benchmark execution error: ' . $e->getMessage()], 500);
+            self::opaque_failure('ZEUS BENCHMARK', $e);
         }
     }
 
@@ -226,8 +239,7 @@ final class VIS_Dashboard_Ajax {
             $result = \VisionGaia\GeDefense\Modules\Zeus\Zeus_Benchmark::runSecuritySelfTest(wp_normalize_path($vaultDir));
             wp_send_json_success($result);
         } catch (Throwable $e) {
-            error_log('[ZEUS SELFTEST] ' . $e->getMessage());
-            wp_send_json_error(['message' => 'Self-test execution error: ' . $e->getMessage()], 500);
+            self::opaque_failure('ZEUS SELFTEST', $e);
         }
     }
 
@@ -244,8 +256,7 @@ final class VIS_Dashboard_Ajax {
                 'metrics' => $metrics
             ]);
         } catch (Throwable $e) {
-            error_log('[ZEUS DRAIN] ' . $e->getMessage());
-            wp_send_json_error(['message' => 'Drain error: ' . $e->getMessage()], 500);
+            self::opaque_failure('ZEUS DRAIN', $e);
         }
     }
 
@@ -434,7 +445,9 @@ final class VIS_Dashboard_Ajax {
         wp_send_json_success([
              'filename' => esc_html(basename($real_path)),
              'path'     => esc_html(str_replace(WP_CONTENT_DIR, '', $real_path)),
-             'content'  => $content // Safe: escaped in frontend jQuery
+             // Escaped at the source: a future consumer must not be able to
+             // inject file content into the admin DOM unescaped.
+             'content'  => esc_html($content)
         ]);
     }
 
@@ -587,6 +600,14 @@ final class VIS_Dashboard_Ajax {
                 wp_send_json_error(['message' => sprintf(__('Sicherheitsalarm: Unzulässige Add-On-Struktur "%s" im Archiv.', 'vgt-sentinel'), esc_html($entry_root))], 403);
             }
 
+            // Reject Unix symlink entries. ZipArchive would otherwise materialise
+            // a link that resolves outside the add-on directory (Symlink/Zip-Slip).
+            $unix_mode = ((int)($stat['external_attributes'] ?? 0) >> 16) & 0xF000;
+            if ($unix_mode === 0xA000) {
+                $zip->close();
+                wp_send_json_error(['message' => __('Sicherheitsalarm: Symlink-Eintrag im ZIP-Archiv abgelehnt.', 'vgt-sentinel')], 403);
+            }
+
             $total_uncompressed += (int)($stat['size'] ?? 0);
             if ($total_uncompressed > $max_uncompressed) {
                 $zip->close();
@@ -597,8 +618,27 @@ final class VIS_Dashboard_Ajax {
         $addons_dir = VIS_Module_Registry::get_addons_dir();
         if (!is_dir($addons_dir)) {
             wp_mkdir_p($addons_dir);
-            // Protect addons directory with .htaccess and index.php
-            @file_put_contents($addons_dir . '/index.php', "<?php\nhttp_response_code(404);\nexit;\n");
+        }
+
+        // The add-on directory is written by the web server and must never
+        // execute uploaded PHP directly. The previous build wrote only
+        // index.php and only on first creation, so an existing directory stayed
+        // executable. Write both guards unconditionally.
+        $index_file = $addons_dir . '/index.php';
+        if (!is_file($index_file)) {
+            @file_put_contents($index_file, "<?php\nhttp_response_code(404);\nexit;\n");
+        }
+
+        $htaccess_file = $addons_dir . '/.htaccess';
+        $htaccess_rules = "Options -Indexes\n"
+            . "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n"
+            . "<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n";
+        if (!is_file($htaccess_file) || (string)@file_get_contents($htaccess_file) !== $htaccess_rules) {
+            @file_put_contents($htaccess_file, $htaccess_rules);
+        }
+
+        if (!is_dir($addons_dir) || !is_writable($addons_dir)) {
+            wp_send_json_error(['message' => __('Add-On Verzeichnis ist nicht beschreibbar.', 'vgt-sentinel')], 500);
         }
 
         $extracted = $zip->extractTo($addons_dir);

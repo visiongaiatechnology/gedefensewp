@@ -1,4 +1,4 @@
-HINWEIS: Dieses Manual dokumentiert die V7/V8-Architektur. Aktueller Release: 8.4.3 (2026-10-22) — siehe README.md, CHANGELOG.md und Next.md.
+HINWEIS: Dieses Manual dokumentiert die V7/V8-Architektur. Aktueller Release: 8.4.4 (2026-10-23) — siehe README.md und CHANGELOG.md.
 
 VGT Dokumentation
 DEPLOYMENT MANUAL: GEDEFENSE WP V7 (ZERO-TRUST WAF)

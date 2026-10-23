@@ -110,11 +110,12 @@ final class Gorgon_Ajax {
         $response = wp_remote_post($url, [
             'body'      => $payload,
             'timeout'   => 8,
+            'limit_response_size' => 262144,
             'sslverify' => true,
             'redirection' => 0,
             'headers'   => [
                 'X-VGT-Nexus-Auth'       => $api_key,
-                'X-VGT-Sentinel-Magic'   => 'vgt-magic-noc-9938-omega-fusion',
+                'X-VGT-Sentinel-Magic'   => defined('VIS_GORGON_NEXUS_MAGIC') ? VIS_GORGON_NEXUS_MAGIC : '',
                 'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '7.4.0',
                 'Content-Type'           => 'application/json',
                 'Connection'             => 'close',
@@ -162,7 +163,9 @@ final class Gorgon_Ajax {
     }
 
     private static function get_node_id(): string {
-        $salt = defined('AUTH_SALT') ? AUTH_SALT : (defined('SECURE_AUTH_KEY') ? SECURE_AUTH_KEY : 'vgt_omega_fallback_salt');
+        $salt = class_exists('VIS_Security')
+            ? VIS_Security::install_key('gorgon-node')
+            : (string)(function_exists('wp_salt') ? wp_salt('auth') : '');
         return hash_hmac('sha384', get_site_url(), $salt);
     }
 

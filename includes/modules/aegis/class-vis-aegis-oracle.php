@@ -209,6 +209,7 @@ EOT;
                 'User-Agent'    => 'VGT-Sentinel-Aegis/7.4.0',
             ],
             'timeout'     => self::MAX_TIMEOUT,
+            'limit_response_size' => 262144,
             'httpversion' => '1.1',
             'blocking'    => true,
             'data_format' => 'body',
@@ -315,7 +316,9 @@ EOT;
     }
 
     private static function cache_key(string $payload): string {
-        $key = function_exists('wp_salt') ? wp_salt('auth') : (defined('AUTH_KEY') ? AUTH_KEY : 'vgt-oracle-cache');
+        $key = class_exists('VIS_Security')
+            ? VIS_Security::install_key('oracle-cache')
+            : (string)(function_exists('wp_salt') ? wp_salt('auth') : '');
         return 'vis_oracle_' . hash_hmac('sha256', $payload, $key);
     }
 

@@ -43,6 +43,15 @@ final class ThreatIntelligence {
     public const OPTION_CONFIG = 'vis_threat_intel_config';
     public const OPTION_CIDRS  = 'vis_threat_intel_cidrs';
 
+    /** Hard per-feed entry cap: bounds memory, database growth and ban blast radius. */
+    public const MAX_ENTRIES_PER_FEED = 300000;
+
+    /** A feed growing faster than this factor is quarantined for operator review. */
+    public const GROWTH_QUARANTINE_FACTOR = 4;
+
+    /** Growth quarantine only applies after a feed had a meaningful baseline. */
+    public const GROWTH_QUARANTINE_MIN = 500;
+
     /**
      * Festprogrammierte, fälschungssichere Whitelist der offiziellen Threat-Intelligence-Domains.
      * Schließt Missbrauch durch beliebige Plugins oder fremde Domains mathematisch aus.
@@ -172,6 +181,7 @@ final class ThreatIntelligence {
             'last_sync'       => null,
             'sync_stats'      => [],
             'total_threats'   => 0,
+            'feed_counts'     => [],
         ];
         $this->config = is_array($saved) ? array_merge($defaults, $saved) : $defaults;
     }
@@ -244,7 +254,16 @@ final class ThreatIntelligence {
         $suppress = $wpdb->suppress_errors(true);
         $has_feed_key = (bool)$wpdb->get_var("SHOW COLUMNS FROM {$this->table_threats} LIKE 'feed_key'");
         if (!$has_feed_key && $wpdb->get_var("SHOW TABLES LIKE '{$this->table_threats}'") === $this->table_threats) {
-            $wpdb->query("DROP TABLE IF EXISTS {$this->table_threats}");
+            // Non-destructive migration: archive the legacy table instead of
+            // dropping it. A failed or unwanted migration stays recoverable.
+            $legacy_backup = $this->table_threats . '_legacy_' . gmdate('YmdHis');
+            $renamed = $wpdb->query("RENAME TABLE {$this->table_threats} TO {$legacy_backup}");
+            if ($renamed === false) {
+                error_log('[VGT THREAT INTEL] Legacy schema table could not be archived; migration aborted.');
+                $wpdb->suppress_errors($suppress);
+                return;
+            }
+            error_log("[VGT THREAT INTEL] Legacy schema table archived as {$legacy_backup}");
         }
         $wpdb->suppress_errors($suppress);
 
@@ -354,33 +373,58 @@ final class ThreatIntelligence {
         $prev_state = self::$sync_in_progress;
         self::$sync_in_progress = true;
 
-        try {
-            // 1. Sicheres Herunterladen mit Timeout und Header-Schutz
-            $response = wp_safe_remote_get($url, [
-                'timeout'     => 25,
-                'redirection' => 2,
-                'sslverify'   => true,
-                'headers'     => [
-                    'User-Agent' => 'VisionGaia-Threat-Intel/8.2.2 (Security Engine; Autonomous Node)',
-                    'Accept'     => 'text/plain,application/json,*/*',
-                ],
-            ]);
-        } finally {
-            self::$sync_in_progress = $prev_state;
+        // 1. Transport: prefer the DNS-rebinding-resistant pinned fetch. The
+        //    previous build used wp_safe_remote_get() only, which protects
+        //    against SSRF and redirect abuse but does not pin the resolved peer.
+        $body      = '';
+        $code      = 0;
+        $pinned_ok = false;
+
+        if (class_exists('VIS_Security') && method_exists('VIS_Security', 'pinned_https_get')) {
+            $pinned = VIS_Security::pinned_https_get(
+                $url,
+                25,
+                20 * 1024 * 1024,
+                'VisionGaia-Threat-Intel/8.4.4'
+            );
+
+            if (is_wp_error($pinned)) {
+                error_log("[VGT THREAT INTEL] Pinned transport rejected {$feed_id}: " . $pinned->get_error_code());
+            } else {
+                $body      = (string)($pinned['body'] ?? '');
+                $code      = (int)($pinned['response']['code'] ?? 0);
+                $pinned_ok = true;
+            }
         }
 
-        if (is_wp_error($response)) {
-            error_log("[VGT THREAT INTEL] Feed {$feed_id} download error: " . $response->get_error_message());
-            return ['status' => 'error', 'message' => $response->get_error_message(), 'count' => 0];
+        if (!$pinned_ok) {
+            try {
+                $response = wp_safe_remote_get($url, [
+                    'timeout'     => 25,
+                    'redirection' => 2,
+                    'sslverify'   => true,
+                    'headers'     => [
+                        'User-Agent' => 'VisionGaia-Threat-Intel/8.4.4 (Security Engine; Autonomous Node)',
+                        'Accept'     => 'text/plain,application/json,*/*',
+                    ],
+                ]);
+            } finally {
+                self::$sync_in_progress = $prev_state;
+            }
+
+            if (is_wp_error($response)) {
+                error_log("[VGT THREAT INTEL] Feed {$feed_id} download error: " . $response->get_error_message());
+                return ['status' => 'error', 'message' => $response->get_error_message(), 'count' => 0];
+            }
+
+            $code = (int)wp_remote_retrieve_response_code($response);
+            $body = wp_remote_retrieve_body($response);
         }
 
-        $code = (int)wp_remote_retrieve_response_code($response);
         if ($code !== 200) {
             error_log("[VGT THREAT INTEL] Feed {$feed_id} HTTP status: {$code}");
             return ['status' => 'error', 'message' => "HTTP {$code}", 'count' => 0];
         }
-
-        $body = wp_remote_retrieve_body($response);
         $size = strlen($body);
 
         // Puffer-Schutz: Feeds über 20MB abweisen
@@ -409,10 +453,38 @@ final class ThreatIntelligence {
             }
 
             $sanitized_entries[$validated['target']] = $validated['type'];
+
+            if (count($sanitized_entries) >= self::MAX_ENTRIES_PER_FEED) {
+                error_log("[VGT THREAT INTEL] Feed {$feed_id} entry cap reached; remaining lines ignored.");
+                break;
+            }
         }
 
-        // 3. Batch-Persistierung in der Datenbank
+        // 3. Feed-Poisoning-Guard: a sudden list explosion is quarantined instead
+        //    of being applied. Unsigned community feeds would otherwise be able
+        //    to inject a mass-ban set in a single sync.
+        $incoming_count = count($sanitized_entries);
+        $previous_count = (int)($this->config['feed_counts'][$feed_id] ?? 0);
+
+        if ($previous_count >= self::GROWTH_QUARANTINE_MIN
+            && $incoming_count > ($previous_count * self::GROWTH_QUARANTINE_FACTOR)) {
+            error_log(
+                "[VGT THREAT INTEL] Feed {$feed_id} quarantined: {$previous_count} -> {$incoming_count} entries ("
+                . self::GROWTH_QUARANTINE_FACTOR . 'x limit).'
+            );
+
+            return [
+                'status'   => 'quarantined',
+                'count'    => 0,
+                'previous' => $previous_count,
+                'incoming' => $incoming_count,
+                'message'  => 'Anomalous list growth; feed quarantined for operator review.',
+            ];
+        }
+
+        // 4. Batch-Persistierung in der Datenbank
         $imported_count = $this->batch_upsert_entries($sanitized_entries, $feed_id);
+        $this->config['feed_counts'][$feed_id] = $incoming_count;
 
         // 4. VGT KERNEL PRUNING / LIST-SWAP:
         // Alle Einträge für diesen Feed, die im neuen Payload nicht mehr enthalten sind, sauber entfernen!
@@ -457,7 +529,10 @@ final class ThreatIntelligence {
             $query = $wpdb->prepare("DELETE FROM {$this->table_threats} WHERE feed_key NOT IN ({$placeholders})", $active);
             $wpdb->query($query);
         } else {
-            $wpdb->query("TRUNCATE TABLE {$this->table_threats}");
+            // All feeds disabled: clear the list with a logged, non-destructive
+            // DELETE instead of an irreversible TRUNCATE.
+            error_log('[VGT THREAT INTEL] All feeds disabled; clearing threat list via DELETE.');
+            $wpdb->query("DELETE FROM {$this->table_threats}");
         }
         $wpdb->suppress_errors($suppress);
 

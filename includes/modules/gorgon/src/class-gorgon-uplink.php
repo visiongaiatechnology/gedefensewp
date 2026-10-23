@@ -47,11 +47,12 @@ final class Gorgon_Uplink {
             'headers' => [ 
                 'X-VGT-Nexus-Auth'       => $api_key,
                 'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '7.4.0',
-                'X-VGT-Sentinel-Magic'   => 'vgt-magic-noc-9938-omega-fusion',
+                'X-VGT-Sentinel-Magic'   => defined('VIS_GORGON_NEXUS_MAGIC') ? VIS_GORGON_NEXUS_MAGIC : '',
                 'Content-Type'           => 'application/json',
                 'Connection'             => 'close' 
             ],
             'timeout'   => 2,
+            'limit_response_size' => 262144,
             'sslverify' => true,
             'redirection' => 0,
         ]);
@@ -95,11 +96,12 @@ final class Gorgon_Uplink {
             'headers' => [ 
                 'X-VGT-Nexus-Auth'       => $api_key,
                 'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '7.4.0',
-                'X-VGT-Sentinel-Magic'   => 'vgt-magic-noc-9938-omega-fusion',
+                'X-VGT-Sentinel-Magic'   => defined('VIS_GORGON_NEXUS_MAGIC') ? VIS_GORGON_NEXUS_MAGIC : '',
                 'Content-Type'           => 'application/json',
                 'Connection'             => 'close',
             ],
             'timeout'   => 20,
+            'limit_response_size' => 262144,
             'sslverify' => true,
             'redirection' => 0,
         ]);

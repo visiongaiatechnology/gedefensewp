@@ -291,7 +291,9 @@ final class Nemesis {
     public function inject_canary_token(): void {
         if ( is_admin() || wp_is_json_request() || wp_doing_ajax() ) return;
 
-        $salt = defined( 'AUTH_SALT' ) ? AUTH_SALT : 'vgt_critical_fallback_salt_99';
+        $salt = class_exists( 'VIS_Security' )
+            ? VIS_Security::install_key( 'nemesis-canary' )
+            : (string)( function_exists( 'wp_salt' ) ? wp_salt( 'auth' ) : '' );
         
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $host = preg_replace( '/[^a-zA-Z0-9.-]/', '', $host ); 

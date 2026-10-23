@@ -19,12 +19,38 @@ final class VIS_Bootstrapper {
         \VisionGaia\GeDefense\Core\NamespaceCompatibility::register();
     }
 
+    /**
+     * Fail-closed kernel halt.
+     *
+     * Security stays fail-closed, but the response is opaque: module names,
+     * file paths and failure reasons are written to the error log only. The
+     * end user receives a correlation ID so support can find the incident
+     * without the page leaking internal architecture. Operators can opt into
+     * degraded operation with the VIS_DISABLE_FAIL_CLOSE constant.
+     */
     private static function trigger_fail_close(string $module, string $reason = ''): void {
-        error_log("[VGT BOOTSTRAPPER CRITICAL] Fail-Close sequence initiated for [{$module}]. Reason: " . ($reason ?: 'Unknown'));
-        http_response_code(503);
-        header('Status: 503 Service Temporarily Unavailable');
-        header('Retry-After: 300');
-        die("<h1>VGT SYSTEM HALT</h1><p>INTEGRITY COMPROMISED. Critical module [{$module}] failed to load. Fail-Close sequence initiated to protect host environment. " . ($reason ? "($reason)" : "") . "</p>");
+        $incident = substr(hash('sha256', $module . '|' . $reason . '|' . (string)microtime(true)), 0, 12);
+        error_log("[VGT BOOTSTRAPPER CRITICAL] Fail-Close [{$incident}] module={$module} reason=" . ($reason ?: 'Unknown'));
+
+        if (defined('VIS_DISABLE_FAIL_CLOSE') && VIS_DISABLE_FAIL_CLOSE === true) {
+            error_log("[VGT BOOTSTRAPPER] VIS_DISABLE_FAIL_CLOSE active, continuing in degraded mode [{$incident}].");
+            return;
+        }
+
+        if (!headers_sent()) {
+            http_response_code(503);
+            header('Status: 503 Service Temporarily Unavailable');
+            header('Retry-After: 300');
+            header('X-VGT-Incident: ' . $incident);
+            header('Content-Type: text/html; charset=utf-8');
+        }
+
+        echo '<h1>Service temporarily unavailable</h1>'
+            . '<p>Security kernel integrity check failed. Reference: '
+            . htmlspecialchars($incident, ENT_QUOTES, 'UTF-8')
+            . '</p>';
+
+        exit;
     }
 
     public static function ensure_sovereign_temp_dir(): void {

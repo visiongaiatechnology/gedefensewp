@@ -1,7 +1,7 @@
 > [!WARNING]
 > **PUBLIC BETA / RELEASE CANDIDATE — NICHT FÜR UNBEAUFSICHTIGTEN PRODUKTIVBETRIEB**
 >
-> **VGT GeDefense WP 8.4.3 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.4.4 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 <div align="center">
 
@@ -11,7 +11,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.4.3**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.3)
+[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.4.4**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.4)
 
 </div>
 
@@ -25,7 +25,7 @@
 
 ### Souveräne WordPress-Sicherheitsarchitektur & Pre-Boot-Zulassungskern
 
-[![Version](https://img.shields.io/badge/version-8.4.3_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.4.4_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.1--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -56,6 +56,19 @@
 > **Archivierte Basis:** Die verlinkten PDF-Handbücher dokumentieren die 8.1.0-Generation. Aktuelle Release-Dokumentation: dieses README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) und [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
+
+# 🚀 Neu in GeDefense WP 8.4.4
+
+> **Release 8.4.4** ist ein dediziertes Sicherheits-Härtungsrelease auf Basis von 8.4.3: Kryptografie fail-closed, strengere WAF-Capability-Policy, Nonce-Pflicht beim Sprachwechsel, Quarantäne für Threat-Feeds, begrenzte Ressourcen und eine neue abhängigkeitsfreie Härtungs-Testsuite. Details in [`CHANGELOG.md`](CHANGELOG.md).
+
+- **Vault-Krypto ist fail-closed.** Fehlgeschlagene Entschlüsselung wirft jetzt eine Security-Exception, statt den Rohtext zurückzugeben; der hartcodierte Legacy-Schlüssel wurde entfernt. Legacy-Payloads lassen sich nur mit einem vom Betreiber gesetzten `VIS_VAULT_LEGACY_KEY` migrieren.
+- **WAF-Bypass für Inhaltsautoren entfernt.** Die AEGIS-Whitelist vertraut nicht mehr auf `edit_posts`; nur administrative Capabilities umgehen die Payload-Inspektion (erweiterbar über `vis_aegis_whitelist_capabilities`).
+- **Sprachwechsel benötigt einen Nonce.** `?vis_lang=` kann per einfachem GET keine Optionen, User-Meta oder Cookies mehr persistieren; das Cookie ist `HttpOnly` und `SameSite=Lax`.
+- **Opaker Fail-Close mit Break-Glass.** Die 503-Seite liefert nur eine Incident-Referenz; `VIS_DISABLE_FAIL_CLOSE` bietet einen dokumentierten Recovery-Pfad.
+- **Sichere Aktivierungs-Defaults.** Die Aktivierung startet AEGIS im `learning`-Modus sowie Zeus und Morpheus, statt die Konfiguration leer zu lassen.
+- **Feed-Härtung.** Feeds werden über den DNS-Rebinding-resistenten Transport geladen, auf 300.000 Einträge je Feed begrenzt, bei anomalem Wachstum unter Quarantäne gestellt; das Legacy-Schema wird archiviert statt gelöscht.
+- **Überall begrenzte Ressourcen.** GeoIP-Transients sind FIFO-begrenzt, ausgehende POST-Antworten auf 256 KB limitiert, Add-on-ZIPs lehnen Symlink-Einträge ab und erhalten eine deny-all `.htaccess`.
+- **Neues Verifikations-Gate.** `scripts/hardening-regression.php` ergänzt 72 Verhaltens-Assertions (insgesamt 29 Suiten); `.github/workflows/hardening.yml` führt Lint, alle Suiten und den Trust-Anchor unter PHP 8.1–8.4 aus.
 
 # 🚀 Neu in GeDefense WP 8.4.3
 
@@ -126,6 +139,7 @@ Das GeDefense Echtzeit-Bedrohungsradar und die globale Angriffsvektoren-Karte ba
 ## Inhaltsverzeichnis
 
 - [Dokumentation & Handbücher](#-offizielle-dokumentation--handbücher)
+- [Neu in GeDefense WP 8.4.4](#-neu-in-gedefense-wp-844)
 - [Neu in GeDefense WP 8.4.3](#-neu-in-gedefense-wp-843)
 - [Sicherheitsarchitektur & Technische Spezifikation](#-sicherheitsarchitektur--technische-spezifikation)
 - [Multi-Phase Zündungsprotokoll](#multi-phase-zündungsprotokoll)
@@ -248,14 +262,14 @@ Jeder HTTP-Request durchläuft eine deterministische Pipeline:
 
 > [!TIP]
 > **"Don't Trust, Verify" — Vollständige Transparenz & Reproduzierbarkeit**
-> GeDefense WP folgt dem Prinzip kompromissloser Beweisbarkeit. Alle Schutzbehauptungen, RASP-Hypervisoren, DPI-Regeln, Pre-Boot-Filter und Merkle-Manifeste sind durch **28 eigenständige, abhängigkeitsfreie Regressions- und Benchmark-Suiten** lokal über die PHP-CLI überprüfbar.
+> GeDefense WP folgt dem Prinzip kompromissloser Beweisbarkeit. Alle Schutzbehauptungen, RASP-Hypervisoren, DPI-Regeln, Pre-Boot-Filter und Merkle-Manifeste sind durch **29 eigenständige, abhängigkeitsfreie Regressions- und Benchmark-Suiten** lokal über die PHP-CLI überprüfbar.
 
 ### Unveränderliche Prüf-Invarianten
 - **0 externe Abhängigkeiten**: Alle Tests laufen nativ mit PHP 8.1–8.4 CLI ohne Composer, PHPUnit oder Test-Server.
 - **Vollständig zerstörungsfrei**: Tests laufen im Arbeitsspeicher oder gegen isolierte Fixtures ohne Veränderung der WordPress-Datenbank.
 - **Fail-Secure Exitcodes**: Jeder Test liefert Exitcode `0` bei Erfolg und Exitcode `1` bei jeder kleinsten Invarianzverletzung.
 
-### Vollständige 28-Suiten Testmatrix
+### Vollständige 29-Suiten Testmatrix
 
 | # | Test-Skript | Geltungsbereich & Untersuchte Subsysteme | Testumfang & Verifikationskriterien |
 |---|---|---|---|
@@ -287,6 +301,7 @@ Jeder HTTP-Request durchläuft eine deterministische Pipeline:
 | **26** | `scripts/builder-live-preview-regression.php` | **Page-Builder Sandbox** | Prüft Sandbox-Isolation und Schutz vor Frame-Bypasses bei Page-Buildern. |
 | **27** | `scripts/seo-relevance-regression.php` | **Metadaten-Scrubbing** | Bereinigung ausgehender Metadaten und Prüfung von Crawler-Zulassungen. |
 | **28** | `scripts/generate-module-manifest.php` | **Trust-Anker Compiler** | Kompiliert Komponenten-Hashes in `module-manifest.json` und versiegelt Plugin-Entrypoints. |
+| **29** | `scripts/hardening-regression.php` | **Härtungs-Invarianten (8.4.4)** | 72 Verhaltens- und Quell-Assertions: Vault fail-closed inkl. Legacy-Secret-Ablehnung, WAF-Capability-Policy, Nonce-Pflicht beim Sprachwechsel, opaker Fail-Close, Installations-Schlüsselableitung, begrenzter Geo-Cache, Add-on-Archivschutz, Feed-Quarantäne und zerstörungsfreie Schema-Migration. |
 
 ### Testausführung
 
@@ -306,7 +321,7 @@ Get-ChildItem scripts\*-regression.php | ForEach-Object {
 }
 php scripts/sentinel-threat-benchmark.php
 php scripts/threat-binary-swap-test.php
-Write-Host "ALLE 28 SUITEN ERFOLGREICH BESTANDEN (100%)" -ForegroundColor Green
+Write-Host "ALLE 29 SUITEN ERFOLGREICH BESTANDEN (100%)" -ForegroundColor Green
 ```
 
 #### Alle Tests ausführen (Bash / Linux / macOS):
@@ -317,7 +332,7 @@ for test in scripts/*-regression.php; do
 done
 php scripts/sentinel-threat-benchmark.php || exit 1
 php scripts/threat-binary-swap-test.php || exit 1
-echo "ALLE 28 SUITEN ERFOLGREICH BESTANDEN (100%)"
+echo "ALLE 29 SUITEN ERFOLGREICH BESTANDEN (100%)"
 ```
 
 ---
@@ -446,7 +461,7 @@ GeDefense WP Open Core steht unter der **GNU Affero General Public License v3.0 
 
 <div align="center">
 
-## GeDefense WP 8.4.3 — Open Core
+## GeDefense WP 8.4.4 — Open Core
 
 **SOUVERÄNE WORDPRESS SICHERHEIT**
 

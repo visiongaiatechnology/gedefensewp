@@ -1,7 +1,8 @@
 # Architecture
 
-> **Current release: 8.4.0** (2026-10-21). Security and login-surface changes in this release:
-> PHP upload-progress mitigation, ThroneGuard auth-surface redesign and LoginPager viewport centering.
+> **Current release: 8.4.4** (2026-10-23). Security-hardening release on top of 8.4.3:
+> fail-closed vault crypto, stricter WAF capability policy, nonce-gated language switching,
+> threat-feed quarantine, bounded resource limits and a new hardening regression suite.
 > See [CHANGELOG.md](CHANGELOG.md) for details.
 
 

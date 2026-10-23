@@ -7,6 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.4.4] — 2026-10-23
+
+### Security Hardening — Full Pass 1 (Open Core)
+
+Every item below is covered by `scripts/hardening-regression.php`, which runs
+with plain PHP (no Composer, no PHPUnit, no WordPress) and asserts behavior,
+not only source patterns.
+
+#### Fixed
+
+- **Vault crypto was fail-open and shipped a hard-coded legacy secret.**
+  `VIS_Vault::decrypt()` returned the raw blob whenever decryption failed, so a
+  corrupted or foreign ciphertext could be handed back to callers as plaintext.
+  The legacy key `sha256('VGT_INTERNAL_ENCRYPTION_SECRET')` is removed: legacy
+  decryption now requires the operator-defined `VIS_VAULT_LEGACY_KEY`
+  (controlled migration only). Versioned payloads and ciphertext-shaped blobs
+  fail closed with `SecurityException`.
+- **WAF bypass for content authors (SEC-01).** `VIS_Aegis::is_whitelisted()`
+  granted a firewall bypass to every account holding `edit_posts` — that is
+  every Contributor and Author. Whitelisting is now limited to
+  `manage_options` and explicitly extensible through the
+  `vis_aegis_whitelist_capabilities` filter.
+- **Language switching mutated state via GET without a nonce (SEC-08).**
+  `?vis_lang=` wrote the global option, user meta and cookie on any request.
+  Persisted changes now require a `wp_nonce_url()` token; a bare GET stays
+  request-scoped. The language cookie is `HttpOnly` + `SameSite=Lax`
+  (`Secure` on HTTPS).
+- **Fail-close page leaked internal module names, paths and reasons.** The 503
+  response now renders an opaque incident reference only; details go to the
+  error log, the response carries `X-VGT-Incident`, and
+  `VIS_DISABLE_FAIL_CLOSE` provides a documented break-glass path.
+- **Static fallback salts (4 sites).** Oracle, Gorgon (2×) and Nemesis derived
+  key material from hard-coded literals. All four now use
+  `VIS_Security::install_key()`, which derives per-installation key material
+  from the WordPress salts with a persisted CSPRNG fallback.
+- **Schema gating compared against the marketing version string.** Migrations
+  keyed off `VIS_VERSION` (`"8.4.3 OPEN CORE"`), so a display change could
+  trigger or suppress a migration. A numeric `VIS_Schema::SCHEMA_VERSION` now
+  owns schema revisioning.
+- **Unbounded GeoIP transient cache (SEC-04).** Every distinct IP created a
+  7-day `wp_options` row. The cache is now FIFO-bounded
+  (`MAX_GEO_TRANSIENTS = 2000`).
+- **Add-on directory could keep executing uploaded PHP (SEC-07).** The
+  installer wrote only `index.php`, and only on first creation. It now writes
+  `index.php` and a deny-all `.htaccess` unconditionally and refuses to extract
+  into a non-writable directory.
+- **File viewer response was returned unescaped.** The AJAX payload is now
+  escaped at the source instead of relying on a future frontend consumer.
+- **Unsigned community feeds could poison the ban list (SEC-05).** Feed pulls
+  now use the DNS-rebinding-resistant `pinned_https_get()` transport (with a
+  bounded `wp_safe_remote_get()` fallback), enforce a hard per-feed entry cap
+  (300 000), and quarantine a feed that grows more than 4× over its previous
+  baseline instead of applying it. Legacy schema migration archives the old
+  table (`RENAME`) instead of `DROP`, and clearing all feeds uses a logged
+  `DELETE` instead of an irreversible `TRUNCATE`.
+- **Add-on archives accepted Unix symlink entries.** ZIP extraction now rejects
+  entries whose external attributes carry the `S_IFLNK` mode.
+- **Unexpected AJAX failures leaked internal exception messages.** Benchmark,
+  self-test and drain handlers now return an opaque reference and log details
+  server-side.
+- **Outbound POST responses were unbounded.** Oracle, Morpheus and Gorgon
+  requests now set `limit_response_size` (256 KB) in addition to timeouts.
+
+#### Changed
+
+- **Secure activation defaults.** Activation previously left `vis_config`
+  empty, so the firewall engine stayed disabled while the dashboard implied
+  protection. Activation now sets `aegis_enabled=1`, mode `learning`,
+  `zeus_enabled=1`, `morpheus_enabled=1`. Existing keys are never overwritten.
+- **Deactivation clears every plugin cron.** Previously three hooks were
+  cleared (one had no handler at all) while six retention/security jobs kept
+  running after deactivation.
+- **Platform floor declared and enforced.** The plugin header now declares
+  `Requires PHP: 8.1` and `Requires at least: 6.0`; a runtime guard keeps the
+  plugin inactive on older runtimes instead of emitting a fatal error.
+- **Nexus wire fingerprint documented and overridable.** The
+  `X-VGT-Sentinel-Magic` value is a protocol marker, not an authentication
+  factor (Gorgon authenticates with the per-site API key) and can be replaced
+  via the `VIS_GORGON_NEXUS_MAGIC` constant.
+
+#### Added
+
+- `scripts/hardening-regression.php` — behavioral and source assertions for
+  every item above (72 assertions).
+- `.github/workflows/hardening.yml` — CI gate: PHP 8.1–8.4 matrix, syntax lint
+  for every PHP file, the full dependency-free regression suite, trust-anchor
+  freshness, and a zero-runtime-dependency supply-chain check.
+- Release packaging rules — development artifacts (`.git`, `.github`, internal development notes) stay out of the distributed plugin directory.
+
+---
+
 ## [8.4.3] — 2026-10-22
 
 ### Security Hardening & VGT-100 Full Audit Remediation

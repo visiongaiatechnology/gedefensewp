@@ -9,6 +9,12 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
  * ARCHITECT: OMEGA PROTOCOL
  */
 final class VIS_Schema {
+    /**
+     * Numeric schema revision. Schema gating must not depend on the marketing
+     * version string (VIS_VERSION = "8.4.4 OPEN CORE"): a display change would
+     * otherwise trigger or suppress migrations.
+     */
+    public const SCHEMA_VERSION = '8.4.4.0';
     public const XDR_SCHEMA_VERSION = '3';
     public const DOWNLOAD_SCHEMA_VERSION = '1';
 
@@ -19,7 +25,7 @@ final class VIS_Schema {
         $download_ver = get_option('vis_download_schema_version');
         
         // Bail early if the database schema is already up-to-date
-        if ($installed_ver === VIS_VERSION
+        if ($installed_ver === self::SCHEMA_VERSION
             && $xdr_ver === self::XDR_SCHEMA_VERSION
             && $download_ver === self::DOWNLOAD_SCHEMA_VERSION) {
             return;
@@ -267,7 +273,7 @@ final class VIS_Schema {
         $wpdb->show_errors();
         
         // 4. FINALIZE UPDATE
-        update_option('vis_db_version', VIS_VERSION);
+        update_option('vis_db_version', self::SCHEMA_VERSION);
         update_option('vis_xdr_schema_version', self::XDR_SCHEMA_VERSION, false);
         update_option('vis_download_schema_version', self::DOWNLOAD_SCHEMA_VERSION, false);
         update_option('vgt_oracle_table_ready', true); // VGT KERNEL FIX: State-Synchronisation für das Oracle

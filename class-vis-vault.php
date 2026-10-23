@@ -29,8 +29,25 @@ final class VIS_Vault {
         return hash('sha256', $material . 'VGT_OMEGA_SALT_V1', true);
     }
 
+    /**
+     * Legacy payloads from pre-vault releases were encrypted with a secret that
+     * shipped inside the plugin source. That made every migrated secret
+     * decryptable by anyone holding a copy of the code, so the constant was
+     * removed. Legacy decryption is now opt-in for a controlled migration only:
+     * the operator defines VIS_VAULT_LEGACY_KEY, migrates, then removes it.
+     */
+    private static function has_legacy_key(): bool {
+        return defined('VIS_VAULT_LEGACY_KEY')
+            && is_string(VIS_VAULT_LEGACY_KEY)
+            && VIS_VAULT_LEGACY_KEY !== '';
+    }
+
     private static function get_legacy_key(): string {
-        return hash('sha256', 'VGT_INTERNAL_ENCRYPTION_SECRET', true);
+        if (!self::has_legacy_key()) {
+            throw new SecurityException('Legacy vault key not configured.');
+        }
+
+        return hash('sha256', VIS_VAULT_LEGACY_KEY, true);
     }
 
     public static function encrypt(string $plaintext): string {
@@ -55,25 +72,61 @@ final class VIS_Vault {
         $is_versioned = str_starts_with($encoded_blob, self::PAYLOAD_PREFIX);
         $payload = $is_versioned ? substr($encoded_blob, strlen(self::PAYLOAD_PREFIX)) : $encoded_blob;
 
+        // Not base64-shaped: a pre-vault plaintext value, never a ciphertext.
         if (!preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $payload)) {
+            if ($is_versioned) {
+                throw new SecurityException('Vault token format rejected.');
+            }
+
             return $encoded_blob;
         }
-        
+
         $plaintext = self::core_decrypt($payload, self::get_primary_key());
         if ($plaintext !== false) {
             return $plaintext;
         }
-        
-        if (!$is_versioned) {
+
+        // Legacy ciphertexts are only decryptable when the operator explicitly
+        // configured the migration key (see has_legacy_key()).
+        if (!$is_versioned && self::has_legacy_key()) {
             $plaintext = self::core_decrypt($payload, self::get_legacy_key());
             if ($plaintext !== false) {
                 return $plaintext;
             }
+        }
+
+        // Fail closed for anything that could actually be a ciphertext: handing
+        // the raw blob back would silently pass ciphertext as plaintext.
+        if (!$is_versioned && !self::looks_like_ciphertext($payload)) {
             return $encoded_blob;
         }
 
         error_log('[VGT VAULT] Decrypt rejected invalid vault payload.');
         throw new SecurityException('Vault token authentication failed.');
+    }
+
+    /**
+     * Whether a base64 payload has the minimum length of a supported ciphertext.
+     * Used to distinguish migrated plaintext from a corrupted legacy ciphertext.
+     */
+    private static function looks_like_ciphertext(string $payload): bool {
+        $decoded = base64_decode($payload, true);
+        if ($decoded === false) {
+            return false;
+        }
+
+        $length = mb_strlen($decoded, '8bit');
+
+        if (function_exists('sodium_crypto_secretbox')) {
+            $sodium_min = SODIUM_CRYPTO_SECRETBOX_NONCEBYTES + SODIUM_CRYPTO_SECRETBOX_MACBYTES;
+            if ($length >= $sodium_min) {
+                return true;
+            }
+        }
+
+        $iv_length = openssl_cipher_iv_length('aes-256-gcm');
+
+        return is_int($iv_length) && $length >= ($iv_length + 16);
     }
 
     private static function core_decrypt(string $encoded_blob, string $key): string|false {
@@ -132,7 +185,9 @@ final class VIS_Vault {
                         : (string)$payload;
                     if (self::core_decrypt($payload_body, self::get_primary_key()) !== false) continue;
                     
-                    $plaintext = self::core_decrypt($payload_body, self::get_legacy_key());
+                    $plaintext = self::has_legacy_key()
+                        ? self::core_decrypt($payload_body, self::get_legacy_key())
+                        : false;
                     if ($plaintext !== false) {
                         $config[$s_key] = self::encrypt($plaintext);
                         $migrated = true;
@@ -157,7 +212,9 @@ final class VIS_Vault {
                 ? substr($aegis_key, strlen(self::PAYLOAD_PREFIX))
                 : $aegis_key;
             if (self::core_decrypt($aegis_payload, self::get_primary_key()) === false) {
-                $plaintext = self::core_decrypt($aegis_payload, self::get_legacy_key());
+                $plaintext = self::has_legacy_key()
+                    ? self::core_decrypt($aegis_payload, self::get_legacy_key())
+                    : false;
                 if ($plaintext !== false) {
                     update_option('vis_aegis_ai_key', self::encrypt($plaintext));
                 } elseif (!str_starts_with($aegis_key, self::PAYLOAD_PREFIX)) {

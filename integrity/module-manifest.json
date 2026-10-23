@@ -5,7 +5,7 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "a3d43544ee2a9f3f63c96eeec8001318cd1845c848b262b865d11dbd735d2582"
+            "root_hash": "03dd931662eb871f453f1af00bf7c0704bab197456a478522c44566b3893e901"
         },
         "assets": {
             "files": 12,
@@ -17,11 +17,11 @@
         },
         "core": {
             "files": 15,
-            "root_hash": "c138a85d57f3233e903eda99bd9a8d1413a9e7cbef4f7592660cffef2d135332"
+            "root_hash": "7a206cbe71a2f11680d3955bb1cb3caf9fc4254a5ff24ffff80a84ba1ad6f7d3"
         },
         "dashboard": {
             "files": 87,
-            "root_hash": "8a929333dfc1b54e28839fbb1cbcd513e22bb3cff02a6648f55e2f912d70d82f"
+            "root_hash": "b964df91f478b3f62d7af1eb113b4c60e901473730eb7af891f4a8b57f57506a"
         },
         "xdr": {
             "files": 9,
@@ -33,7 +33,7 @@
         },
         "aegis": {
             "files": 2,
-            "root_hash": "87a50c999c2b4f1aab61ef49efd3ee46cc4e49e424e71f4e7177444270d8a632"
+            "root_hash": "ad3d7365a4832684466ed03fde3607506879ac898fb2ba132321574a3d5a971d"
         },
         "airlock": {
             "files": 4,
@@ -57,7 +57,7 @@
         },
         "gorgon": {
             "files": 6,
-            "root_hash": "f78123d38bfc5ec6b30be6050c8911cb7f09ce23c0790dd97097e5b8594d428a"
+            "root_hash": "d4cc875f9477f6f6686e68bbdd8a158d54b2a823953b3ce700843ddc6f8563fa"
         },
         "hades": {
             "files": 1,
@@ -69,11 +69,11 @@
         },
         "morpheus": {
             "files": 10,
-            "root_hash": "97e6323c11029c5160cd53a5e857738d4357f00ac000f5134083b5665d0a7478"
+            "root_hash": "4b31ca1d6ea1064070ef3e5f174d333c2f297b602d41b7e59cf81165d105538a"
         },
         "nemesis": {
             "files": 1,
-            "root_hash": "d7d694736ad9aff9489879bdd26c3b09bd6b4bf0de03c32a27f7e920447e3a33"
+            "root_hash": "c0c176e8679bf031be981ba64c66b9112f1c5f9057c76be1d1c7310bf0bfd2b3"
         },
         "oracle": {
             "files": 1,
