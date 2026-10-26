@@ -41,6 +41,10 @@
 
 </div>
 
+
+<img width="1536" height="1024" alt="GeDefense_ Real Security, Many Feathers" src="https://github.com/user-attachments/assets/e16f809d-4968-4cbc-9147-7c872b32a2e5" />
+
+
 ---
 
 > ### 📚 Official Documentation & Handbooks
