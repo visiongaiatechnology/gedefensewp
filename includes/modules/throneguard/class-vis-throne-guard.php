@@ -569,6 +569,7 @@ final class VIS_Throne_Guard {
     public function handle_claim_master(): never {
         if (!current_user_can('manage_options')) wp_die('Request rejected for security reasons.', 'Security Error', ['response' => 403]);
         check_admin_referer('vis_throneguard_claim');
+        if ($this->has_master()) wp_die('A ThroneGuard master is already provisioned.', 'Security Error', ['response' => 403]);
         if (!self::provision_current_master()) wp_die('A server error occurred.', 'Server Error', ['response' => 500]);
         wp_safe_redirect($this->dashboard_url(['claimed' => '1']));
         exit;

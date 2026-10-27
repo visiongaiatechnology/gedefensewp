@@ -1,7 +1,7 @@
 > [!WARNING]
 > **ПУБЛИЧНАЯ БЕТА / RELEASE CANDIDATE — НЕ ДЛЯ ПРОИЗВОДСТВЕННОЙ ЭКСПЛУАТАЦИИ БЕЗ НАБЛЮДЕНИЯ**
 >
-> **VGT GeDefense WP 8.5.0 Open Core — публичная бета / release candidate, а не GA-релиз.** Хуки, политики, правила обнаружения, форматы конфигурации и поведение безопасности могут меняться без предупреждения. Проверяйте каждую сборку в staging-среде, начинайте в **observe-режиме**, держите протестированные резервные копии и out-of-band доступ для восстановления; не используйте для производственной эксплуатации без наблюдения. Предоставляется **как есть**, без гарантий, по AGPL-3.0-or-later. См. [`CHANGELOG.md`](CHANGELOG.md) и [GitHub-релизы](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.5.1 Open Core — публичная бета / release candidate, а не GA-релиз.** Хуки, политики, правила обнаружения, форматы конфигурации и поведение безопасности могут меняться без предупреждения. Проверяйте каждую сборку в staging-среде, начинайте в **observe-режиме**, держите протестированные резервные копии и out-of-band доступ для восстановления; не используйте для производственной эксплуатации без наблюдения. Предоставляется **как есть**, без гарантий, по AGPL-3.0-or-later. См. [`CHANGELOG.md`](CHANGELOG.md) и [GitHub-релизы](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 > [!CAUTION]
 > **ALPHA-ТЕСТ — GeDefense WP ↔ Linux Bridge:** новое в 8.5.0, не для production. Скомпрометированный WordPress может подделывать записи общим секретом; lease — 2 часа, IP/хост, только L7-лимиты/content-pattern на административных поверхностях. См. 8.5.0 ниже.
@@ -14,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇷🇺 К журналу изменений (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Релиз на GitHub v8.5.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.0)
+[**🇷🇺 К журналу изменений (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Релиз на GitHub v8.5.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.1)
 
 </div>
 
@@ -30,7 +30,7 @@
 
 <img width="1536" height="1024" alt="GeDefense_ Real Security, Many Feathers" src="https://github.com/user-attachments/assets/e16f809d-4968-4cbc-9147-7c872b32a2e5" />
 
-[![Version](https://img.shields.io/badge/version-8.5.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.5.1_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -61,6 +61,20 @@
 > **Архивная база:** PDF-руководства описывают поколение 8.1.0. Актуальная документация: этот README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) и [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
+
+# 🚀 Обновление безопасности 8.5.1 — усиление моста (27.10.2026)
+
+> **Обновление 8.5.1** усиливает alpha-мост Linux после security-review. Это не production-релиз.
+
+- **Привязка к master-сессии:** вкладка моста и admin-post-мутации требуют разблокированной master-сессии ThroneGuard; одной роли недостаточно.
+- **Защита master-claim:** администратор не может назначить мастера, если мастер уже существует.
+- **Более сильный at-rest ключ:** требуются как минимум шесть различных высокоэнтропийных солей wp-config; известные default/placeholder-соли отклоняются.
+- **Logout/revocation:** WordPress отправляет best-effort `master_logout`; Linux удаляет lease. Отзыв в Linux сохраняется после перезапуска control; старые события журнала не могут повторно выдать отозванный lease.
+- **Отклонение loopback:** master leases для loopback/unspecified IP отклоняются; настройте real-IP для inline edge.
+- **Исключение только для XSS:** только точные VGT preview/save-поверхности могут подавлять XSS-ложные срабатывания; SQLi/LFI/PHP-tag и все остальные семейства остаются активными.
+- **Sensitive-лимиты сохраняются:** master lease больше не обходит login/XML-RPC sensitive buckets; применяется настроенный ослабленный клиентский бюджет CMS.
+- **Усиление installer:** исправлены порядок чистого install, python3 до trust-проверки, строгие trust-режимы и ownership при rollback.
+- **ALPHA:** мост остаётся alpha-функцией. Скомпрометированный WordPress с общим секретом может подделывать записи; TTL/IP/host-лимиты и read-only логирование — меры снижения риска, а не production-гарантия.
 
 # 🚀 Что нового в GeDefense WP 8.5.0 — мост Linux (Alpha)
 
@@ -491,7 +505,7 @@ GeDefense WP Open Core распространяется по лицензии **
 
 <div align="center">
 
-## GeDefense WP 8.5.0 — Open Core
+## GeDefense WP 8.5.1 — Open Core
 
 **СУВЕРЕННАЯ БЕЗОПАСНОСТЬ WORDPRESS**
 

@@ -5,7 +5,7 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "c8b6060f47ee64e204a889d2ed02044c6b5287faa9180539444c4d1d96e222b7"
+            "root_hash": "2befb11f441eec15a4205b41d0ea578da083602a876fc888c4287daa85253418"
         },
         "assets": {
             "files": 12,
@@ -93,7 +93,7 @@
         },
         "throneguard": {
             "files": 2,
-            "root_hash": "270cd4ceb323518285ccfeea7becf72d93b4ba1d04e4f975a40b5aba4b8119c2"
+            "root_hash": "7ae3496f6a1ceb1583f16ea3360e2ecd47e130c1ec4b8c9aaa73af2439c13f9d"
         },
         "loginpager": {
             "files": 1,

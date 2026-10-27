@@ -1,5 +1,17 @@
 # Changelog
 
+## 8.5.1 - 2026-10-27 - Security hardening for the Linux bridge
+
+- Bridge configuration now requires an unlocked ThroneGuard master session; role membership alone is insufficient.
+- A master cannot be claimed when one already exists.
+- At-rest bridge secret requires at least six distinct, high-entropy wp-config salts; default/placeholder/duplicate salts are rejected.
+- Added master logout notification and Linux revocation persistence; old log events cannot re-grant a revoked lease.
+- Loopback/unspecified master leases are rejected; configure real-IP handling for the inline edge.
+- Content exemption narrowed to exact VGT preview/save surfaces and only the XSS finding family; all other L7 pattern families remain active.
+- Master leases retain sensitive login/XML-RPC rate limits; configured relaxed CMS client budget is used.
+- ALPHA: the bridge remains a test feature and is not production-ready.
+
+
 ## 8.5.0 - 2026-10-27 - Linux Bridge (ALPHA) and dashboard integration
 
 ### Added

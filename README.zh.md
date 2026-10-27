@@ -1,7 +1,7 @@
 > [!WARNING]
 > **公开测试版 / 发布候选 — 禁止在无人值守的生产环境中使用**
 >
-> **VGT GeDefense WP 8.5.0 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
+> **VGT GeDefense WP 8.5.1 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
 
 > [!CAUTION]
 > **ALPHA 测试 — GeDefense WP ↔ Linux Bridge：** 8.5.0 新增，并非生产就绪。被攻陷的 WordPress 可用共享 secret 伪造记录；lease 为两小时、绑定 IP/主机，仅放宽管理界面的 L7 限制/内容模式检查。见下方 8.5.0。
@@ -14,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.5.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.0)
+[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.5.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.1)
 
 </div>
 
@@ -30,7 +30,7 @@
 
 <img width="1536" height="1024" alt="GeDefense_ Real Security, Many Feathers" src="https://github.com/user-attachments/assets/e16f809d-4968-4cbc-9147-7c872b32a2e5" />
 
-[![Version](https://img.shields.io/badge/version-8.5.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.5.1_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -61,6 +61,20 @@
 > **归档基线：** 链接的 PDF 手册记录 8.1.0 世代。当前发布文档：本 README、[`CHANGELOG.md`](CHANGELOG.md)、[`ARCHITECTURE.md`](ARCHITECTURE.md)。
 
 ---
+
+# 🚀 安全更新 8.5.1 — 桥梁加固（2026-10-27）
+
+> **8.5.1 更新** 在安全审查后加固 alpha Linux 桥。这不是生产就绪声明。
+
+- **Master 会话绑定：** 桥标签页和 admin-post 变更需要已解锁的 ThroneGuard master 会话；仅有角色不够。
+- **Master 认领保护：** 已有 master 时，管理员不能再认领 master 角色。
+- **更强的静态密钥：** 至少需要六个不同、高熵的 wp-config 盐值；已知默认/占位盐值会被拒绝。
+- **注销/撤销：** WordPress 发送 best-effort `master_logout` 事件；Linux 移除 lease。Linux 撤销状态在 control 重启后保留；旧日志事件不能重新授予已撤销 lease。
+- **拒绝 loopback：** 拒绝 loopback/unspecified IP 的 master lease；为 inline edge 配置 real-IP。
+- **仅 XSS 编辑例外：** 只有精确的 VGT preview/save 界面可以抑制 XSS 误报；SQLi/LFI/PHP-tag 和所有其他模式族仍保持启用。
+- **敏感限制保留：** master lease 不再绕过 login/XML-RPC 敏感桶；应用配置的 CMS 放宽客户端预算。
+- **Installer 加固：** 修复 clean-install 顺序、trust 前安装 python3、严格 trust 模式及 rollback ownership。
+- **ALPHA：** 桥仍为 alpha 测试功能。持有共享 secret 的被攻陷 WordPress 可伪造记录；TTL/IP/host 限制与只读日志属于缓解措施，并非生产保证。
 
 # 🚀 GeDefense WP 8.5.0 新特性 — Linux 桥（Alpha）
 
@@ -491,7 +505,7 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 
 <div align="center">
 
-## GeDefense WP 8.5.0 — Open Core
+## GeDefense WP 8.5.1 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

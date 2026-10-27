@@ -1,7 +1,7 @@
 > [!WARNING]
 > **PUBLIC BETA / RELEASE CANDIDATE — NICHT FÜR UNBEAUFSICHTIGTEN PRODUKTIVBETRIEB**
 >
-> **VGT GeDefense WP 8.5.0 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.5.1 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 > [!CAUTION]
 > **ALPHA-TEST — GeDefense WP ↔ Linux Bridge:** neu in 8.5.0, nicht produktionsreif. Ein kompromittiertes WordPress kann Datensätze mit dem gemeinsamen Secret fälschen; die Lease ist 2 Std., IP/Host-gebunden und lockert nur L7-Limits/Content-Pattern-Prüfungen auf Admin-Oberflächen. Siehe 8.5.0 unten.
@@ -14,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.5.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.0)
+[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.5.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.1)
 
 </div>
 
@@ -30,7 +30,7 @@
 
 <img width="1536" height="1024" alt="GeDefense_ Real Security, Many Feathers" src="https://github.com/user-attachments/assets/e16f809d-4968-4cbc-9147-7c872b32a2e5" />
 
-[![Version](https://img.shields.io/badge/version-8.5.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.5.1_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -61,6 +61,20 @@
 > **Archivierte Basis:** Die verlinkten PDF-Handbücher dokumentieren die 8.1.0-Generation. Aktuelle Release-Dokumentation: dieses README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) und [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
+
+# 🚀 Sicherheitsupdate 8.5.1 — Bridge-Hardening (27.10.2026)
+
+> **Update 8.5.1** härtet die Alpha-Linux-Bridge nach dem Security-Review. Es ist keine Produktionsfreigabe.
+
+- **Master-Session-Bindung:** Bridge-Tab und Admin-Post-Mutationen benötigen eine entsperrte ThroneGuard-Master-Session; eine Rolle allein genügt nicht.
+- **Master-Claim-Schutz:** Ein Administrator kann keinen Master mehr beanspruchen, wenn bereits einer existiert.
+- **Stärkerer At-Rest-Key:** Mindestens sechs unterschiedliche, hoch-entropische wp-config-Salts sind erforderlich; bekannte Default-/Platzhalter-Salts werden abgelehnt.
+- **Logout/Revocation:** WordPress sendet ein Best-Effort-`master_logout`-Event; Linux entfernt die Lease. Linux-Widerruf überlebt Control-Neustarts; alte Log-Events können widerrufene Leases nicht erneut erteilen.
+- **Loopback-Ablehnung:** Master-Leases für Loopback/unspecified IPs werden abgelehnt; Real-IP-Handling für die Inline-Edge konfigurieren.
+- **Nur XSS-Editor-Ausnahme:** Nur exakte VGT-Preview-/Save-Oberflächen dürfen XSS-False-Positives unterdrücken; SQLi/LFI/PHP-Tag und alle anderen Pattern-Familien bleiben aktiv.
+- **Sensible Limits bleiben:** Eine Master-Lease umgeht keine Login-/XML-RPC-Sensitive-Buckets mehr; das konfigurierte gelockerte CMS-Client-Budget wird angewandt.
+- **Installer-Härtung:** Clean-Install-Reihenfolge, python3 vor Trust-Prüfung, strikte Trust-Modi und Rollback-Ownership wurden korrigiert.
+- **ALPHA:** Die Bridge bleibt ein Alpha-Testfeature. Ein kompromittiertes WordPress mit gemeinsamem Secret kann Datensätze fälschen; TTL-/IP-/Host-Limits und Read-only-Logging sind Mitigationen, keine Produktionsgarantie.
 
 # 🚀 Neu in GeDefense WP 8.5.0 — Linux Bridge (Alpha)
 
@@ -486,7 +500,7 @@ GeDefense WP Open Core steht unter der **GNU Affero General Public License v3.0 
 
 <div align="center">
 
-## GeDefense WP 8.5.0 — Open Core
+## GeDefense WP 8.5.1 — Open Core
 
 **SOUVERÄNE WORDPRESS SICHERHEIT**
 

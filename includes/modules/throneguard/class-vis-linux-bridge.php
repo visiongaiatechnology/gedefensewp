@@ -44,47 +44,59 @@ final class VIS_Linux_Bridge {
         'NONCE_SALT',
     ];
 
-    /** Only a ThroneGuard master may configure the bridge trust channel. */
+    /** Only an unlocked ThroneGuard master may configure the bridge. */
     public static function can_manage(): bool {
         if (!current_user_can('manage_options')) {
             return false;
         }
-        if (class_exists('VIS_Throne_Guard') && defined('VIS_Throne_Guard::MASTER_CAP')) {
-            return current_user_can(VIS_Throne_Guard::MASTER_CAP);
+        if (!class_exists('VIS_Throne_Guard')) {
+            return false;
         }
-        return true;
+        try {
+            $status = VIS_Throne_Guard::status();
+        } catch (\Throwable $e) {
+            return false;
+        }
+        return !empty($status['session_unlocked']);
     }
 
     public static function init(): void {
         add_action('admin_post_vis_gedefense_linux_bridge_save', [self::class, 'handle_save']);
         add_action('admin_post_vis_gedefense_linux_bridge_test', [self::class, 'handle_test']);
         add_action('update_option_vis_throneguard_ip_leases', [self::class, 'leases_updated'], 10, 2);
+        add_action('clear_auth_cookie', [self::class, 'emit_logout'], 20);
     }
 
     /** @return array{available:bool,parts:int} */
     public static function salt_status(): array {
-        $parts = 0;
-        foreach (self::SALT_CONSTANTS as $name) {
-            if (defined($name) && is_string(constant($name)) && strlen((string)constant($name)) >= 16) {
-                $parts++;
-            }
-        }
-        return ['available' => $parts >= 4, 'parts' => $parts];
+        return ['available' => count(self::usable_salts()) >= 6, 'parts' => count(self::usable_salts())];
     }
 
-    private static function storage_key(): ?string {
-        $parts = [];
+    /** @return list<string> */
+    private static function usable_salts(): array {
+        $values = [];
         foreach (self::SALT_CONSTANTS as $name) {
             if (!defined($name) || !is_string(constant($name))) {
                 continue;
             }
-            $value = (string)constant($name);
-            if (strlen($value) < 16) {
+            $value = trim((string)constant($name));
+            if (strlen($value) < 32) {
                 continue;
             }
-            $parts[] = $value;
+            if (stripos($value, 'put your unique phrase here') !== false || stripos($value, 'change this') !== false) {
+                continue;
+            }
+            if (in_array($value, $values, true)) {
+                continue;
+            }
+            $values[] = $value;
         }
-        if (count($parts) < 4) {
+        return $values;
+    }
+
+    private static function storage_key(): ?string {
+        $parts = self::usable_salts();
+        if (count($parts) < 6) {
             return null;
         }
         $key = hash_hkdf(
@@ -214,6 +226,10 @@ final class VIS_Linux_Bridge {
             self::set_error('Client IP is invalid.');
             return false;
         }
+        if ($eventName === 'master_login' && (str_starts_with($ip, '127.') || $ip === '::1' || $ip === '0.0.0.0')) {
+            self::set_error('Loopback master leases are rejected; configure proxy real-IP handling.');
+            return false;
+        }
         if ($eventName === 'master_login') {
             $expires = isset($lease['expires_at']) ? (int)$lease['expires_at'] : 0;
             if ($expires <= $now) {
@@ -221,6 +237,9 @@ final class VIS_Linux_Bridge {
             }
             $expires = min($expires, $now + self::DEFAULT_TTL);
             $user = isset($lease['user_login']) && is_string($lease['user_login']) ? $lease['user_login'] : 'master';
+        } elseif ($eventName === 'master_logout') {
+            $expires = $now + 300;
+            $user = 'master';
         } else {
             $expires = $now + 300;
             $user = 'bridge-test';
