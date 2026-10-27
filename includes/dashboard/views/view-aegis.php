@@ -5,10 +5,13 @@ declare(strict_types=1);
 if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
 $is_oracle_active = false;
+$oracle_state = 'missing';
 if (class_exists('VIS_Key_Vault') && class_exists('VIS_Aegis_Oracle')) {
     try {
-        $is_oracle_active = VIS_Key_Vault::get_key('vis_aegis_ai_key') !== '';
+        $oracle_state = VIS_Key_Vault::key_state('vis_aegis_ai_key');
+        $is_oracle_active = $oracle_state === 'sealed';
     } catch (Throwable $e) {
+        $oracle_state = get_option('vis_aegis_ai_key') !== false ? 'invalid' : 'missing';
         error_log('[VGT ORACLE STATUS] Vault state could not be read.');
     }
 }
@@ -121,6 +124,10 @@ $aegisToggle = static function(string $name, bool $enabled, string $label): void
                         <span style="font: 700 10px monospace; color: #34d399; background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3); padding: 3px 8px; border-radius: 4px;">
                             <?php esc_html_e('IM KRYPTO-TRESOR VERSIEGELT', 'vgt-sentinel'); ?>
                         </span>
+                    <?php elseif ($oracle_state === 'invalid'): ?>
+                        <span style="font: 700 10px monospace; color: #fbbf24; background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.3); padding: 3px 8px; border-radius: 4px;">
+                            <?php esc_html_e('SCHLÜSSEL UNGÜLTIG', 'vgt-sentinel'); ?>
+                        </span>
                     <?php else: ?>
                         <span style="font: 700 10px monospace; color: #fb7185; background: rgba(251, 113, 133, 0.12); border: 1px solid rgba(251, 113, 133, 0.3); padding: 3px 8px; border-radius: 4px;">
                             <?php esc_html_e('SCHLÜSSEL FEHLT', 'vgt-sentinel'); ?>
@@ -132,6 +139,12 @@ $aegisToggle = static function(string $name, bool $enabled, string $label): void
                     <?php esc_html_e('Trage hier deinen Groq API Key ein. Er wird beim Speichern automatisch unter dem festgelegten Identifier vis_aegis_ai_key per AES-256-GCM hardware-gebunden im Krypto-Tresor versiegelt.', 'vgt-sentinel'); ?>
                 </small>
             </label>
+            <?php if ($oracle_state === 'invalid'): ?>
+                <p style="margin: 4px 2px 0; color: #fbbf24; font-size: 12px; line-height: 1.5;">
+                    <?php esc_html_e('Im Krypto-Tresor liegt ein Eintrag, der mit dem aktuellen Site-Schlüssel nicht entschlüsselt werden kann. Trage den Groq-Key erneut ein oder verwerfe den alten Eintrag im Krypto-Tresor.', 'vgt-sentinel'); ?>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=vgt-suite&tab=vault&key_id=vis_aegis_ai_key')); ?>" style="color:#e9d5ff;"><?php esc_html_e('Zum Krypto-Tresor', 'vgt-sentinel'); ?></a>
+                </p>
+            <?php endif; ?>
         </div>
 
         <div class="vgt-oracle-diagnostics" data-oracle-active="<?php echo $is_oracle_active ? '1' : '0'; ?>" style="margin-top: 14px; background: rgba(3, 8, 16, 0.6); padding: 18px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.12);">

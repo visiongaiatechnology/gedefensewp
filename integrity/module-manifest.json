@@ -5,7 +5,7 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "2befb11f441eec15a4205b41d0ea578da083602a876fc888c4287daa85253418"
+            "root_hash": "026255661a629ea92723a10a092fb4ce755d3bf5adf3030bc419495f2d1dfe55"
         },
         "assets": {
             "files": 12,
@@ -21,7 +21,7 @@
         },
         "dashboard": {
             "files": 89,
-            "root_hash": "710043f3ec0c0379a4aa0ec4d088ce884da6fed8d518387cd3354538519f645b"
+            "root_hash": "a492a0394bc5b01b965ac8d204d888600af4e511fd7ee0e341116b1ccbace669"
         },
         "xdr": {
             "files": 9,
@@ -93,7 +93,7 @@
         },
         "throneguard": {
             "files": 2,
-            "root_hash": "7ae3496f6a1ceb1583f16ea3360e2ecd47e130c1ec4b8c9aaa73af2439c13f9d"
+            "root_hash": "d0ca8c9ff4658ab743e6069222a91659501ee5fe9428c394f446ad31b02ec09a"
         },
         "loginpager": {
             "files": 1,
@@ -105,7 +105,7 @@
         },
         "vault": {
             "files": 1,
-            "root_hash": "b71b016876c300a21664ad05c042ed05c6cd44507524404d9649f5bee9f83aea"
+            "root_hash": "8a997a9562b7df9f5f46c66303ed3c037f0471a49753368986445f7cf471e3ae"
         },
         "zeus": {
             "files": 16,

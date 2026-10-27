@@ -4,6 +4,7 @@ declare(strict_types=1);
 if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 
 $bridge = class_exists('VIS_Linux_Bridge') ? VIS_Linux_Bridge::status() : [];
+$can_view = class_exists('VIS_Linux_Bridge') ? VIS_Linux_Bridge::can_view() : false;
 $can_manage = class_exists('VIS_Linux_Bridge') ? VIS_Linux_Bridge::can_manage() : false;
 $enabled = !empty($bridge['enabled']);
 $secretOk = !empty($bridge['secret_usable']);
@@ -17,7 +18,8 @@ $tested = isset($_GET['bridge_tested']) ? sanitize_key(wp_unslash($_GET['bridge_
 $errorCode = isset($_GET['bridge_error']) ? sanitize_key(wp_unslash($_GET['bridge_error'])) : '';
 ?>
 <div class="vgt-lb-page">
-    <?php if (!$can_manage): ?><div class="vgt-lb-alert is-warn"><strong>ThroneGuard-Master erforderlich.</strong> <?php esc_html_e('Nur eine verifizierte Master-Session darf die Linux-Bridge konfigurieren.', 'vgt-sentinel'); ?></div><?php endif; ?>
+    <?php if (!$can_view): ?><div class="vgt-lb-alert is-error"><strong>Kein Zugriff.</strong> <?php esc_html_e('Diese Ansicht ist WordPress-Administratoren vorbehalten.', 'vgt-sentinel'); ?></div>
+    <?php elseif (!$can_manage): ?><div class="vgt-lb-alert is-warn"><strong>Schreibgeschützt.</strong> <?php esc_html_e('Die Linux-Bridge ist sichtbar; Speichern und Testen sind erst nach dem Entsperren der ThroneGuard-Master-Session möglich.', 'vgt-sentinel'); ?></div><?php endif; ?>
     <section class="vgt-lb-hero">
         <div class="vgt-lb-hero-copy">
             <span class="vgt-lb-eyebrow"><i aria-hidden="true"></i> GEDEFENSE WP → GEDEFENSE LINUX</span>
@@ -34,7 +36,7 @@ $errorCode = isset($_GET['bridge_error']) ? sanitize_key(wp_unslash($_GET['bridg
     </section>
 
     <?php if ($saved): ?><div class="vgt-lb-alert is-ok"><strong><?php esc_html_e('Gespeichert.', 'vgt-sentinel'); ?></strong> <?php esc_html_e('Die Bridge-Konfiguration wurde sicher aktualisiert.', 'vgt-sentinel'); ?></div><?php endif; ?>
-    <?php if ($tested === '1'): ?><div class="vgt-lb-alert is-ok"><strong><?php esc_html_e('Testereignis übergeben.', 'vgt-sentinel'); ?></strong> <?php esc_html_e('Das PHP-/Syslog-Ereignis wurde erzeugt. Prüfe den Lease in GeDefense Linux.', 'vgt-sentinel'); ?></div><?php endif; ?>
+    <?php if ($tested === '1'): ?><div class="vgt-lb-alert is-ok"><strong><?php esc_html_e('Testereignis übergeben.', 'vgt-sentinel'); ?></strong> <?php esc_html_e('Das PHP-/Syslog-Ereignis wurde erzeugt. Prüfe Transport und Log-Pfad in GeDefense Linux (das Testereignis erzeugt bewusst keinen Master-Lease).', 'vgt-sentinel'); ?></div><?php endif; ?>
     <?php if ($tested === '0'): ?><div class="vgt-lb-alert is-error"><strong><?php esc_html_e('Test fehlgeschlagen.', 'vgt-sentinel'); ?></strong> <?php esc_html_e('PHP-Logging/Syslog hat das Ereignis nicht angenommen.', 'vgt-sentinel'); ?></div><?php endif; ?>
     <?php if ($errorCode !== ''): ?><div class="vgt-lb-alert is-error"><strong><?php esc_html_e('Secret abgelehnt.', 'vgt-sentinel'); ?></strong> <?php echo $errorCode === 'secret' ? esc_html__('Der Wert ist kein gültiger 32-Byte-Base64-Key, oder die wp-config-Salts reichen nicht aus.', 'vgt-sentinel') : esc_html__('Die Bridge kann nicht ohne gültiges Secret aktiviert werden.', 'vgt-sentinel'); ?></div><?php endif; ?>
     <?php if ($lastError !== ''): ?><div class="vgt-lb-alert is-warn"><strong><?php esc_html_e('Letzter Bridge-Hinweis:', 'vgt-sentinel'); ?></strong> <?php echo esc_html($lastError); ?></div><?php endif; ?>

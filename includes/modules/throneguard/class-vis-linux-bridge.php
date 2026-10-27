@@ -60,6 +60,15 @@ final class VIS_Linux_Bridge {
         return !empty($status['session_unlocked']);
     }
 
+    /**
+     * The navigation entry is visible to WordPress administrators so the native
+     * tab can be found and opened. Configuration stays locked behind
+     * can_manage() until the ThroneGuard master session is unlocked.
+     */
+    public static function can_view(): bool {
+        return current_user_can('manage_options');
+    }
+
     public static function init(): void {
         add_action('admin_post_vis_gedefense_linux_bridge_save', [self::class, 'handle_save']);
         add_action('admin_post_vis_gedefense_linux_bridge_test', [self::class, 'handle_test']);
@@ -200,6 +209,27 @@ final class VIS_Linux_Bridge {
 
     public static function send_test_event(): bool {
         return self::emit_event('bridge_hello', []);
+    }
+
+    /**
+     * Best-effort revoke notification when a ThroneGuard master logs out.
+     * The clear_auth_cookie hook is registered in init(); without this method
+     * the hook resolved to a missing callable and crashed the admin.
+     */
+    public static function emit_logout(): void {
+        if (!self::enabled()) {
+            return;
+        }
+        if (class_exists('VIS_Throne_Guard') && defined('VIS_Throne_Guard::MASTER_CAP')) {
+            try {
+                if (!current_user_can(VIS_Throne_Guard::MASTER_CAP)) {
+                    return;
+                }
+            } catch (\Throwable $e) {
+                return;
+            }
+        }
+        self::emit_event('master_logout', []);
     }
 
     private static function emit_event(string $eventName, array $lease): bool {

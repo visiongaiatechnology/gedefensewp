@@ -229,7 +229,84 @@ final class VIS_Key_Vault {
             throw new \RuntimeException("VGT Vault Error: Key [{$clean_identifier}] existiert nicht in der Matrix.");
         }
 
-        return self::decrypt((string) $payload, $clean_identifier);
+        try {
+            return self::decrypt((string) $payload, $clean_identifier);
+        } catch (\RuntimeException $e) {
+            // A previous build re-wrapped Key Vault ciphertext with the legacy
+            // VIS_Vault engine on every admin_init. Unwrap that envelope and
+            // re-seal the actual key so an already-damaged entry heals itself.
+            $recovered = self::recover_legacy_payload((string) $payload, $clean_identifier);
+            if ($recovered !== null) {
+                return $recovered;
+            }
+            throw $e;
+        }
+    }
+
+    /** Whether any payload is stored for this identifier (decryptable or not). */
+    public static function has_key(string $identifier): bool {
+        $clean_identifier = preg_replace('/[^a-zA-Z0-9_\-]/', '', $identifier);
+        return $clean_identifier !== '' && get_option($clean_identifier) !== false;
+    }
+
+    /**
+     * @return string missing|sealed|invalid
+     */
+    public static function key_state(string $identifier): string {
+        $clean_identifier = preg_replace('/[^a-zA-Z0-9_\-]/', '', $identifier);
+        if ($clean_identifier === '' || get_option($clean_identifier) === false) {
+            return 'missing';
+        }
+        try {
+            $plain = self::get_key($clean_identifier);
+        } catch (\Throwable $e) {
+            return 'invalid';
+        }
+        return $plain !== '' ? 'sealed' : 'invalid';
+    }
+
+    /**
+     * Recover a payload wrapped by the legacy VIS_Vault engine (vgt1: envelope).
+     * The recovered value may itself be a Key Vault ciphertext (the result of a
+     * double wrap), so it is unwrapped once more when possible.
+     */
+    private static function recover_legacy_payload(string $payload, string $identifier): ?string {
+        if (!str_starts_with($payload, 'vgt1:')) {
+            return null;
+        }
+        if (!class_exists('VIS_Vault')) {
+            $legacy = defined('VIS_PATH') ? VIS_PATH . 'class-vis-vault.php' : '';
+            if ($legacy === '' || !is_readable($legacy)) {
+                return null;
+            }
+            require_once $legacy;
+        }
+        if (!class_exists('VIS_Vault')) {
+            return null;
+        }
+        try {
+            $value = \VIS_Vault::decrypt($payload);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+        $plain = $value;
+        try {
+            $plain = self::decrypt($value, $identifier);
+        } catch (\Throwable $e) {
+            $plain = $value;
+        }
+        if (!is_string($plain) || $plain === '') {
+            return null;
+        }
+        try {
+            self::save_key($identifier, $plain);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        return $plain;
     }
 
     /**
@@ -244,6 +321,9 @@ final class VIS_Key_Vault {
 
         $encrypted = self::encrypt($plaintext, $clean_identifier);
         update_option($clean_identifier, $encrypted, false);
+        if ((string) get_option($clean_identifier, '') !== $encrypted) {
+            throw new \RuntimeException("VGT Vault Error: Key [{$clean_identifier}] konnte nicht gespeichert werden.");
+        }
         
         // O(1) Registrierung über assoziative Hash-Map
         $registry = get_option(self::REGISTRY_OPTION, []);
@@ -278,7 +358,16 @@ final class VIS_Key_Vault {
         }
 
         delete_option($clean_identifier);
-        
+        if (get_option($clean_identifier) !== false) {
+            // Fall back to an explicit cache purge for stale alloptions entries.
+            wp_cache_delete($clean_identifier, 'options');
+            wp_cache_delete('alloptions', 'options');
+            delete_option($clean_identifier);
+        }
+        if (get_option($clean_identifier) !== false) {
+            throw new \RuntimeException("VGT Vault Error: Key [{$clean_identifier}] konnte nicht gelöscht werden.");
+        }
+
         $registry = get_option(self::REGISTRY_OPTION, []);
         if (is_array($registry)) {
             if (isset($registry[0])) {
@@ -286,8 +375,8 @@ final class VIS_Key_Vault {
             }
             if (isset($registry[$clean_identifier])) {
                 unset($registry[$clean_identifier]);
-                update_option(self::REGISTRY_OPTION, $registry, false);
             }
+            update_option(self::REGISTRY_OPTION, $registry, false);
         }
     }
 

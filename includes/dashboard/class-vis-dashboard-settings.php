@@ -186,18 +186,6 @@ final class VIS_Dashboard_Settings {
                 }
             }
 
-            if (!empty($_POST['vis_aegis_oracle_key'])) {
-                $aegis_key = is_string($_POST['vis_aegis_oracle_key']) ? trim(sanitize_text_field(wp_unslash($_POST['vis_aegis_oracle_key']))) : '';
-                if ($aegis_key !== '') {
-                    if (!class_exists('VIS_Key_Vault') && is_readable(VIS_PATH . 'includes/modules/vault/class-vis-key-vault.php')) {
-                        require_once VIS_PATH . 'includes/modules/vault/class-vis-key-vault.php';
-                    }
-                    if (class_exists('VIS_Key_Vault')) {
-                        VIS_Key_Vault::save_key('vis_aegis_ai_key', $aegis_key);
-                    }
-                }
-            }
-
             if (isset($_POST['vis_zeus_config']) && is_array($_POST['vis_zeus_config'])) {
                 $zeus_raw = wp_unslash($_POST['vis_zeus_config']);
                 VIS_Dashboard_Ajax::ensure_zeus_dependencies();
@@ -214,6 +202,26 @@ final class VIS_Dashboard_Settings {
 
             // Flush rewrite rules automatically to bind Hades stealth routing
             flush_rewrite_rules(true);
+        }
+
+        // AEGIS Oracle key: the field is offered on the AEGIS tab as well as in
+        // the setup wizard. Handling it only for setup_wizard silently dropped
+        // every key entered on the AEGIS tab, so AEGIS kept reporting
+        // "SCHLÜSSEL FEHLT".
+        if (($context === 'aegis' || $context === 'all' || $context === 'setup_wizard') && !empty($_POST['vis_aegis_oracle_key'])) {
+            $aegis_key = is_string($_POST['vis_aegis_oracle_key']) ? trim(sanitize_text_field(wp_unslash($_POST['vis_aegis_oracle_key']))) : '';
+            if ($aegis_key !== '') {
+                if (!class_exists('VIS_Key_Vault') && is_readable(VIS_PATH . 'includes/modules/vault/class-vis-key-vault.php')) {
+                    require_once VIS_PATH . 'includes/modules/vault/class-vis-key-vault.php';
+                }
+                if (class_exists('VIS_Key_Vault')) {
+                    try {
+                        VIS_Key_Vault::save_key('vis_aegis_ai_key', $aegis_key);
+                    } catch (\Throwable $e) {
+                        error_log('[VGT AEGIS] Oracle key could not be sealed: ' . $e->getMessage());
+                    }
+                }
+            }
         }
 
         // --- VGT POST-SAVE TRIGGERS ---

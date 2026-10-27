@@ -56,7 +56,7 @@ class VIS_Dashboard_View {
             'setup_wizard'   => ['icon' => '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>', 'label' => __('EINRICHTUNGSASSISTENT', 'vgt-sentinel')],
         ];
 
-        if (isset($tabs['linux_bridge']) && class_exists('VIS_Linux_Bridge') && !VIS_Linux_Bridge::can_manage()) {
+        if (isset($tabs['linux_bridge']) && class_exists('VIS_Linux_Bridge') && !VIS_Linux_Bridge::can_view()) {
             unset($tabs['linux_bridge']);
         }
         // Hide onboarding wizard tab if already completed

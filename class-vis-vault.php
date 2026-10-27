@@ -206,19 +206,23 @@ final class VIS_Vault {
             }
         }
 
+        // vis_aegis_ai_key is owned by VIS_Key_Vault. This legacy migrator must
+        // never re-encrypt an existing Key Vault payload: doing so wrapped the
+        // ciphertext again on every admin_init and made the stored key
+        // undecryptable (AEGIS then reported "SCHLÜSSEL FEHLT"). Only genuine
+        // legacy plaintext is handed over once; vgt1: envelopes are recovered
+        // by VIS_Key_Vault itself.
         $aegis_key = get_option('vis_aegis_ai_key');
-        if (!empty($aegis_key) && is_string($aegis_key)) {
-            $aegis_payload = str_starts_with($aegis_key, self::PAYLOAD_PREFIX)
-                ? substr($aegis_key, strlen(self::PAYLOAD_PREFIX))
-                : $aegis_key;
-            if (self::core_decrypt($aegis_payload, self::get_primary_key()) === false) {
-                $plaintext = self::has_legacy_key()
-                    ? self::core_decrypt($aegis_payload, self::get_legacy_key())
-                    : false;
-                if ($plaintext !== false) {
-                    update_option('vis_aegis_ai_key', self::encrypt($plaintext));
-                } elseif (!str_starts_with($aegis_key, self::PAYLOAD_PREFIX)) {
-                    update_option('vis_aegis_ai_key', self::encrypt($aegis_key));
+        if (is_string($aegis_key) && $aegis_key !== '' && !str_starts_with($aegis_key, self::PAYLOAD_PREFIX)) {
+            $decoded = base64_decode($aegis_key, true);
+            $looks_like_ciphertext = preg_match('/^[A-Za-z0-9+\/=\r\n]+$/', $aegis_key) === 1
+                && is_string($decoded)
+                && strlen($decoded) >= 40;
+            if (!$looks_like_ciphertext && class_exists('VIS_Key_Vault')) {
+                try {
+                    \VIS_Key_Vault::save_key('vis_aegis_ai_key', $aegis_key);
+                } catch (\Throwable $e) {
+                    error_log('[VGT VAULT] Legacy AEGIS key migration skipped: ' . $e->getMessage());
                 }
             }
         }
