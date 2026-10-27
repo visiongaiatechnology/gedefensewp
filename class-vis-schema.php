@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 final class VIS_Schema {
     /**
      * Numeric schema revision. Schema gating must not depend on the marketing
-     * version string (VIS_VERSION = "8.4.5 OPEN CORE"): a display change would
+     * version string (VIS_VERSION = "8.5.0 OPEN CORE"): a display change would
      * otherwise trigger or suppress migrations.
      */
     public const SCHEMA_VERSION = '8.4.4.0';

@@ -232,6 +232,16 @@ final class VIS_Bootstrapper {
             if (class_exists('VIS_Key_Vault')) new VIS_Key_Vault();
         }
 
+        // Linux bridge: dashboard tab only, encrypted DB secret,
+        // existing PHP logging path. No extra menu page and no WP file write.
+        $linux_bridge_file = VIS_PATH . 'includes/modules/throneguard/class-vis-linux-bridge.php';
+        if (is_readable($linux_bridge_file)) {
+            require_once $linux_bridge_file;
+            if (class_exists('VIS_Linux_Bridge')) {
+                VIS_Linux_Bridge::init();
+            }
+        }
+
         if (class_exists('VIS_Integration_Bus')) VIS_Integration_Bus::mount();
         if (class_exists('VIS_Module_Registry')) {
             foreach (VIS_Module_Registry::all() as $id => $module) {

@@ -1,7 +1,10 @@
 > [!WARNING]
 > **PUBLIC BETA / RELEASE CANDIDATE — NICHT FÜR UNBEAUFSICHTIGTEN PRODUKTIVBETRIEB**
 >
-> **VGT GeDefense WP 8.4.5 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.5.0 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+
+> [!CAUTION]
+> **ALPHA-TEST — GeDefense WP ↔ Linux Bridge:** neu in 8.5.0, nicht produktionsreif. Ein kompromittiertes WordPress kann Datensätze mit dem gemeinsamen Secret fälschen; die Lease ist 2 Std., IP/Host-gebunden und lockert nur L7-Limits/Content-Pattern-Prüfungen auf Admin-Oberflächen. Siehe 8.5.0 unten.
 
 <div align="center">
 
@@ -11,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.4.5**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.5)
+[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.5.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.0)
 
 </div>
 
@@ -23,9 +26,11 @@
 
 <img width="256" height="256" alt="GeDefense" src="https://github.com/user-attachments/assets/978d2835-c915-473d-9995-d315efaa869c" />
 
-### Souveräne WordPress-Sicherheitsarchitektur & Pre-Boot-Zulassungskern
+### Entenprise WordPress-Sicherheitsarchitektur & Pre-Boot-Zulassungskern
 
-[![Version](https://img.shields.io/badge/version-8.4.5_Open_Core-D4AF37?style=for-the-badge)](#)
+<img width="1536" height="1024" alt="GeDefense_ Real Security, Many Feathers" src="https://github.com/user-attachments/assets/e16f809d-4968-4cbc-9147-7c872b32a2e5" />
+
+[![Version](https://img.shields.io/badge/version-8.5.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -56,6 +61,21 @@
 > **Archivierte Basis:** Die verlinkten PDF-Handbücher dokumentieren die 8.1.0-Generation. Aktuelle Release-Dokumentation: dieses README, [`CHANGELOG.md`](CHANGELOG.md), [`ARCHITECTURE.md`](ARCHITECTURE.md) und [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
+
+# 🚀 Neu in GeDefense WP 8.5.0 — Linux Bridge (Alpha)
+
+> **Release 8.5.0** ergänzt die **GeDefense Linux Bridge** als nativen Tab im GeDefense-WP-Dashboard. Sie verbindet eine verifizierte ThroneGuard-Master-Session mit dem Linux-L7-Fabric – ohne WordPress-zu-Kernel-Brücke.
+
+- **Dashboard-Tab, keine externe Ansicht:** **VGT Suite → Linux Bridge** öffnen. Dort das von Linux ausgegebene Secret eintragen; der Tab zeigt Verschlüsselung, Transport, Health und aktive Leases.
+- **Verschlüsselt gespeichert:** Das Linux-Secret liegt AES-256-GCM-verschlüsselt in der WordPress-Options-Tabelle. Der Umschlagsschlüssel wird per HKDF-SHA256 aus allen nutzbaren `wp-config.php`-Salts abgeleitet, nicht aus einem in wp-config geschriebenen Secret.
+- **Nur bestehendes PHP-Log:** WordPress schreibt eine authentifizierte `GeDefense:`-Zeile über `error_log()` in sein vorhandenes PHP-/Debug-Log. Linux liest diese Datei nur lesend; WordPress erhält keinen eigenen Dateipfad und keinen Schreibzugriff außerhalb seines Webroots.
+- **Begrenztes Vertrauen:** Eine verifizierte Master-Session erhält eine zwei Stunden gültige, IP-/Host-gebundene L7-Rate-Limit-Ausnahme. Auf verifizierten Editor-Schreibflächen wird nur der Content-Pattern-Detector für legitime Builder-Vorschauen/Page-Saves übersprungen. WAF-, Protokoll-, Upload- und Kernel-Enforcement bleiben aktiv.
+- **Ökosystem:** Mit [GeDefense Linux](https://github.com/visiongaiatechnology/gedefense) zum vollständigen Sicherheitsfabric kombinieren.
+- **Verbindung herstellen:** Linux → CMS Defense → Bridge-Key rotieren → einmaliges Base64-Secret in VGT Suite → Linux Bridge eintragen → aktivieren → Testereignis senden → ThroneGuard mit Masterkey entsperren. Die Linux-Ansicht sollte eine Zwei-Stunden-Lease für die Admin-IP zeigen.
+- Technische Details: [`CHANGELOG.md`](CHANGELOG.md).
+
+> [!CAUTION]
+> **ALPHA-TEST — GeDefense WP ↔ Linux Bridge.** Diese Bridge ist eine Alpha-Vorschau, nicht produktionsreif. Ein vollständig kompromittiertes WordPress kann mit dem gemeinsamen Secret weiterhin Datensätze fälschen. Die Lease ist deshalb auf zwei Stunden, IP/Host begrenzt und lockert nur L7-Limits/Content-Pattern-Prüfungen auf Admin-Oberflächen; WAF-, Upload- und Kernel-Enforcement bleiben aktiv. Nicht im unbeaufsichtigten Produktivbetrieb verwenden und einen bestandenen Test nicht als Sicherheitszertifizierung werten.
 
 # 🚀 Neu in GeDefense WP 8.4.5
 
@@ -466,7 +486,7 @@ GeDefense WP Open Core steht unter der **GNU Affero General Public License v3.0 
 
 <div align="center">
 
-## GeDefense WP 8.4.5 — Open Core
+## GeDefense WP 8.5.0 — Open Core
 
 **SOUVERÄNE WORDPRESS SICHERHEIT**
 

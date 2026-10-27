@@ -49,12 +49,16 @@ class VIS_Dashboard_View {
 
             'section_system' => ['label' => __('VI. SYSTEM & ASSISTENT', 'vgt-sentinel'), 'type' => 'separator'],
             'throneguard'    => ['icon' => '<path d="M3 7l4 4 5-7 5 7 4-4-2 12H5L3 7z"/><line x1="5" y1="22" x2="19" y2="22"/>', 'label' => __('THRONEGUARD', 'vgt-sentinel')],
+            'linux_bridge'   => ['icon' => '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/><line x1="8" y1="12" x2="16" y2="12"/>', 'label' => __('LINUX BRIDGE', 'vgt-sentinel')],
             'loginpager'     => ['icon' => '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 10h8M8 14h5"/>', 'label' => __('LOGINPAGER', 'vgt-sentinel')],
             'downloads'      => ['icon' => '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>', 'label' => __('SICHERE DOWNLOADS', 'vgt-sentinel')],
             'modules'        => ['icon' => '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>', 'label' => __('ADD-ON VERWALTUNG', 'vgt-sentinel')],
             'setup_wizard'   => ['icon' => '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>', 'label' => __('EINRICHTUNGSASSISTENT', 'vgt-sentinel')],
         ];
 
+        if (isset($tabs['linux_bridge']) && class_exists('VIS_Linux_Bridge') && !VIS_Linux_Bridge::can_manage()) {
+            unset($tabs['linux_bridge']);
+        }
         // Hide onboarding wizard tab if already completed
         $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : '';
         if ($active_tab === '' && isset($_GET['page'])) {

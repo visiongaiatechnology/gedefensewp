@@ -1,7 +1,10 @@
 > [!WARNING]
 > **PUBLIC BETA / RELEASE CANDIDATE — NOT FOR UNSUPERVISED PRODUCTION USE**
 >
-> **VGT GeDefense WP 8.4.5 Open Core is a public beta / release candidate, not a GA release.** Hooks, policies, detection rules, configuration formats and security behavior may change without notice. Validate every build in a staging environment, start in **observe mode**, keep tested backups and out-of-band recovery access, and do not use it for unsupervised production. Provided **as-is**, without warranty, under AGPL-3.0-or-later. See [`CHANGELOG.md`](CHANGELOG.md) and the [GitHub releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.5.0 Open Core is a public beta / release candidate, not a GA release.** Hooks, policies, detection rules, configuration formats and security behavior may change without notice. Validate every build in a staging environment, start in **observe mode**, keep tested backups and out-of-band recovery access, and do not use it for unsupervised production. Provided **as-is**, without warranty, under AGPL-3.0-or-later. See [`CHANGELOG.md`](CHANGELOG.md) and the [GitHub releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+
+> [!CAUTION]
+> **ALPHA TEST — GeDefense WP ↔ Linux Bridge:** new in 8.5.0, not production-ready. A fully compromised WordPress can forge shared-secret records; the lease is two hours, IP/host-bound and only relaxes L7 limits/content-pattern checks on admin surfaces. See the 8.5.0 section below.
 
 <div align="center">
 
@@ -11,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.4.5**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.5)
+[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.5.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.0)
 
 </div>
 
@@ -24,9 +27,9 @@
 <img width="256" height="256" alt="GeDefense" src="https://github.com/user-attachments/assets/978d2835-c915-473d-9995-d315efaa869c" />
 
 
-### Sovereign WordPress Security Fabric & Pre-Boot Admission Kernel
+### Entenprise WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.4.5_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.5.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -65,6 +68,21 @@
 
 
 ---
+
+# 🚀 What's New in GeDefense WP 8.5.0 — Linux Bridge (Alpha)
+
+> **Release 8.5.0** adds the **GeDefense Linux Bridge** as a native tab in the GeDefense WP dashboard. It connects a verified ThroneGuard master session to the Linux L7 fabric without a WordPress-to-kernel bridge.
+
+- **Dashboard tab, not an external screen:** open **VGT Suite → Linux Bridge**. Enter the Linux-issued secret there; the tab shows encryption, transport, health and active leases.
+- **Encrypted at rest:** the Linux secret is stored in the WordPress options table with AES-256-GCM. The wrapping key is derived with HKDF-SHA256 from all usable `wp-config.php` salts, not from a secret written into wp-config.
+- **Existing PHP log only:** WordPress emits one authenticated `GeDefense:` line through `error_log()` into its existing PHP/debug log. Linux reads that file read-only; WordPress receives no custom file path and no write access outside its webroot.
+- **Bounded trust:** a verified master session gets a two-hour, IP/host-bound L7 rate-limit exemption. On verified editor write surfaces, only the content-pattern detector is skipped for legitimate builder previews/page saves. WAF, protocol, upload and kernel enforcement remain active.
+- **Ecosystem:** combine with [GeDefense Linux](https://github.com/visiongaiatechnology/gedefense) for the complete security fabric.
+- **How to connect:** Linux → CMS Defense → rotate bridge key → paste the one-time Base64 secret in VGT Suite → Linux Bridge → enable → verify with the test event → unlock ThroneGuard with the masterkey. The Linux view should show a two-hour lease for the admin IP.
+- Full technical detail is in [`CHANGELOG.md`](CHANGELOG.md).
+
+> [!CAUTION]
+> **ALPHA TEST — GeDefense WP ↔ Linux Bridge.** This bridge is an alpha preview, not production-ready. A fully compromised WordPress can still forge records while it holds the shared secret. The lease is therefore limited to two hours, IP/host-bound, and only relaxes L7 limits/content-pattern checks on admin surfaces; WAF, upload and kernel enforcement remain active. Do not use it in unsupervised production and do not treat a passing test as a security certification.
 
 # 🚀 What's New in GeDefense WP 8.4.5
 
@@ -1013,7 +1031,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.4.5 — Open Core
+## GeDefense WP 8.5.0 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

@@ -1,7 +1,10 @@
 > [!WARNING]
 > **公开测试版 / 发布候选 — 禁止在无人值守的生产环境中使用**
 >
-> **VGT GeDefense WP 8.4.5 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
+> **VGT GeDefense WP 8.5.0 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
+
+> [!CAUTION]
+> **ALPHA 测试 — GeDefense WP ↔ Linux Bridge：** 8.5.0 新增，并非生产就绪。被攻陷的 WordPress 可用共享 secret 伪造记录；lease 为两小时、绑定 IP/主机，仅放宽管理界面的 L7 限制/内容模式检查。见下方 8.5.0。
 
 <div align="center">
 
@@ -11,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.4.5**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.4.5)
+[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.5.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.0)
 
 </div>
 
@@ -23,9 +26,11 @@
 
 <img width="256" height="256" alt="GeDefense" src="https://github.com/user-attachments/assets/978d2835-c915-473d-9995-d315efaa869c" />
 
-### 主权级 WordPress 安全架构与 Pre-Boot 引导前准入内核
+### Entenprise WordPress 主权级安全架构与 Pre-Boot 引导前准入内核
 
-[![Version](https://img.shields.io/badge/version-8.4.5_Open_Core-D4AF37?style=for-the-badge)](#)
+<img width="1536" height="1024" alt="GeDefense_ Real Security, Many Feathers" src="https://github.com/user-attachments/assets/e16f809d-4968-4cbc-9147-7c872b32a2e5" />
+
+[![Version](https://img.shields.io/badge/version-8.5.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -56,6 +61,21 @@
 > **归档基线：** 链接的 PDF 手册记录 8.1.0 世代。当前发布文档：本 README、[`CHANGELOG.md`](CHANGELOG.md)、[`ARCHITECTURE.md`](ARCHITECTURE.md)。
 
 ---
+
+# 🚀 GeDefense WP 8.5.0 新特性 — Linux 桥（Alpha）
+
+> **8.5.0 版本**将 **GeDefense Linux 桥**作为原生标签页加入 GeDefense WP 仪表盘。它把已验证的 ThroneGuard master 会话连接到 Linux L7 织网，无需 WordPress 到内核的桥。
+
+- **仪表盘标签页，而非外部界面：** 打开 **VGT Suite → Linux Bridge**。输入 Linux 发出的 secret；标签页显示加密、传输、健康状态和活动 lease。
+- **加密存储：** Linux secret 以 AES-256-GCM 加密存储在 WordPress options 表中。封装密钥通过 HKDF-SHA256 从所有可用 `wp-config.php` 盐值派生，而不是来自写入 wp-config 的 secret。
+- **仅使用现有 PHP 日志：** WordPress 通过 `error_log()` 将一条认证的 `GeDefense:` 记录写入现有 PHP/debug 日志。Linux 仅以只读方式读取该文件；WordPress 不获得自定义文件路径，也不获得 webroot 之外的写入权限。
+- **有限信任：** 已验证 master 会话获得两小时、IP/主机绑定的 L7 速率限制豁免。在已验证的编辑器写入界面，仅对合法构建器预览/页面保存跳过内容模式检测器。WAF、协议、上传和内核执行仍保持启用。
+- **生态系统：** 与 [GeDefense Linux](https://github.com/visiongaiatechnology/gedefense) 配合，获得完整安全织网。
+- **连接方式：** Linux → CMS Defense → 轮换 bridge key → 将一次性 Base64 secret 填入 VGT Suite → Linux Bridge → 启用 → 发送测试事件 → 使用 masterkey 解锁 ThroneGuard。Linux 视图应显示管理员 IP 的两小时 lease。
+- 技术细节见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+> [!CAUTION]
+> **ALPHA 测试 — GeDefense WP ↔ Linux 桥。** 该桥为 alpha 预览，并非生产就绪。完全被攻陷的 WordPress 仍可使用共享 secret 伪造记录。因此 lease 限制为两小时、绑定 IP/主机，并且仅放宽管理界面上的 L7 限制/内容模式检查；WAF、上传和内核执行仍保持启用。请勿在无人值守的生产环境中使用；测试通过不等于安全认证。
 
 # 🚀 GeDefense WP 8.4.5 新特性
 
@@ -471,7 +491,7 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 
 <div align="center">
 
-## GeDefense WP 8.4.5 — Open Core
+## GeDefense WP 8.5.0 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

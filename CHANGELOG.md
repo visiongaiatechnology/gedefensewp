@@ -1,3 +1,26 @@
+# Changelog
+
+## 8.5.0 - 2026-10-27 - Linux Bridge (ALPHA) and dashboard integration
+
+### Added
+
+- **GeDefense Linux Bridge as a native dashboard tab** (`VGT Suite → Linux Bridge`), not an external admin page.
+- One-time Linux secret input, encrypted at rest in the WordPress options table with AES-256-GCM; the wrapping key is derived with HKDF-SHA256 from all usable `wp-config.php` salts.
+- Authenticated event emission through the existing PHP `error_log()`/debug log; no custom WordPress file, no path outside the webroot, no WordPress-to-kernel path.
+- ThroneGuard master-lease hook, two-hour Linux L7 exemption records, health/test event, active-lease diagnostics and revoke support on the Linux side.
+- Manifest/trust-anchor regeneration for the new class, view and style files.
+
+### Security
+
+- Only a ThroneGuard master (`mcp_master_access` + `manage_options`) can configure the bridge; normal administrators do not see the tab.
+- **ALPHA TEST:** the bridge is not production-ready. A fully compromised WordPress holding the shared secret can forge records. The Linux lease is limited to two hours, bound to admin IP/host, and only relaxes L7 rate limits/content-pattern checks on verified admin write surfaces; WAF, upload and kernel enforcement remain active. Do not use this bridge in unsupervised production.
+
+### Changed
+
+- Product version 8.5.0 across entrypoint, `VIS_VERSION`, READMEs, badges, current release links and documentation.
+- All language READMEs carry the Entenprise identity, the English hero image, the Linux ecosystem link and the 8.5.0 bridge documentation.
+- Linux link: https://github.com/visiongaiatechnology/gedefense
+
 # Changelog — GeDefense WP Open Core
 
 All notable changes to **GeDefense WP — Open Core** are documented in this file.
