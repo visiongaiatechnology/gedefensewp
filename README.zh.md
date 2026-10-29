@@ -62,6 +62,19 @@
 
 ---
 
+## 🌐 GeDefense 宇宙
+
+GeDefense 是一套本地优先的安全架构，覆盖 Linux、Windows、Android 和 WordPress。所有同系项目遵循同一理念：本地控制、诚实可见性、无静默遥测。
+
+| 项目 | 方向 |
+| --- | --- |
+| [![Android TV](https://img.shields.io/badge/Android_TV-3DDC84?style=flat-square&logo=android&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefense_androidtv) **GeDefense TV** | Android TV / Google TV 安全控制台：回环 VPN、流量地图、XDR-Light 与可逆 Kinetic-Lite 遏制。 |
+| [![Linux](https://img.shields.io/badge/Linux-D4AF37?style=flat-square&logo=linux&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefense) **GeDefense Linux** | 内核级网络防御：eBPF/XDP 执行、L7 WAF、带签名证据的主机 XDR、可逆加固（Rust/Go，完全本地）。 |
+| [![Windows](https://img.shields.io/badge/Windows-8B5CF6?style=flat-square&logo=windows&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewin) **GeDefense Windows** | 本地自主的 Windows 11 安全控制台：Defender/ASR/WFP/App Control、加固、MHX EDR/XDR、本地威胁情报与 HMAC 链式证据。 |
+| [![Android](https://img.shields.io/badge/Android-22D3EE?style=flat-square&logo=android&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefenseandroid) **GeDefense Android** | 原生 Android 安全平台：本地 VPN 执行、端点遥测、XDR/EDR 关联、威胁情报、应用风险分析与加密证据。 |
+| [![WordPress](https://img.shields.io/badge/WordPress-1F8FFF?style=flat-square&logo=wordpress&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewp) **GeDefense WordPress** *（本仓库）* | AGPL-3.0 开源核心 WordPress 套件：ZEUS WAF、AEGIS 深度包检测、TRINITY XDR、ThroneGuard 锁定与 HADES 后台隐藏。 |
+
+
 # 🚀 安全更新 8.5.1 — 桥梁加固（2026-10-27）
 
 > **8.5.1 更新** 在安全审查后加固 alpha Linux 桥。这不是生产就绪声明。
@@ -91,42 +104,6 @@
 > [!CAUTION]
 > **ALPHA 测试 — GeDefense WP ↔ Linux 桥。** 该桥为 alpha 预览，并非生产就绪。完全被攻陷的 WordPress 仍可使用共享 secret 伪造记录。因此 lease 限制为两小时、绑定 IP/主机，并且仅放宽管理界面上的 L7 限制/内容模式检查；WAF、上传和内核执行仍保持启用。请勿在无人值守的生产环境中使用；测试通过不等于安全认证。
 
-# 🚀 GeDefense WP 8.4.5 新特性
-
-> **8.4.5 发布**：修复新 CI 门发现的 PHP 8.1 兼容性缺陷。五个值对象和多个验证脚本使用了 PHP 8.2 语言特性，因此声明的 8.1 下限并不真实。最低运行时现在为 **PHP 8.2**（PHP 8.1 已于 2025 年 12 月停止支持），CI 矩阵为 8.2–8.4。详见 [`CHANGELOG.md`](CHANGELOG.md)。
-
-# 🚀 GeDefense WP 8.4.4 新特性
-
-> **8.4.4 发布**：在 8.4.3 基础上的专项安全加固版本：加密故障即关闭、更严格的 WAF 权限策略、语言切换强制 nonce、威胁情报源隔离、资源上限，以及新的零依赖加固测试套件。详见 [`CHANGELOG.md`](CHANGELOG.md)。
-
-- **保险库加密故障即关闭。** 解密失败现在抛出安全异常，而不是返回原始数据；硬编码的旧密钥已移除。旧数据只能通过运维设置的 `VIS_VAULT_LEGACY_KEY` 迁移。
-- **移除内容作者的 WAF 绕过。** AEGIS 白名单不再信任 `edit_posts`；只有管理权限可绕过载荷检查（可通过 `vis_aegis_whitelist_capabilities` 扩展）。
-- **语言切换需要 nonce。** `?vis_lang=` 无法再通过普通 GET 持久化选项、用户元数据或 Cookie；Cookie 为 `HttpOnly` 且 `SameSite=Lax`。
-- **不透明失败与应急开关。** 503 页面仅返回事件编号；`VIS_DISABLE_FAIL_CLOSE` 提供有文档的恢复路径。
-- **安全默认值。** 激活时默认开启 AEGIS（`learning` 模式）、Zeus 与 Morpheus，而不是留空配置。
-- **威胁情报源加固。** 通过抗 DNS-rebinding 的传输下载，单源上限 300 000 条，异常增长进入隔离；旧表结构归档而不是删除。
-- **全面资源上限。** GeoIP 瞬态缓存采用 FIFO 上限，出站 POST 响应限制 256 KB，附加组件 ZIP 拒绝符号链接条目并写入 deny-all `.htaccess`。
-- **新增验证门。** `scripts/hardening-regression.php` 新增 72 项行为断言（共 29 套）；`.github/workflows/hardening.yml` 在 PHP 8.2–8.4 上运行 lint、全部测试套件与信任锚。
-
-# 🚀 GeDefense WP 8.4.3 新特性
-
-> **8.4.3 发布**：根据 VGT-100 深度安全审计与钻石发布标准带来全方位的系统安全与遥测加固：统一实时遥测数据库查询基线、彻底消除前端 UI 的 HTML 接收点风险、解决 Zeus WAF 反向代理 IP 伪造、异常类命名空间碰撞防护、密钥保管库高弹性与经实测验证的带外应急恢复。详情见 [`CHANGELOG.md`](CHANGELOG.md)。
-
-- **实时遥测数据库表名规范化（P1 级修复）：** `class-vis-dashboard-ajax.php` 中的实时遥测轮询端点严格对齐底层规范数据表（`vis_apex_bans` 与 `vis_omega_logs` / `VIS_TABLE_BANS` 与 `VIS_TABLE_LOGS`），并配备平滑向下兼容回退，确保当前封禁与核心日志 100% 实时同步至威胁雷达。
-- **Zero-Sink DOM UI 加固与严格 CSP（P1 级修复）：** 彻底移除行内事件监听器（`data-select-on-focus`），将 `overview/script.js` 中所有动态 DOM 操作改造为原生安全构建方法（`createElement`、`createElementNS`、`replaceChildren`、`textContent`），内部 UI 回归测试 0 告警通过。
-- **防碰撞全局异常架构（P2 级修复）：** `class-vis-security.php` 中的核心异常定义（`AppException`、`ValidationException`、`SecurityException`、`StorageException`）全面引入 `if (!class_exists(...))` 守卫，并设立 `VisionGaia\GeDefense\Exceptions` 别名，杜绝第三方插件重复声明冲突。
-- **清理开发遗留路径与本地 GeoIP 发现机制（P2 级修复）：** 彻底清除了 `class-vis-geo-resolver.php` 中的本地开发路径，建立插件目录、上传目录与 WordPress 过滤钩子的多层级鲁棒查找体系。
-- **经实测验证的带外灾难恢复（P2 级修复）：** 完善并验证了 Zeus WAF 前置防火墙的紧急旁路指令（`define('ZEUS_DISABLE', true);`）、WP-CLI 应急恢复（`wp plugin deactivate gedefense-wp`）以及原生 WordPress 恢复模式（`WP_RECOVERY_MODE`）。
-- **Zeus WAF 反向代理 IP 真实性校验 (VGT-049 / CWE-290)：** `extract_deterministic_ip()` 强制验证套接字 IP (`REMOTE_ADDR`) 是否属于真实的 Cloudflare 官方 CIDR 节点，杜绝恶意伪造 `CF-Connecting-IP` 绕过限流和拦截。
-- **Zeus Preboot 反向代理 HTTPS Cookie 检测 (VGT-006 / VGT-031 / CWE-614)：** 自动评估 `HTTP_X_FORWARDED_PROTO` 与 `HTTP_X_FORWARDED_SSL` 变量，确保在 TLS 终结的反向代理和负载均衡后端下始终签发带 `Secure` 标记的安全 Cookie。
-- **威胁雷达存储型 DOM-XSS 彻底消除 (VGT-043 / CWE-79)：** 动态遥测字段（`path`、`ip`、`country`、`asn`、`module`、`action`）在渲染到前端表格前必须经过严格的 `escapeHtml()` 转义与安全 DOM 文本节点挂载。
-- **Hades Gateway 恒定时间认证 (VGT-048 / CWE-208)：** 管理令牌的校验改为恒定时间 `hash_equals()` 并在比对前执行严格的 `is_string()` 类型判定，根除针对安全凭证的侧信道时序攻击。
-- **密钥保管库健壮性与界面交互修复 (VGT-007 / CWE-636 / CWE-311)：** 绑定真实的凭证标识符（恢复单键删除功能），为未版本化的密钥提供安全平滑回退，并支持对任意明文配置参数执行自动化密文加密。
-- **AEGIS Oracle Distillate 本地 Host 白名单 (8.4.2 汇总)：** 消除合法内部请求（如 `/wp-login.php`、`wp-admin/` 及内部重定向）被误判为 `remote_asset_hijack` 的误报。
-- **发布：** 入口、`VIS_VERSION`、模块清单 (`3cd53343...`) 和信任锚均升级至 `8.4.3`。
-
----
-
 ### 🗺️ 威胁雷达制图引擎、本地 GeoIP/ASN 数据来源与第三方开源许可
 GeDefense 实时威胁雷达和全球攻击向量图由 **100% 自主可控的本地 BGP/ASN 制图引擎** (`data/geoip.csv` 与 `world-map.svg.php`) 驱动：
 - **1. 墨卡托投影世界地图 SVG 矢量轮廓 (`world-map.svg.php`)：**
@@ -140,6 +117,40 @@ GeDefense 实时威胁雷达和全球攻击向量图由 **100% 自主可控的�
   - **致谢与声明：** *本产品包含来自 iplocate/ip-address-databases 项目的 IP-to-Country 和 IP-to-ASN 数据，遵循 CC BY-SA 4.0 许可。*
 - **数字主权与隐私保障：** 所有地理坐标、国家旗帜和 ASN 信息均在本地通过纳秒级二进制 `fseek()` 偏移量读取 (~0.25ms - 0.45ms)。系统绝不向任何外部 HTTP 服务器或 DNS 服务器发送逆向解析请求。
 - **带外灾难恢复保证：** 若因规则误配或前置 WAF 导致管理员后台被拦截，只需在 `wp-config.php` 中添加 `define('ZEUS_DISABLE', true);` 或通过 WP-CLI 执行 `wp plugin deactivate gedefense-wp` 即可在数秒内解锁管理权限。
+
+---
+
+## 目录
+
+- [官方文档与技术手册](#-官方文档与技术手册)
+- [安全架构与技术规范](#-安全架构与技术规范)
+- [多阶段点火引导协议](#多阶段点火引导协议)
+- [核心模块矩阵](#核心模块矩阵)
+- [1. ZEUS — 引导前准入内核](#1-zeus--引导前准入内核)
+- [2. AEGIS — 深度包检测 WAF](#2-aegis--深度包检测-waf)
+- [3. PROMETHEUS — 行为威胁视界](#3-prometheus--行为威胁视界)
+- [4. TRINITY XDR — 自主响应中枢](#4-trinity-xdr--自主响应中枢)
+- [5. 自主完整性校验引擎](#5-自主完整性校验引擎)
+- [6. MORPHEUS — 应用运行时自我保护 (RASP)](#6-morpheus--应用运行时自我保护-rasp)
+- [7. NEMESIS — 欺骗诱捕网格](#7-nemesis--欺骗诱捕网格)
+- [8. TITAN — WordPress 系统加固](#8-titan--wordpress-系统加固)
+- [9. HADES — 动态后台隐身与伪装](#9-hades--动态后台隐身与伪装)
+- [10. CERBERUS — 边界防火墙](#10-cerberus--边界防火墙)
+- [11. AIRLOCK — 传入文件检测扫描](#11-airlock--传入文件检测扫描)
+- [12. GHOST TRAP — 蜜罐诱捕层](#12-ghost-trap--蜜罐诱捕层)
+- [13. STYX — 出站通信屏蔽防护盾](#13-styx--出站通信屏蔽防护盾)
+- [14. CHRONOS — 自主定时巡检](#14-chronos--自主定时巡检)
+- [15. KEY VAULT — 密码学密钥保险库](#15-key-vault--密码学密钥保险库)
+- [16. ORACLE — 安全态势审计引擎](#16-oracle--安全态势审计引擎)
+- [17. THRONEGUARD — 主权特权守卫](#17-throneguard--主权特权守卫)
+- [18. LOGINPAGER — 强化登录入口](#18-loginpager--强化登录入口)
+- [19. 模块注册表 / Open Core](#19-模块注册表--open-core)
+- [零外部依赖理念](#零外部依赖理念)
+- [性能指标与基准测试](#性能指标与基准测试)
+- [独立验证 — 完整测试套件与自主审计](#-独立验证--完整测试套件与自主审计)
+- [系统运行要求](#系统运行要求)
+- [开源协议](#开源协议)
+- [版本变更历史](#版本变更历史)
 
 ---
 
@@ -171,43 +182,6 @@ GeDefense 实时威胁雷达和全球攻击向量图由 **100% 自主可控的�
 - **Security Center 深度自检平面**: 21 项涵盖服务器加固、文件权限、密码学完整性及 WAF 状态的全自动深层审计。
 - **实时 NOC 拓扑网格**: 全景展示各防御层传感器的吞吐率、延迟与当前拦截状态。
 - **12小时 Sovereign Master 全局白名单**: 针对已通过 Superkey 认证的超级管理员提供一键 12 小时全矩阵放行保护。
-
----
-
-## 目录
-
-- [官方文档与技术手册](#-官方文档与技术手册)
-- [GeDefense WP 8.4.5 新特性](#-gedefense-wp-845-新特性)
-- [GeDefense WP 8.4.4 新特性](#-gedefense-wp-844-新特性)
-- [GeDefense WP 8.4.3 新特性](#-gedefense-wp-843-新特性)
-- [安全架构与技术规范](#-安全架构与技术规范)
-- [多阶段点火引导协议](#多阶段点火引导协议)
-- [核心模块矩阵](#核心模块矩阵)
-- [1. ZEUS — 引导前准入内核](#1-zeus--引导前准入内核)
-- [2. AEGIS — 深度包检测 WAF](#2-aegis--深度包检测-waf)
-- [3. PROMETHEUS — 行为威胁视界](#3-prometheus--行为威胁视界)
-- [4. TRINITY XDR — 自主响应中枢](#4-trinity-xdr--自主响应中枢)
-- [5. 自主完整性校验引擎](#5-自主完整性校验引擎)
-- [6. MORPHEUS — 应用运行时自我保护 (RASP)](#6-morpheus--应用运行时自我保护-rasp)
-- [7. NEMESIS — 欺骗诱捕网格](#7-nemesis--欺骗诱捕网格)
-- [8. TITAN — WordPress 系统加固](#8-titan--wordpress-系统加固)
-- [9. HADES — 动态后台隐身与伪装](#9-hades--动态后台隐身与伪装)
-- [10. CERBERUS — 边界防火墙](#10-cerberus--边界防火墙)
-- [11. AIRLOCK — 传入文件检测扫描](#11-airlock--传入文件检测扫描)
-- [12. GHOST TRAP — 蜜罐诱捕层](#12-ghost-trap--蜜罐诱捕层)
-- [13. STYX — 出站通信屏蔽防护盾](#13-styx--出站通信屏蔽防护盾)
-- [14. CHRONOS — 自主定时巡检](#14-chronos--自主定时巡检)
-- [15. KEY VAULT — 密码学密钥保险库](#15-key-vault--密码学密钥保险库)
-- [16. ORACLE — 安全态势审计引擎](#16-oracle--安全态势审计引擎)
-- [17. THRONEGUARD — 主权特权守卫](#17-throneguard--主权特权守卫)
-- [18. LOGINPAGER — 强化登录入口](#18-loginpager--强化登录入口)
-- [19. 模块注册表 / Open Core](#19-模块注册表--open-core)
-- [零外部依赖理念](#零外部依赖理念)
-- [性能指标与基准测试](#性能指标与基准测试)
-- [独立验证 — 完整测试套件与自主审计](#-独立验证--完整测试套件与自主审计)
-- [系统运行要求](#系统运行要求)
-- [开源协议](#开源协议)
-- [版本变更历史](#版本变更历史)
 
 ---
 

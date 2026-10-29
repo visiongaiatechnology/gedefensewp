@@ -66,8 +66,20 @@
 ---
 
 
-
 ---
+
+## 🌐 The GeDefense universe
+
+GeDefense is one local-first security fabric — for Linux, Windows, Android and WordPress. Every sibling project follows the same philosophy: local-only control, honest visibility, no silent telemetry.
+
+| Project | Focus |
+| --- | --- |
+| [![Android TV](https://img.shields.io/badge/Android_TV-3DDC84?style=flat-square&logo=android&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefense_androidtv) **GeDefense TV** | Security console for Android TV / Google TV: loopback VPN, traffic map, XDR-Light and reversible Kinetic-Lite containment. |
+| [![Linux](https://img.shields.io/badge/Linux-D4AF37?style=flat-square&logo=linux&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefense) **GeDefense Linux** | Kernel-near network defense: eBPF/XDP enforcement, L7 WAF, host XDR with signed evidence and reversible hardening (Rust/Go, fully local). |
+| [![Windows](https://img.shields.io/badge/Windows-8B5CF6?style=flat-square&logo=windows&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewin) **GeDefense Windows** | Local sovereign Windows 11 security console: Defender/ASR/WFP/App Control, hardening, MHX EDR/XDR, local threat intelligence and HMAC-chained evidence. |
+| [![Android](https://img.shields.io/badge/Android-22D3EE?style=flat-square&logo=android&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefenseandroid) **GeDefense Android** | Native Android security platform: local VPN enforcement, endpoint telemetry, XDR/EDR correlation, threat intelligence, app-risk analysis and encrypted evidence. |
+| [![WordPress](https://img.shields.io/badge/WordPress-1F8FFF?style=flat-square&logo=wordpress&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewp) **GeDefense WordPress** *(this repository)* | AGPL-3.0 open-core suite for WordPress: ZEUS WAF, AEGIS deep-packet inspection, TRINITY XDR, ThroneGuard lockdown and HADES admin cloaking. |
+
 
 # 🚀 Security Update 8.5.1 — Bridge Hardening (2026-10-27)
 
@@ -98,42 +110,6 @@
 > [!CAUTION]
 > **ALPHA TEST — GeDefense WP ↔ Linux Bridge.** This bridge is an alpha preview, not production-ready. A fully compromised WordPress can still forge records while it holds the shared secret. The lease is therefore limited to two hours, IP/host-bound, and only relaxes L7 limits/content-pattern checks on admin surfaces; WAF, upload and kernel enforcement remain active. Do not use it in unsupervised production and do not treat a passing test as a security certification.
 
-# 🚀 What's New in GeDefense WP 8.4.5
-
-> **Release 8.4.5** fixes a PHP 8.1 compatibility defect found by the new CI gate: five value objects and several verification scripts use PHP 8.2 language features, so the declared 8.1 floor was not real. The minimum runtime is now **PHP 8.2** (PHP 8.1 reached end of life in December 2025) and the CI matrix runs 8.2–8.4. Full details in [`CHANGELOG.md`](CHANGELOG.md).
-
-# 🚀 What's New in GeDefense WP 8.4.4
-
-> **Release 8.4.4** is a dedicated security-hardening release on top of 8.4.3: fail-closed cryptography, a stricter WAF capability policy, nonce-gated language switching, threat-feed quarantine, bounded resource limits and a new dependency-free hardening regression suite. Full details in [`CHANGELOG.md`](CHANGELOG.md).
-
-- **Vault crypto is fail-closed.** Decryption failures raise a security exception instead of returning the raw blob, and the hard-coded legacy key was removed. Legacy payloads can only be migrated with an operator-defined `VIS_VAULT_LEGACY_KEY`.
-- **WAF bypass for content authors removed.** The AEGIS whitelist no longer trusts `edit_posts`; only administrative capabilities bypass payload inspection (extensible via `vis_aegis_whitelist_capabilities`).
-- **Language switching requires a nonce.** `?vis_lang=` can no longer persist options, user meta or cookies on a bare GET; the cookie is `HttpOnly` and `SameSite=Lax`.
-- **Opaque fail-close with break-glass.** The 503 page returns an incident reference only, and `VIS_DISABLE_FAIL_CLOSE` provides a documented recovery path.
-- **Secure activation defaults.** Activation enables AEGIS in `learning` mode, Zeus and Morpheus instead of leaving the configuration empty.
-- **Threat-feed hardening.** Feeds are fetched through the DNS-rebinding-resistant transport, capped at 300,000 entries per feed, quarantined on anomalous growth, and the legacy schema is archived instead of dropped.
-- **Bounded resources everywhere.** GeoIP transients are FIFO-capped, outbound POST responses are limited to 256 KB, and add-on ZIP archives reject symlink entries and keep a deny-all `.htaccess`.
-- **New verification gate.** `scripts/hardening-regression.php` adds 72 behavioral assertions (29 suites total) and `.github/workflows/hardening.yml` runs lint, all suites and the trust anchor on PHP 8.2–8.4.
-
-# 🚀 What's New in GeDefense WP 8.4.3
-
-> **Release 8.4.3** delivers a comprehensive security and telemetry hardening update following a full VGT-100 deep audit and diamond release verification: live telemetry database alignment, zero-sink DOM UI hardening, reverse-proxy IP spoofing elimination, collision-safe exception namespaces, cryptographic Key Vault resilience, and verified out-of-band recovery. Full details in [`CHANGELOG.md`](CHANGELOG.md).
-
-- **Canonical Telemetry Table Resolution (P1 Fix):** The live telemetry polling handler in `class-vis-dashboard-ajax.php` now strictly queries canonical database tables (`vis_apex_bans` and `vis_omega_logs` / `VIS_TABLE_BANS` and `VIS_TABLE_LOGS`) with graceful legacy fallback, ensuring active bans and core security logs are seamlessly streamed to the real-time Threat Radar.
-- **Zero-Sink DOM UI Hardening & Strict CSP (P1 Fix):** Completely eliminated inline event handlers (`data-select-on-focus`) and converted all dynamic DOM modifications in `overview/script.js` to pure DOM element construction (`createElement`, `createElementNS`, `replaceChildren`, `textContent`). The internal UI regression test passes with zero warnings.
-- **Collision-Safe Exception Architecture (P2 Fix):** Core exception definitions (`AppException`, `ValidationException`, `SecurityException`, `StorageException`) in `class-vis-security.php` are now wrapped in `if (!class_exists(...))` guards and aliased under `VisionGaia\GeDefense\Exceptions`, preventing fatal redeclaration collisions with third-party plugins.
-- **Purged Dev Paths & Sovereign GeoIP Discovery (P2 Fix):** Removed all development environment paths from `class-vis-geo-resolver.php`. Implemented a robust multi-tier discovery order across plugin root, persistent upload directories, and WordPress filter hooks.
-- **Verified Out-of-Band Disaster Recovery (P2 Fix):** Documented and tested verified recovery workflows for the Zeus pre-boot WAF (`define('ZEUS_DISABLE', true);`), WP-CLI emergency recovery (`wp plugin deactivate gedefense-wp`), and WordPress native recovery mode (`WP_RECOVERY_MODE`).
-- **Zeus WAF Reverse-Proxy IP Verification (VGT-049 / CWE-290):** `extract_deterministic_ip()` strictly validates socket IPs (`REMOTE_ADDR`) against authentic Cloudflare CIDRs before trusting `CF-Connecting-IP` headers, preventing rate limit and lockout evasion.
-- **Zeus Preboot Reverse-Proxy HTTPS Cookie Detection (VGT-006 / VGT-031 / CWE-614):** Admission cookies evaluate `HTTP_X_FORWARDED_PROTO` and `HTTP_X_FORWARDED_SSL`, ensuring `Secure` flags are guaranteed behind TLS-terminating reverse proxies and load balancers.
-- **Stored DOM-XSS Elimination in Threat Radar (VGT-043 / CWE-79):** Dynamic telemetry fields (`path`, `ip`, `country`, `asn`, `module`, `action`) are safely sanitized with `escapeHtml()` and pure DOM text nodes prior to insertion into the live event table.
-- **Hades Gateway Constant-Time Auth (VGT-048 / CWE-208):** Eliminates side-channel timing attacks on the administrative access token using constant-time `hash_equals()` and strict `is_string()` type validation.
-- **Key Vault Robustness & UI Resolution (VGT-007 / CWE-636 / CWE-311):** Binds actual secret identifiers in the UI (restoring single-key deletion), introduces resilient fallback for unversioned keys, and automates encryption for arbitrary plaintext configuration secrets.
-- **AEGIS Oracle Distillate Local Host Allowlist (8.4.2 Rollup):** Eliminates false-positive `remote_asset_hijack` blocks on legitimate internal URLs (`wp-login.php`, `wp-admin/`, internal redirects).
-- **Release:** `8.4.3` across all entrypoints, `VIS_VERSION`, module manifest (`3cd53343...`), and trust anchor.
-
----
-
 ### 🗺️ Threat Map Cartography, GeoIP/ASN Provenance & Third-Party Licenses
 The GeDefense real-time Threat Radar and global attack vector map operate on a **100% sovereign, local BGP/ASN cartography engine** (`data/geoip.csv` and `world-map.svg.php`):
 - **1. World Map Vector Geometry (`world-map.svg.php`):**
@@ -150,6 +126,67 @@ The GeDefense real-time Threat Radar and global attack vector map operate on a *
 
 ---
 
+## Overview
+
+**GeDefense WP — Open Core** is a modular, zero-dependency WordPress security platform designed as a **multi-tier security kernel and active defense matrix** for PHP 8.2–8.4 and WordPress 6.0+.
+
+Instead of treating WordPress security as a single firewall rule set, GeDefense WP combines multiple defensive layers into one coordinated request and runtime pipeline:
+
+- pre-boot admission control and request envelope rejection;
+- deep packet inspection Web Application Firewall;
+- behavioral threat scoring and event horizon tracking;
+- autonomous closed-loop XDR and virtual route containment;
+- cryptographic self-integrity verification (Merkle roots);
+- Runtime Application Self-Protection (RASP);
+- ingress file and upload entropy inspection;
+- WordPress hardening and anti-enumeration;
+- dynamic admin-path cloaking;
+- honeypots and cyber deception;
+- zero-trust outbound egress control;
+- autonomous background integrity scanning;
+- cryptographic secrets storage; and
+- security posture auditing.
+
+The core is designed to remain **fully functional as an independent open-source security platform**. Optional modules can be integrated through the Open Core module registry.
+
+> GeDefense WP is built around one principle: **a request must earn trust as it moves deeper into the application stack.**
+
+---
+
+## Table of Contents
+
+- [Documentation & Handbooks](#-official-documentation--handbooks)
+- [Security Architecture & Technical Specification](#-security-architecture--technical-specification)
+- [Multi-Phase Ignition Protocol](#multi-phase-ignition-protocol)
+- [Core Module Matrix](#core-module-matrix)
+- [1. ZEUS — Pre-Boot Admission Kernel](#1-zeus--pre-boot-admission-kernel)
+- [2. AEGIS — Deep Packet Inspection WAF](#2-aegis--deep-packet-inspection-waf)
+- [3. PROMETHEUS — Behavioral Threat Horizon](#3-prometheus--behavioral-threat-horizon)
+- [4. TRINITY XDR — Closed-Loop Response Fabric](#4-trinity-xdr--closed-loop-response-fabric)
+- [5. Self-Integrity Engine](#5-self-integrity-engine)
+- [6. MORPHEUS — Runtime Application Self-Protection](#6-morpheus--runtime-application-self-protection)
+- [7. NEMESIS — Deception Grid](#7-nemesis--deception-grid)
+- [8. TITAN — WordPress Hardening](#8-titan--wordpress-hardening)
+- [9. HADES — Admin Stealth](#9-hades--dynamic-admin-stealth)
+- [10. CERBERUS — Perimeter Firewall](#10-cerberus--perimeter-firewall)
+- [11. AIRLOCK — Ingress File Inspection](#11-airlock--ingress-file-inspection)
+- [12. GHOST TRAP — Honeypot Layer](#12-ghost-trap--honeypot-layer)
+- [13. STYX — Outbound Egress Shield](#13-styx--outbound-egress-shield)
+- [14. CHRONOS — Autonomous Scanner](#14-chronos--autonomous-scanner)
+- [15. KEY VAULT — Cryptographic Secret Storage](#15-key-vault--cryptographic-secret-storage)
+- [16. ORACLE — Security Audit Engine](#16-oracle--security-audit-engine)
+- [17. THRONEGUARD — Sovereign Privilege Sentinel](#17-throneguard--sovereign-privilege-sentinel)
+- [18. LOGINPAGER — Sovereign Login Surface](#18-loginpager--sovereign-login-surface)
+- [19. Module Registry / Open Core](#19-module-registry--open-core-expansion)
+- [Zero-Dependency Philosophy](#zero-dependency-philosophy)
+- [Performance & Benchmarks](#performance)
+- [Verify Yourself — Full Test Suite & Independent Self-Audit](#-verify-yourself--full-test-suite--independent-self-audit)
+- [Requirements](#requirements)
+- [License](#license)
+- [Changelog History](#changelog-history)
+
+---
+
 # 🧱 Platform Deep Dive — 8.1.0 baseline (ZEUS NextGen, TRINITY XDR, Dashboard)
 
 > **Changelog Overview**: Version 8.1.0 represents a massive architectural leap, introducing the **ZEUS Next Generation Pre-Boot Admission Kernel**, the **TRINITY Autonomous Closed-Loop XDR Fabric**, formalized **TITAN Assurance Lifecycles**, and comprehensive **Strict-Typing and Localization Refactoring** across the entire platform.
@@ -159,9 +196,7 @@ The GeDefense real-time Threat Radar and global attack vector map operate on a *
 <img width="2416" height="1232" alt="image" src="https://github.com/user-attachments/assets/00a397f3-3c6a-4a7a-9100-812f72969dac" />
 
 
-
 <img width="2421" height="1227" alt="image_2026-10-17_07-49-58" src="https://github.com/user-attachments/assets/21b58245-46d1-4c04-979f-42fcda437670" />
-
 
 
 ## ⚡ 1. ZEUS Next Generation — Pre-Boot Admission Control & Edge Defense Kernel
@@ -285,70 +320,6 @@ The GeDefense real-time Threat Radar and global attack vector map operate on a *
 - **Lock-Free Atomic Inode & APCu Swap**: Threat feed updates and database list-swaps write to isolated temp files and execute atomic rename operations and `apcu_store()` pointer updates. Readers run completely unblocked with zero latency spikes or lock contention even during volumetric DDoS attacks.
 - **Dynamic Differential Feed Swapping & Stale Threat Pruning**: Tracks incoming threats with composite keys `(feed_key, ip_or_cidr)`. Delisted IPs from remote feeds are automatically pruned upon sync completion, and Cerberus dynamically invalidates its cache to unblock remediated visitors immediately.
 - **Styx Zero-Trust Egress Self-Sync**: Hardcoded origin verification allows `ThreatIntelligence` internal sync requests to connect strictly to the 8 official feed domains while blocking all unauthorized third-party outbound connections under strict fail-closed policies.
-
----
-
-## Overview
-
-**GeDefense WP — Open Core** is a modular, zero-dependency WordPress security platform designed as a **multi-tier security kernel and active defense matrix** for PHP 8.2–8.4 and WordPress 6.0+.
-
-Instead of treating WordPress security as a single firewall rule set, GeDefense WP combines multiple defensive layers into one coordinated request and runtime pipeline:
-
-- pre-boot admission control and request envelope rejection;
-- deep packet inspection Web Application Firewall;
-- behavioral threat scoring and event horizon tracking;
-- autonomous closed-loop XDR and virtual route containment;
-- cryptographic self-integrity verification (Merkle roots);
-- Runtime Application Self-Protection (RASP);
-- ingress file and upload entropy inspection;
-- WordPress hardening and anti-enumeration;
-- dynamic admin-path cloaking;
-- honeypots and cyber deception;
-- zero-trust outbound egress control;
-- autonomous background integrity scanning;
-- cryptographic secrets storage; and
-- security posture auditing.
-
-The core is designed to remain **fully functional as an independent open-source security platform**. Optional modules can be integrated through the Open Core module registry.
-
-> GeDefense WP is built around one principle: **a request must earn trust as it moves deeper into the application stack.**
-
----
-
-## Table of Contents
-
-- [Documentation & Handbooks](#-official-documentation--handbooks)
-- [What's New in GeDefense WP 8.4.5](#-whats-new-in-gedefense-wp-845)
-- [What's New in GeDefense WP 8.4.4](#-whats-new-in-gedefense-wp-844)
-- [What's New in GeDefense WP 8.4.3](#-whats-new-in-gedefense-wp-843)
-- [Security Architecture & Technical Specification](#-security-architecture--technical-specification)
-- [Multi-Phase Ignition Protocol](#multi-phase-ignition-protocol)
-- [Core Module Matrix](#core-module-matrix)
-- [1. ZEUS — Pre-Boot Admission Kernel](#1-zeus--pre-boot-admission-kernel)
-- [2. AEGIS — Deep Packet Inspection WAF](#2-aegis--deep-packet-inspection-waf)
-- [3. PROMETHEUS — Behavioral Threat Horizon](#3-prometheus--behavioral-threat-horizon)
-- [4. TRINITY XDR — Closed-Loop Response Fabric](#4-trinity-xdr--closed-loop-response-fabric)
-- [5. Self-Integrity Engine](#5-self-integrity-engine)
-- [6. MORPHEUS — Runtime Application Self-Protection](#6-morpheus--runtime-application-self-protection)
-- [7. NEMESIS — Deception Grid](#7-nemesis--deception-grid)
-- [8. TITAN — WordPress Hardening](#8-titan--wordpress-hardening)
-- [9. HADES — Admin Stealth](#9-hades--dynamic-admin-stealth)
-- [10. CERBERUS — Perimeter Firewall](#10-cerberus--perimeter-firewall)
-- [11. AIRLOCK — Ingress File Inspection](#11-airlock--ingress-file-inspection)
-- [12. GHOST TRAP — Honeypot Layer](#12-ghost-trap--honeypot-layer)
-- [13. STYX — Outbound Egress Shield](#13-styx--outbound-egress-shield)
-- [14. CHRONOS — Autonomous Scanner](#14-chronos--autonomous-scanner)
-- [15. KEY VAULT — Cryptographic Secret Storage](#15-key-vault--cryptographic-secret-storage)
-- [16. ORACLE — Security Audit Engine](#16-oracle--security-audit-engine)
-- [17. THRONEGUARD — Sovereign Privilege Sentinel](#17-throneguard--sovereign-privilege-sentinel)
-- [18. LOGINPAGER — Sovereign Login Surface](#18-loginpager--sovereign-login-surface)
-- [19. Module Registry / Open Core](#19-module-registry--open-core-expansion)
-- [Zero-Dependency Philosophy](#zero-dependency-philosophy)
-- [Performance & Benchmarks](#performance)
-- [Verify Yourself — Full Test Suite & Independent Self-Audit](#-verify-yourself--full-test-suite--independent-self-audit)
-- [Requirements](#requirements)
-- [License](#license)
-- [Changelog History](#changelog-history)
 
 ---
 

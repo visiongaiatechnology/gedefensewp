@@ -62,6 +62,19 @@
 
 ---
 
+## 🌐 Das GeDefense-Universum
+
+GeDefense ist eine lokal-first Security-Fabric – für Linux, Windows, Android und WordPress. Alle Schwesterprojekte teilen dieselbe Philosophie: lokale Kontrolle, ehrliche Sichtbarkeit, keine stille Telemetrie.
+
+| Projekt | Schwerpunkt |
+| --- | --- |
+| [![Android TV](https://img.shields.io/badge/Android_TV-3DDC84?style=flat-square&logo=android&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefense_androidtv) **GeDefense TV** | Sicherheitskonsole für Android TV / Google TV: Loopback-VPN, Traffic-Map, XDR-Light und reversibles Kinetic-Lite-Containment. |
+| [![Linux](https://img.shields.io/badge/Linux-D4AF37?style=flat-square&logo=linux&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefense) **GeDefense Linux** | Kernel-nahe Netzwerkverteidigung: eBPF/XDP-Durchsetzung, L7-WAF, Host-XDR mit signierter Evidenz und reversible Härtung (Rust/Go, vollständig lokal). |
+| [![Windows](https://img.shields.io/badge/Windows-8B5CF6?style=flat-square&logo=windows&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewin) **GeDefense Windows** | Lokale, souveräne Windows-11-Sicherheitskonsole: Defender/ASR/WFP/App Control, Härtung, MHX EDR/XDR, lokale Threat Intelligence und HMAC-verkettete Evidenz. |
+| [![Android](https://img.shields.io/badge/Android-22D3EE?style=flat-square&logo=android&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefenseandroid) **GeDefense Android** | Native Android-Sicherheitsplattform: lokale VPN-Durchsetzung, Endpoint-Telemetrie, XDR/EDR-Korrelation, Threat Intelligence, App-Risikoanalyse und verschlüsselte Evidenz. |
+| [![WordPress](https://img.shields.io/badge/WordPress-1F8FFF?style=flat-square&logo=wordpress&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewp) **GeDefense WordPress** *(dieses Repository)* | AGPL-3.0-Open-Core-Suite für WordPress: ZEUS-WAF, AEGIS-Deep-Packet-Inspection, TRINITY-XDR, ThroneGuard-Lockdown und HADES-Admin-Cloaking. |
+
+
 # 🚀 Sicherheitsupdate 8.5.1 — Bridge-Hardening (27.10.2026)
 
 > **Update 8.5.1** härtet die Alpha-Linux-Bridge nach dem Security-Review. Es ist keine Produktionsfreigabe.
@@ -91,42 +104,6 @@
 > [!CAUTION]
 > **ALPHA-TEST — GeDefense WP ↔ Linux Bridge.** Diese Bridge ist eine Alpha-Vorschau, nicht produktionsreif. Ein vollständig kompromittiertes WordPress kann mit dem gemeinsamen Secret weiterhin Datensätze fälschen. Die Lease ist deshalb auf zwei Stunden, IP/Host begrenzt und lockert nur L7-Limits/Content-Pattern-Prüfungen auf Admin-Oberflächen; WAF-, Upload- und Kernel-Enforcement bleiben aktiv. Nicht im unbeaufsichtigten Produktivbetrieb verwenden und einen bestandenen Test nicht als Sicherheitszertifizierung werten.
 
-# 🚀 Neu in GeDefense WP 8.4.5
-
-> **Release 8.4.5** behebt einen PHP-8.1-Kompatibilitätsfehler, den das neue CI-Gate gefunden hat: Fünf Value-Objekte und mehrere Verifikationsskripte nutzen PHP-8.2-Sprachmerkmale, die deklarierte 8.1-Untergrenze war also nicht real. Die Mindestlaufzeit ist jetzt **PHP 8.2** (PHP 8.1 ist im Dezember 2025 ausgelaufen), die CI-Matrix läuft auf 8.2–8.4. Details in [`CHANGELOG.md`](CHANGELOG.md).
-
-# 🚀 Neu in GeDefense WP 8.4.4
-
-> **Release 8.4.4** ist ein dediziertes Sicherheits-Härtungsrelease auf Basis von 8.4.3: Kryptografie fail-closed, strengere WAF-Capability-Policy, Nonce-Pflicht beim Sprachwechsel, Quarantäne für Threat-Feeds, begrenzte Ressourcen und eine neue abhängigkeitsfreie Härtungs-Testsuite. Details in [`CHANGELOG.md`](CHANGELOG.md).
-
-- **Vault-Krypto ist fail-closed.** Fehlgeschlagene Entschlüsselung wirft jetzt eine Security-Exception, statt den Rohtext zurückzugeben; der hartcodierte Legacy-Schlüssel wurde entfernt. Legacy-Payloads lassen sich nur mit einem vom Betreiber gesetzten `VIS_VAULT_LEGACY_KEY` migrieren.
-- **WAF-Bypass für Inhaltsautoren entfernt.** Die AEGIS-Whitelist vertraut nicht mehr auf `edit_posts`; nur administrative Capabilities umgehen die Payload-Inspektion (erweiterbar über `vis_aegis_whitelist_capabilities`).
-- **Sprachwechsel benötigt einen Nonce.** `?vis_lang=` kann per einfachem GET keine Optionen, User-Meta oder Cookies mehr persistieren; das Cookie ist `HttpOnly` und `SameSite=Lax`.
-- **Opaker Fail-Close mit Break-Glass.** Die 503-Seite liefert nur eine Incident-Referenz; `VIS_DISABLE_FAIL_CLOSE` bietet einen dokumentierten Recovery-Pfad.
-- **Sichere Aktivierungs-Defaults.** Die Aktivierung startet AEGIS im `learning`-Modus sowie Zeus und Morpheus, statt die Konfiguration leer zu lassen.
-- **Feed-Härtung.** Feeds werden über den DNS-Rebinding-resistenten Transport geladen, auf 300.000 Einträge je Feed begrenzt, bei anomalem Wachstum unter Quarantäne gestellt; das Legacy-Schema wird archiviert statt gelöscht.
-- **Überall begrenzte Ressourcen.** GeoIP-Transients sind FIFO-begrenzt, ausgehende POST-Antworten auf 256 KB limitiert, Add-on-ZIPs lehnen Symlink-Einträge ab und erhalten eine deny-all `.htaccess`.
-- **Neues Verifikations-Gate.** `scripts/hardening-regression.php` ergänzt 72 Verhaltens-Assertions (insgesamt 29 Suiten); `.github/workflows/hardening.yml` führt Lint, alle Suiten und den Trust-Anchor unter PHP 8.2–8.4 aus.
-
-# 🚀 Neu in GeDefense WP 8.4.3
-
-> **Release 8.4.3** liefert ein umfassendes Sicherheits- und Telemetrie-Härtungsupdate nach vollständigem VGT-100-Audit und diamantener Release-Verifikation: Bereinigung der Live-Telemetrie-Datenbankabfragen, kompromisslose Beseitigung von HTML-Sinks im UI, Schutz vor Reverse-Proxy IP-Spoofing, kollisionssichere Exception-Architektur, kryptographische Key-Vault-Resilienz und verifizierte Out-of-band Notfallwiederherstellung. Alle Details in [`CHANGELOG.md`](CHANGELOG.md).
-
-- **Kanonische Telemetrie-Tabellenauflösung (P1-Fix):** Der Live-Telemetrie-Polling-Handler in `class-vis-dashboard-ajax.php` fragt nun strikt die kanonischen Tabellen ab (`vis_apex_bans` und `vis_omega_logs` / `VIS_TABLE_BANS` und `VIS_TABLE_LOGS`) inklusive Legacy-Fallback. Aktive Sperren und Kern-Sicherheitslogs werden dadurch lückenlos in das Live-Radar gestreamt.
-- **Zero-Sink DOM UI-Härtung & strikte CSP (P1-Fix):** Vollständige Beseitigung von Inline-Event-Handlern (`data-select-on-focus`) und Umstellung aller dynamischen DOM-Manipulationen in `overview/script.js` auf native DOM-Element-Erzeugung (`createElement`, `createElementNS`, `replaceChildren`, `textContent`). Der interne UI-Regressionstest besteht mit 0 Fehlern.
-- **Kollisionssichere Exception-Architektur (P2-Fix):** Kern-Ausnahmeklassen (`AppException`, `ValidationException`, `SecurityException`, `StorageException`) in `class-vis-security.php` sind nun durch `if (!class_exists(...))` geschützt und unter `VisionGaia\GeDefense\Exceptions` aliasiert, um fatale Namenskonflikte mit Drittanbieter-Plugins auszuschließen.
-- **Bereinigte Entwicklungspfade & souveräne GeoIP-Erkennung (P2-Fix):** Alle lokalen Entwicklungspfade in `class-vis-geo-resolver.php` wurden entfernt. Die Pfadsuche erfolgt hierarchisch über Plugin-Root, persistente Upload-Verzeichnisse und WordPress-Filter-Hooks.
-- **Verifizierte Out-of-Band Notfallwiederherstellung (P2-Fix):** Dokumentation und Absicherung des Fail-Safe-Recovery-Workflows für Zeus WAF (`define('ZEUS_DISABLE', true);`), WP-CLI Notfallsteuerung (`wp plugin deactivate gedefense-wp`) und nativen WordPress Recovery Mode (`WP_RECOVERY_MODE`).
-- **Zeus WAF Reverse-Proxy IP-Verifikation (VGT-049 / CWE-290):** `extract_deterministic_ip()` validiert Socket-IPs (`REMOTE_ADDR`) gegen authentische Cloudflare-CIDRs, bevor `CF-Connecting-IP`-Header akzeptiert werden.
-- **Zeus Preboot Reverse-Proxy HTTPS-Cookie-Erkennung (VGT-006 / VGT-031 / CWE-614):** Evaluierung von `HTTP_X_FORWARDED_PROTO` und `HTTP_X_FORWARDED_SSL` garantiert das `Secure`-Attribut hinter TLS-terminierenden Proxies und Load Balancern.
-- **Beseitigung von Stored DOM-XSS im Threat-Radar (VGT-043 / CWE-79):** Dynamische Telemetriefelder (`path`, `ip`, `country`, `asn`, `module`, `action`) werden via `escapeHtml()` und native DOM-Textknoten sicher gerendert.
-- **Hades Gateway Constant-Time Authentifizierung (VGT-048 / CWE-208):** Verhindert Side-Channel-Timing-Angriffe auf das administrative Token durch `hash_equals()` und strikte Typprüfung.
-- **Key-Vault-Härtung & UI-Reparatur (VGT-007 / CWE-636 / CWE-311):** Korrekte Schlüssel-IDs in der UI (Wiederherstellung der Einzelschlüssel-Löschung), Fallback für unversionierte Schlüssel und automatische Verschlüsselung von Klartext-Konfigurationen.
-- **AEGIS Oracle Distillate Local Host Allowlist (8.4.2 Rollup):** Verhindert False-Positive-Blocks auf legitimen internen URLs (`wp-login.php`, `wp-admin/`, interne Weiterleitungen).
-- **Release:** `8.4.3` in allen Entrypoints, `VIS_VERSION`, Modul-Manifest (`3cd53343...`) und Trust-Anchor.
-
----
-
 ### 🗺️ Threat-Karten-Kartographie, GeoIP/ASN-Herkunft & Drittanbieter-Lizenzen
 Das GeDefense Echtzeit-Bedrohungsradar und die globale Angriffsvektoren-Karte basieren auf einer **100% autarken, lokalen BGP/ASN-Kartographie-Engine** (`data/geoip.csv` und `world-map.svg.php`):
 - **1. Mercator-Weltkarte SVG-Vektorgeometrie (`world-map.svg.php`):**
@@ -140,6 +117,40 @@ Das GeDefense Echtzeit-Bedrohungsradar und die globale Angriffsvektoren-Karte ba
   - **Quellenangabe:** *Dieses Produkt enthält IP-to-Country- und IP-to-ASN-Daten aus dem Projekt iplocate/ip-address-databases, lizenziert unter CC BY-SA 4.0.*
 - **Souveränitäts- & Datenschutz-Garantie:** Sämtliche GeoIP-Koordinaten, Landesflaggen und ASN-Details werden über lokale binäre `fseek()`-Offsets (~0,25ms - 0,45ms) ermittelt. Keine externen HTTP- oder DNS-Reverse-Abfragen, 0 Cloud-Leaks, DSGVO-konform.
 - **Notfall-Wiederherstellung (Fail-Safe):** Sollte ein WAF-Fehler oder Admin-Lockout auftreten, kann das System sofort über `define('ZEUS_DISABLE', true);` in der `wp-config.php` oder per WP-CLI (`wp plugin deactivate gedefense-wp`) entsperrt werden.
+
+---
+
+## Inhaltsverzeichnis
+
+- [Dokumentation & Handbücher](#-offizielle-dokumentation--handbücher)
+- [Sicherheitsarchitektur & Technische Spezifikation](#-sicherheitsarchitektur--technische-spezifikation)
+- [Multi-Phase Zündungsprotokoll](#multi-phase-zündungsprotokoll)
+- [Kernmodul-Matrix](#kernmodul-matrix)
+- [1. ZEUS — Pre-Boot-Zulassungskern](#1-zeus--pre-boot-zulassungskern)
+- [2. AEGIS — Deep Packet Inspection WAF](#2-aegis--deep-packet-inspection-waf)
+- [3. PROMETHEUS — Verhaltens-Bedrohungshorizont](#3-prometheus--verhaltens-bedrohungshorizont)
+- [4. TRINITY XDR — Autonome Response-Fabric](#4-trinity-xdr--autonome-response-fabric)
+- [5. Selbst-Integritäts-Engine](#5-selbst-integritäts-engine)
+- [6. MORPHEUS — Runtime Application Self-Protection (RASP)](#6-morpheus--runtime-application-self-protection-rasp)
+- [7. NEMESIS — Täuschungsgitter](#7-nemesis--täuschungsgitter)
+- [8. TITAN — WordPress-Systemhärtung](#8-titan--wordpress-systemhärtung)
+- [9. HADES — Dynamisches Admin-Cloaking](#9-hades--dynamisches-admin-cloaking)
+- [10. CERBERUS — Perimeter-Firewall](#10-cerberus--perimeter-firewall)
+- [11. AIRLOCK — Ingress-Dateiinspektion](#11-airlock--ingress-dateiinspektion)
+- [12. GHOST TRAP — Honeypot-Schicht](#12-ghost-trap--honeypot-schicht)
+- [13. STYX — Outbound Egress-Schutzschild](#13-styx--outbound-egress-schutzschild)
+- [14. CHRONOS — Autonomer Scanner](#14-chronos--autonomer-scanner)
+- [15. KEY VAULT — Kryptografischer Schlüsseltresor](#15-key-vault--kryptografischer-schlüsseltresor)
+- [16. ORACLE — Sicherheits-Audit-Engine](#16-oracle--sicherheits-audit-engine)
+- [17. THRONEGUARD — Souveräner Privilegien-Wächter](#17-throneguard--souveräner-privilegien-wächter)
+- [18. LOGINPAGER — Gehärtete Login-Oberfläche](#18-loginpager--gehärtete-login-oberfläche)
+- [19. Modul-Registry / Open Core](#19-modul-registry--open-core)
+- [Zero-Dependency Philosophie](#zero-dependency-philosophie)
+- [Performance & Benchmarks](#performance--benchmarks)
+- [Selbstprüfung & Unabhängiges Audit](#-selbstprüfung--unabhängiges-audit)
+- [Systemanforderungen](#systemanforderungen)
+- [Lizenz](#lizenz)
+- [Changelog-Historie](#changelog-historie)
 
 ---
 
@@ -171,43 +182,6 @@ Das GeDefense Echtzeit-Bedrohungsradar und die globale Angriffsvektoren-Karte ba
 - **Security Center Assurance Plane**: 21 automatische Tiefenprüfungen für Server-Härtung, Dateiberechtigungen, Krypto-Integrität und WAF-Status.
 - **Interaktive NOC-Topologie & Sensor-Grid**: Echtzeit-Visualisierung aller Sensoren, Latenzen und Schutzschilde.
 - **12h Sovereign Master Omni-Whitelist**: 1-Klick-Freischaltung für berechtigte Administratoren mit automatischer Rücknahme.
-
----
-
-## Inhaltsverzeichnis
-
-- [Dokumentation & Handbücher](#-offizielle-dokumentation--handbücher)
-- [Neu in GeDefense WP 8.4.5](#-neu-in-gedefense-wp-845)
-- [Neu in GeDefense WP 8.4.4](#-neu-in-gedefense-wp-844)
-- [Neu in GeDefense WP 8.4.3](#-neu-in-gedefense-wp-843)
-- [Sicherheitsarchitektur & Technische Spezifikation](#-sicherheitsarchitektur--technische-spezifikation)
-- [Multi-Phase Zündungsprotokoll](#multi-phase-zündungsprotokoll)
-- [Kernmodul-Matrix](#kernmodul-matrix)
-- [1. ZEUS — Pre-Boot-Zulassungskern](#1-zeus--pre-boot-zulassungskern)
-- [2. AEGIS — Deep Packet Inspection WAF](#2-aegis--deep-packet-inspection-waf)
-- [3. PROMETHEUS — Verhaltens-Bedrohungshorizont](#3-prometheus--verhaltens-bedrohungshorizont)
-- [4. TRINITY XDR — Autonome Response-Fabric](#4-trinity-xdr--autonome-response-fabric)
-- [5. Selbst-Integritäts-Engine](#5-selbst-integritäts-engine)
-- [6. MORPHEUS — Runtime Application Self-Protection (RASP)](#6-morpheus--runtime-application-self-protection-rasp)
-- [7. NEMESIS — Täuschungsgitter](#7-nemesis--täuschungsgitter)
-- [8. TITAN — WordPress-Systemhärtung](#8-titan--wordpress-systemhärtung)
-- [9. HADES — Dynamisches Admin-Cloaking](#9-hades--dynamisches-admin-cloaking)
-- [10. CERBERUS — Perimeter-Firewall](#10-cerberus--perimeter-firewall)
-- [11. AIRLOCK — Ingress-Dateiinspektion](#11-airlock--ingress-dateiinspektion)
-- [12. GHOST TRAP — Honeypot-Schicht](#12-ghost-trap--honeypot-schicht)
-- [13. STYX — Outbound Egress-Schutzschild](#13-styx--outbound-egress-schutzschild)
-- [14. CHRONOS — Autonomer Scanner](#14-chronos--autonomer-scanner)
-- [15. KEY VAULT — Kryptografischer Schlüsseltresor](#15-key-vault--kryptografischer-schlüsseltresor)
-- [16. ORACLE — Sicherheits-Audit-Engine](#16-oracle--sicherheits-audit-engine)
-- [17. THRONEGUARD — Souveräner Privilegien-Wächter](#17-throneguard--souveräner-privilegien-wächter)
-- [18. LOGINPAGER — Gehärtete Login-Oberfläche](#18-loginpager--gehärtete-login-oberfläche)
-- [19. Modul-Registry / Open Core](#19-modul-registry--open-core)
-- [Zero-Dependency Philosophie](#zero-dependency-philosophie)
-- [Performance & Benchmarks](#performance--benchmarks)
-- [Selbstprüfung & Unabhängiges Audit](#-selbstprüfung--unabhängiges-audit)
-- [Systemanforderungen](#systemanforderungen)
-- [Lizenz](#lizenz)
-- [Changelog-Historie](#changelog-historie)
 
 ---
 
