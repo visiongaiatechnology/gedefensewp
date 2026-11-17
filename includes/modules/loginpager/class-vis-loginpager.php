@@ -252,7 +252,7 @@ body.login::before {
 }
 ";
 
-        wp_register_style('vis-loginpager', false, [], defined('VIS_VERSION') ? VIS_VERSION : '8');
+        wp_register_style('vis-loginpager', false, [], defined('VIS_VERSION') ? VIS_VERSION : '8.6.0');
         wp_enqueue_style('vis-loginpager');
         wp_add_inline_style('vis-loginpager', $css);
     }

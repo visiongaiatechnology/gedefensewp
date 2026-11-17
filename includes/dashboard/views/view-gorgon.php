@@ -62,7 +62,7 @@ if ($api_key !== '' && class_exists('VIS_Vault')) {
                 </div>
                 <div class="vgt-field-wrap">
                     <label><?php esc_html_e('Neural Access Key', 'vgt-sentinel'); ?></label>
-                    <input type="password" id="vgt-nexus-key" name="vis_config[gorgon_api_key]" value="<?php echo esc_attr($api_key); ?>" class="vgt-field-input" placeholder="vgt-nx-...">
+                    <input type="password" id="vgt-nexus-key" name="vis_config[gorgon_api_key]" value="" class="vgt-field-input" autocomplete="new-password" placeholder="<?php echo esc_attr(!empty($api_key) ? '•••••••••••••••••••••••• (Stored Encrypted)' : 'vgt-nx-...'); ?>">
                 </div>
             </div>
             

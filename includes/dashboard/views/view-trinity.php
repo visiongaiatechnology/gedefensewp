@@ -241,7 +241,7 @@ $wpdb->suppress_errors($suppress);
     <!-- HEADER SECTION -->
     <div class="vgt-header">
         <div class="vgt-title-group">
-            <h1 class="vgt-glitch-text" data-text="<?php esc_attr_e('TRINITY GRID V8.0.0', 'vgt-sentinel'); ?>"><?php esc_html_e('TRINITY GRID V8.0.0', 'vgt-sentinel'); ?></h1>
+            <h1 class="vgt-glitch-text" data-text="<?php esc_attr_e('TRINITY GRID V8.6.0', 'vgt-sentinel'); ?>"><?php esc_html_e('TRINITY GRID V8.6.0', 'vgt-sentinel'); ?></h1>
             <p class="vgt-subtitle"><?php esc_html_e('Coordinated Real-Time Defense Interlock Matrix & Visual Topology', 'vgt-sentinel'); ?></p>
         </div>
         <div class="vgt-status-badge <?php echo $trinity_active ? 'active' : 'offline'; ?>">
@@ -550,7 +550,7 @@ $wpdb->suppress_errors($suppress);
                         <td class="time-cell"><?php echo esc_html((string)$feed['time']); ?></td>
                         <td><code class="ip-code"><?php echo esc_html((string)$feed['ip']); ?></code></td>
                         <td>
-                            <span class="tag-badge tag-<?php echo strtolower($feed['module']); ?>">
+                            <span class="tag-badge tag-<?php echo esc_attr(sanitize_html_class(strtolower((string)($feed['module'] ?? 'unknown')))); ?>">
                                 <?php echo esc_html((string)$feed['module']); ?>
                             </span>
                         </td>

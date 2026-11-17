@@ -133,7 +133,10 @@ final class VIS_I18n {
         }
 
         $opt = get_option('vis_config', []);
-        if (is_array($opt)) {
+        $canPersistGlobal = function_exists('current_user_can')
+            ? current_user_can('manage_options')
+            : (function_exists('is_user_logged_in') && is_user_logged_in());
+        if ($canPersistGlobal && is_array($opt)) {
             $opt['dashboard_lang'] = $lang;
             update_option('vis_config', $opt);
         }

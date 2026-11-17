@@ -46,7 +46,7 @@ final class VIS_Titan_Policy_Compiler {
             $headers[$cspMode === 'enforce' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only'] = $csp;
         }
         if ($trustedTypes === 'report_only' && $surface === VIS_Titan_Surface_Resolver::GEDEFENSE_ADMIN) {
-            $ttReport = self::serializeCsp(['require-trusted-types-for' => ["'script'"], 'trusted-types' => ['vgt-titan', 'default'], 'report-uri' => ['/wp-json/visiongaia/v1/titan/csp-report?surface=' . strtolower($surface)]]);
+            $ttReport = self::serializeCsp(['require-trusted-types-for' => ["'script'"], 'trusted-types' => ['vgt-titan', 'default'], 'report-uri' => ['/wp-json/visiongaia/v1/titan/csp-report?surface=' . strtolower($surface) . '&token={report_token}']]);
             if ($cspMode === 'report_only') $headers['Content-Security-Policy-Report-Only'] .= "; require-trusted-types-for 'script'; trusted-types default vgt-titan";
             else $headers['Content-Security-Policy-Report-Only'] = $ttReport;
             $warnings[] = ['level' => 'HIGH', 'code' => 'TRUSTED_TYPES_EXPERIMENTAL', 'message' => 'Trusted Types reports compatibility failures on the GeDefense admin surface.'];
@@ -157,7 +157,7 @@ final class VIS_Titan_Policy_Compiler {
             'worker-src' => $self,
             'media-src' => $self,
             'manifest-src' => $self,
-            'report-uri' => ['/wp-json/visiongaia/v1/titan/csp-report?surface=' . strtolower($surface)],
+            'report-uri' => ['/wp-json/visiongaia/v1/titan/csp-report?surface=' . strtolower($surface) . '&token={report_token}'],
         ];
         $ttSurface = $trustedTypes === 'strict_selected_surfaces' || ($trustedTypes === 'gedefense_admin_only' && $surface === VIS_Titan_Surface_Resolver::GEDEFENSE_ADMIN);
         if ($ttSurface) {

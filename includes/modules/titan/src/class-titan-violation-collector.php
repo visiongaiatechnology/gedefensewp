@@ -12,6 +12,37 @@ final class VIS_Titan_Violation_Collector {
         register_rest_route('visiongaia/v1', '/titan/csp-report', ['methods' => 'POST', 'callback' => [self::class, 'collect'], 'permission_callback' => '__return_true']);
     }
 
+    private static function tokenSecret(): string {
+        $salt = function_exists('wp_salt') ? (string)wp_salt('auth') : (defined('AUTH_SALT') ? (string)AUTH_SALT : '');
+        if (strlen($salt) < 16) {
+            $salt = hash('sha256', (string)get_option('vgt_sentinel_vault_system_salt', ABSPATH));
+        }
+        return hash('sha256', "GEDEFENSE:TITAN:CSP-REPORT:v1\0" . $salt, true);
+    }
+
+    public static function issueReportToken(string $surface): string {
+        $exp = time() + 3600;
+        $payload = strtoupper($surface) . '|' . $exp;
+        $sig = hash_hmac('sha256', $payload, self::tokenSecret());
+        return $exp . '.' . substr($sig, 0, 32);
+    }
+
+    public static function verifyReportToken(string $token, string $surface): bool {
+        if ($token === '' || !str_contains($token, '.')) {
+            return false;
+        }
+        [$expRaw, $sigRaw] = explode('.', $token, 2);
+        if (!ctype_digit($expRaw) || preg_match('/^[a-f0-9]{32}$/D', $sigRaw) !== 1) {
+            return false;
+        }
+        $exp = (int)$expRaw;
+        if ($exp < time() || $exp > time() + 7200) {
+            return false;
+        }
+        $expected = substr(hash_hmac('sha256', strtoupper($surface) . '|' . $exp, self::tokenSecret()), 0, 32);
+        return hash_equals($expected, $sigRaw);
+    }
+
     public static function collect($request) {
         try {
             $contentType = strtolower((string)($request->get_header('content-type') ?? ''));
@@ -20,16 +51,27 @@ final class VIS_Titan_Violation_Collector {
             }
             $body = (string)$request->get_body();
             if ($body === '' || strlen($body) > self::MAX_BODY_BYTES) throw new ValidationException('CSP report size boundary violation.');
+            $surfaceInput = is_object($request) && method_exists($request, 'get_param') ? strtoupper((string)$request->get_param('surface')) : '';
+            $surface = in_array($surfaceInput, VIS_Titan_Surface_Resolver::all(), true) ? $surfaceInput : VIS_Titan_Surface_Resolver::resolve();
+            $reportToken = is_object($request) && method_exists($request, 'get_param') ? (string)$request->get_param('token') : '';
+            // Unauthentifiziertes Vergiften von vis_titan_violations verhindern (FIND-008).
+            if (!self::verifyReportToken($reportToken, $surface)) {
+                throw new SecurityException('CSP report token rejected.');
+            }
             self::rateLimit();
             $decoded = json_decode($body, true, 16, JSON_THROW_ON_ERROR);
             $report = self::extractReport($decoded);
-            $surfaceInput = is_object($request) && method_exists($request, 'get_param') ? strtoupper((string)$request->get_param('surface')) : '';
-            $surface = in_array($surfaceInput, VIS_Titan_Surface_Resolver::all(), true) ? $surfaceInput : VIS_Titan_Surface_Resolver::resolve();
+            $docOrigin = self::origin((string)($report['document-uri'] ?? $report['url'] ?? ''));
+            $siteHost = function_exists('home_url') ? strtolower((string)parse_url((string)home_url('/'), PHP_URL_HOST)) : '';
+            $docHost = $docOrigin !== '' ? strtolower((string)parse_url($docOrigin, PHP_URL_HOST)) : '';
+            if ($siteHost !== '' && ($docHost === '' || !hash_equals($siteHost, $docHost))) {
+                throw new SecurityException('CSP report document origin mismatch.');
+            }
             $record = [
                 'surface' => $surface,
                 'directive' => self::token((string)($report['effective-directive'] ?? $report['violated-directive'] ?? $report['body']['effectiveDirective'] ?? 'unknown'), 64),
                 'blocked_origin' => self::origin((string)($report['blocked-uri'] ?? $report['body']['blockedURL'] ?? '')),
-                'document_origin' => self::origin((string)($report['document-uri'] ?? $report['url'] ?? '')),
+                'document_origin' => $docOrigin,
                 'disposition' => self::token((string)($report['disposition'] ?? $report['body']['disposition'] ?? 'report'), 16),
             ];
             $key = hash('sha256', implode('|', $record));

@@ -590,11 +590,14 @@ final class VIS_Aegis {
                     $this->terminate("Oracle policy [$policy] in $context", 'BLOCK', 'ORACLE_' . $vector);
                 }
                 if (is_array($distillate) && ($distillate['verdict'] ?? '') === 'SAFE') {
-                    self::record_metric('local_safe');
-                    // Local matrix explicitly resolved this input as trusted
-                    // (page-builder JSON, own admin surface, WordPress update
-                    // archive). No AI call and no heuristic escalation.
-                    return;
+                    $safeVector = (string)($distillate['vector'] ?? '');
+                    $isAuthedUser = function_exists('is_user_logged_in') && is_user_logged_in()
+                        && function_exists('current_user_can') && (current_user_can('edit_posts') || current_user_can('manage_options'));
+                    // Unauthenticated traffic matching admin/builder markers must not skip heuristic checks (FIND-001).
+                    if (!in_array($safeVector, ['safe_own_admin', 'safe_elementor'], true) || $isAuthedUser) {
+                        self::record_metric('local_safe');
+                        return;
+                    }
                 }
             } catch (\RuntimeException $e) {
                 // assessment() uses RuntimeException as its internal BLOCK signal
@@ -636,7 +639,10 @@ final class VIS_Aegis {
             } elseif ($match === false) {
                 $last_error = preg_last_error();
                 if ($last_error !== PREG_NO_ERROR) {
-                    $this->terminate("PCRE Engine Error in Learning Pattern | Error Code: $last_error", 'BLOCK', 'pcre_error');
+                    // Fail-Open + Deaktivierung fehlerhafter Dynamic-Regex statt Traffic-DoS (FIND-007).
+                    error_log("[VGT AEGIS] Faulty learning PCRE disabled (error code: {$last_error}).");
+                    self::$learning_regex_cache = '';
+                    update_option('vgt_learning_regex', '', false);
                 }
             }
         }
@@ -649,7 +655,7 @@ final class VIS_Aegis {
             } elseif ($match === false) {
                 $last_error = preg_last_error();
                 if ($last_error !== PREG_NO_ERROR) {
-                    $this->terminate("PCRE Engine Error in Nexus Pattern [$threat_name] | Error Code: $last_error", 'BLOCK', 'pcre_error');
+                    error_log("[VGT AEGIS] Faulty nexus pattern [{$threat_name}] skipped (error code: {$last_error}).");
                 }
             }
         }
@@ -734,9 +740,8 @@ final class VIS_Aegis {
     }
 
     /**
-     * Returns true for authenticated editors/admins and the plugin's own
-     * admin screens. Those requests keep the deterministic atomic signatures,
-     * but skip the probabilistic heuristic/Oracle layer.
+     * Returns true ONLY for authenticated WordPress editors/admins (FIND-001).
+     * Never trust unauthenticated REQUEST_URI substrings like page=vis-/vgt-.
      */
     private function is_privileged_admin_request(): bool {
         if (function_exists('is_user_logged_in') && is_user_logged_in() && function_exists('current_user_can')) {
@@ -745,11 +750,6 @@ final class VIS_Aegis {
             }
         }
 
-        $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
-        if ($uri === '') return false;
-        if (str_contains($uri, 'page=vis-') || str_contains($uri, 'page=vgt-')) {
-            return true;
-        }
         return false;
     }
 

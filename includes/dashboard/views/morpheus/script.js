@@ -3,11 +3,13 @@
     'use strict';
 
     const getNonce = () => {
+        if (window.visMorpheusConfig && window.visMorpheusConfig.nonce) return window.visMorpheusConfig.nonce;
         if (window.visConfig && window.visConfig.nonce) return window.visConfig.nonce;
         return '';
     };
 
     const getIsolationToken = () => {
+        if (window.visMorpheusConfig && window.visMorpheusConfig.isolationToken) return window.visMorpheusConfig.isolationToken;
         if (window.visConfig && window.visConfig.isolationToken) return window.visConfig.isolationToken;
         return '';
     };

@@ -492,13 +492,56 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
         \$_COOKIE['vgt_zeus_adm'] = \$sessToken;
     };
 
-    // 1. CLEAN URL ADMISSION TOKEN EXCHANGE
-    if (isset(\$_GET['vgt_adm']) && is_string(\$_GET['vgt_adm'])) {
-        \$vRes = \$verify_admission_token(\$_GET['vgt_adm'], 'all');
+    // 0. BINARY CIDR WHITELIST CHECK (Evaluated early so allowlisted admins avoid XDR self-DoS, FIND-009)
+    \$wl = {$wl_export};
+    \$cidr_match = static function(string \$clientIp, string \$network): bool {
+        if (\$clientIp === \$network) return true;
+        if (!str_contains(\$network, '/')) return false;
+        [\$subnet, \$mask] = explode('/', \$network, 2);
+        \$clientPacked = @inet_pton(\$clientIp);
+        \$subnetPacked = @inet_pton(\$subnet);
+        if (\$clientPacked === false || \$subnetPacked === false || strlen(\$clientPacked) !== strlen(\$subnetPacked)) {
+            return false;
+        }
+        \$maskBits = (int)\$mask;
+        \$maxBits = strlen(\$clientPacked) * 8;
+        if (\$maskBits < 0 || \$maskBits > \$maxBits) return false;
+        \$fullBytes = intdiv(\$maskBits, 8);
+        \$remBits = \$maskBits % 8;
+        if (\$fullBytes > 0 && substr(\$clientPacked, 0, \$fullBytes) !== substr(\$subnetPacked, 0, \$fullBytes)) {
+            return false;
+        }
+        if (\$remBits > 0) {
+            \$maskByte = chr((0xFF << (8 - \$remBits)) & 0xFF);
+            if ((\$clientPacked[\$fullBytes] & \$maskByte) !== (\$subnetPacked[\$fullBytes] & \$maskByte)) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    \$isWhitelisted = false;
+    \$nowTsWl = time();
+    foreach (\$wl as \$wEntry) {
+        if (!is_string(\$wEntry) || \$wEntry === '') continue;
+        if (isset(\$tgLeases[\$wEntry]) && \$nowTsWl >= (int)\$tgLeases[\$wEntry]) {
+            continue;
+        }
+        if (\$cidr_match(\$ip, \$wEntry)) {
+            \$isWhitelisted = true;
+            break;
+        }
+    }
+
+    // 1. CLEAN URL ADMISSION TOKEN EXCHANGE (Canonical local redirect + surface match, FIND-009)
+    if (isset(\$_GET['vgt_adm']) && is_string(\$_GET['vgt_adm']) && !str_starts_with(\$rawUri, '//')) {
+        \$admSurface = str_starts_with(\$pathOnly, '/wp-admin/') ? 'admin' : (str_starts_with(\$pathOnly, '/wp-login.php') ? 'login' : 'all');
+        \$vRes = \$verify_admission_token(\$_GET['vgt_adm'], \$admSurface);
         if (\$vRes['valid']) {
             \$mint_session_cookie(\$vRes['payload'], \$vRes['key']);
             \$cleanUri = preg_replace('/([?&])vgt_adm=[^&]*(&|$)/', '$1', \$rawUri);
-            \$cleanUri = rtrim(\$cleanUri, '?&');
+            \$cleanUri = rtrim((string)\$cleanUri, '?&');
+            \$cleanUri = '/' . ltrim(\$cleanUri, '/');
             if (\$cleanUri === '') \$cleanUri = '/';
             header('Location: ' . \$cleanUri, true, 302);
             exit;
@@ -516,7 +559,7 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
     }
 
     // 3. XDR VIRTUAL EMERGENCY ROUTE CONTAINMENT CHECK (Hard Semantic TTL)
-    if (!empty(\$xdrContainedRoutes)) {
+    if (!\$isWhitelisted && !empty(\$xdrContainedRoutes)) {
         \$nowUtc = gmdate('Y-m-d H:i:s');
         foreach (\$xdrContainedRoutes as \$prefix => \$info) {
             if ((\$info['expires_at'] ?? '') > \$nowUtc && str_starts_with(\$pathOnly, \$prefix)) {
@@ -574,59 +617,20 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
         \$record_and_kill('ZEUS.REQUEST_CONTRACT_VIOLATION', 'ENV_METHOD_DISALLOWED', "HTTP method {\$method} not permitted.", 7, 405);
     }
 
-    // 7. STRICT STATIC ASSET FAST-PATH
+    // 7. STRICT STATIC ASSET FAST-PATH (Nur für wirklich existierende Dateien, FIND-009)
     \$ext = strtolower(substr((string)strrchr(\$pathOnly, '.'), 1));
     \$static_exts = ['ico'=>1,'map'=>1,'woff'=>1,'woff2'=>1,'ttf'=>1,'png'=>1,'jpg'=>1,'jpeg'=>1,'svg'=>1,'css'=>1,'js'=>1,'webp'=>1,'gif'=>1];
+    \$docRoot = rtrim((string)(\$_SERVER['DOCUMENT_ROOT'] ?? ''), '/\\\\');
     if (
         (\$method === 'GET' || \$method === 'HEAD') &&
         isset(\$static_exts[\$ext]) &&
         !str_contains(\$pathOnly, '.php') &&
         !str_starts_with(\$pathOnly, '/wp-json') &&
         !str_starts_with(\$pathOnly, '/wp-admin') &&
-        (str_starts_with(\$pathOnly, '/wp-content/') || str_starts_with(\$pathOnly, '/wp-includes/') || str_starts_with(\$pathOnly, '/assets/'))
+        (str_starts_with(\$pathOnly, '/wp-content/') || str_starts_with(\$pathOnly, '/wp-includes/') || str_starts_with(\$pathOnly, '/assets/')) &&
+        (\$docRoot !== '' && is_file(\$docRoot . \$pathOnly) && !is_link(\$docRoot . \$pathOnly))
     ) {
         return;
-    }
-
-    // 8. BINARY CIDR WHITELIST CHECK
-    \$wl = {$wl_export};
-    \$cidr_match = static function(string \$clientIp, string \$network): bool {
-        if (\$clientIp === \$network) return true;
-        if (!str_contains(\$network, '/')) return false;
-        [\$subnet, \$mask] = explode('/', \$network, 2);
-        \$clientPacked = @inet_pton(\$clientIp);
-        \$subnetPacked = @inet_pton(\$subnet);
-        if (\$clientPacked === false || \$subnetPacked === false || strlen(\$clientPacked) !== strlen(\$subnetPacked)) {
-            return false;
-        }
-        \$maskBits = (int)\$mask;
-        \$maxBits = strlen(\$clientPacked) * 8;
-        if (\$maskBits < 0 || \$maskBits > \$maxBits) return false;
-        \$fullBytes = intdiv(\$maskBits, 8);
-        \$remBits = \$maskBits % 8;
-        if (\$fullBytes > 0 && substr(\$clientPacked, 0, \$fullBytes) !== substr(\$subnetPacked, 0, \$fullBytes)) {
-            return false;
-        }
-        if (\$remBits > 0) {
-            \$maskByte = chr((0xFF << (8 - \$remBits)) & 0xFF);
-            if ((\$clientPacked[\$fullBytes] & \$maskByte) !== (\$subnetPacked[\$fullBytes] & \$maskByte)) {
-                return false;
-            }
-        }
-        return true;
-    };
-
-    \$isWhitelisted = false;
-    \$nowTsWl = time();
-    foreach (\$wl as \$wEntry) {
-        if (!is_string(\$wEntry) || \$wEntry === '') continue;
-        if (isset(\$tgLeases[\$wEntry]) && \$nowTsWl >= (int)\$tgLeases[\$wEntry]) {
-            continue;
-        }
-        if (\$cidr_match(\$ip, \$wEntry)) {
-            \$isWhitelisted = true;
-            break;
-        }
     }
 
     // 8.5 PRE-BOOT THREAT INTELLIGENCE DROP (O(log N) PACKED-BINARY SEEK & ATOMIC SWAP AWARE)
@@ -848,22 +852,12 @@ if (!defined('VGT_ZEUS_PREBOOT')) define('VGT_ZEUS_PREBOOT', true);
                 \$record_and_kill('ZEUS.ADMISSION_REJECT', 'ADMISSION_TOKEN_REJECTED', 'Admission required: ' . (\$res['reason'] ?? 'TOKEN_INVALID'), 8, 403);
             }
 
-            // Clean URL Exchange: If token came via ?vgt_adm=..., set Secure HttpOnly cookie and 302 redirect
-            if (isset(\$_GET['vgt_adm'])) {
-                \$secure = (!empty(\$_SERVER['HTTPS']) && \$_SERVER['HTTPS'] !== 'off')
-                    || (isset(\$_SERVER['SERVER_PORT']) && (string)\$_SERVER['SERVER_PORT'] === '443')
-                    || (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)\$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
-                    || (isset(\$_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)\$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on');
-                setcookie('vgt_zeus_adm', \$admToken, [
-                    'expires'  => (int)(\$res['payload']['exp'] ?? (time() + 300)),
-                    'path'     => '/',
-                    'domain'   => '',
-                    'secure'   => \$secure,
-                    'httponly' => true,
-                    'samesite' => 'Strict'
-                ]);
+            // Clean URL Exchange: Mint independent multi-use session token (FIND-009).
+            if (isset(\$_GET['vgt_adm']) && !str_starts_with(\$rawUri, '//')) {
+                \$mint_session_cookie(\$res['payload'], \$res['key']);
                 \$clean = preg_replace('/([?&])vgt_adm=[^&]*(&|$)/', '$1', \$rawUri);
-                \$clean = rtrim(\$clean, '?&');
+                \$clean = rtrim((string)\$clean, '?&');
+                \$clean = '/' . ltrim(\$clean, '/');
                 if (\$clean === '') \$clean = '/';
                 header('Location: ' . \$clean, true, 302);
                 header('Cache-Control: no-store, no-cache, must-revalidate');

@@ -1,10 +1,10 @@
 > [!WARNING]
 > **PUBLIC BETA / RELEASE CANDIDATE — NICHT FÜR UNBEAUFSICHTIGTEN PRODUKTIVBETRIEB**
 >
-> **VGT GeDefense WP 8.5.1 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.6.0 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 > [!CAUTION]
-> **ALPHA-TEST — GeDefense WP ↔ Linux Bridge:** neu in 8.5.0, nicht produktionsreif. Ein kompromittiertes WordPress kann Datensätze mit dem gemeinsamen Secret fälschen; die Lease ist 2 Std., IP/Host-gebunden und lockert nur L7-Limits/Content-Pattern-Prüfungen auf Admin-Oberflächen. Siehe 8.5.0 unten.
+> **ALPHA-TEST — GeDefense WP ↔ Linux Bridge:** eingeführt in 8.5.0, nicht produktionsreif. Ein kompromittiertes WordPress kann Datensätze mit dem gemeinsamen Secret fälschen; die Lease ist 2 Std., IP/Host-gebunden und lockert nur L7-Limits/Content-Pattern-Prüfungen auf Admin-Oberflächen. Siehe 8.5.0 unten.
 
 <div align="center">
 
@@ -14,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.5.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.5.1)
+[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.6.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.6.0)
 
 </div>
 
@@ -30,7 +30,7 @@
 
 <img width="1536" height="1024" alt="GeDefense_ Real Security, Many Feathers" src="https://github.com/user-attachments/assets/e16f809d-4968-4cbc-9147-7c872b32a2e5" />
 
-[![Version](https://img.shields.io/badge/version-8.5.1_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.6.0_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -74,6 +74,15 @@ GeDefense ist eine lokal-first Security-Fabric – für Linux, Windows, Android 
 | [![Android](https://img.shields.io/badge/Android-22D3EE?style=flat-square&logo=android&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefenseandroid) **GeDefense Android** | Native Android-Sicherheitsplattform: lokale VPN-Durchsetzung, Endpoint-Telemetrie, XDR/EDR-Korrelation, Threat Intelligence, App-Risikoanalyse und verschlüsselte Evidenz. |
 | [![WordPress](https://img.shields.io/badge/WordPress-1F8FFF?style=flat-square&logo=wordpress&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewp) **GeDefense WordPress** *(dieses Repository)* | AGPL-3.0-Open-Core-Suite für WordPress: ZEUS-WAF, AEGIS-Deep-Packet-Inspection, TRINITY-XDR, ThroneGuard-Lockdown und HADES-Admin-Cloaking. |
 
+
+# 🚀 Release 8.6.0 — Umfassendes Security-Hardening (17.11.2026)
+
+> **Update 8.6.0** schließt eine tiefgreifende Audit-Härtung über alle Schutzschichten ab und ergänzt automatisierte Negativ-Regressionstests (`scripts/audit-fixes-regression.php`, 34 bestandene CLI-Suiten).
+
+- **WAF, Oracle & Bridge-Schutz:** Unauthentifizierte URI-/Payload-Ausnahmen in AEGIS/Oracle entfernt; globale Deaktivierung von Titan-Headern oder WAF-Filtern durch Page-Builder-Query-Flags unterbunden.
+- **ThroneGuard & Key Vault:** Unbefugte `master`-Übernahme nach Ersteinrichtung gesperrt, Superkey-Verifikation beim Speichern erzwungen, `delete_key()` auf registrierte Vault-Keys beschränkt und Standard-WP-Salts verworfen.
+- **Signierte Telemetrie & Anti-Lockout:** HMAC-Token-Prüfung für Titan-CSP-Reports eingeführt, IP-Allowlist vor XDR-Route-Containment ausgewertet, Kernrouten (`/wp-login.php`, `/wp-admin/`) geschützt und `/24`/`/64`-Fehl-Banns in Prometheus beseitigt.
+- **Egress, Ghost Trap, Airlock & Integrität:** `HTTP_HOST`-Vertrauen entfernt und `[::]`-IPv6 in Styx/Morpheus fail-closed gehärtet, Ghost-Trap-Dateien auf `.php` begrenzt, Runtime-Integritätsprüfung (28 Komponenten) aktiviert, SVG aus Airlock-Defaults entfernt und Archive/Großdateien tiefengescannt.
 
 # 🚀 Sicherheitsupdate 8.5.1 — Bridge-Hardening (27.10.2026)
 
@@ -474,7 +483,7 @@ GeDefense WP Open Core steht unter der **GNU Affero General Public License v3.0 
 
 <div align="center">
 
-## GeDefense WP 8.5.1 — Open Core
+## GeDefense WP 8.6.0 — Open Core
 
 **SOUVERÄNE WORDPRESS SICHERHEIT**
 

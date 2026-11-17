@@ -23,6 +23,11 @@ final class Gorgon_Ajax {
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'VGT_UNAUTHORIZED_ACCESS']);
         }
+        if (class_exists('\\VIS_Throne_Guard')
+            && \VIS_Throne_Guard::master_exists()
+            && !current_user_can(\VIS_Throne_Guard::MASTER_CAP)) {
+            wp_send_json_error(['message' => 'VGT_MASTER_CAP_REQUIRED'], 403);
+        }
     }
 
     public static function handle_toggle(): void {
@@ -116,7 +121,7 @@ final class Gorgon_Ajax {
             'headers'   => [
                 'X-VGT-Nexus-Auth'       => $api_key,
                 'X-VGT-Sentinel-Magic'   => defined('VIS_GORGON_NEXUS_MAGIC') ? VIS_GORGON_NEXUS_MAGIC : '',
-                'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '7.4.0',
+                'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '8.6.0',
                 'Content-Type'           => 'application/json',
                 'Connection'             => 'close',
             ],
@@ -181,17 +186,28 @@ final class Gorgon_Ajax {
 
     public static function handle_add_node(): void {
         self::verify_privileges();
+        global $wpdb;
         $id = sanitize_key($_POST['id'] ?? '');
         if (empty($id)) wp_send_json_error(['message' => 'Invalid ID']);
+
+        $table = preg_replace('/[^a-zA-Z0-9_]/', '', (string)($_POST['table'] ?? ''));
+        $allowedTables = [
+            $wpdb->prefix . 'vis_omega_logs',
+            $wpdb->prefix . 'vis_oracle_patterns',
+            $wpdb->prefix . 'vis_apex_bans',
+        ];
+        if (!in_array($table, $allowedTables, true)) {
+            wp_send_json_error(['message' => 'Table rejected by telemetry allowlist.'], 403);
+        }
 
         $config = get_option('vis_config', []);
         if (!isset($config['gorgon_nodes'])) $config['gorgon_nodes'] = [];
 
         $config['gorgon_nodes'][$id] = [
-            'table' => sanitize_text_field($_POST['table'] ?? ''),
-            'ip_col' => sanitize_text_field($_POST['ip_col'] ?? 'ip'),
-            'type_col' => sanitize_text_field($_POST['type_col'] ?? 'type'),
-            'time_col' => sanitize_text_field($_POST['time_col'] ?? 'time'),
+            'table' => $table,
+            'ip_col' => preg_replace('/[^a-zA-Z0-9_]/', '', (string)($_POST['ip_col'] ?? 'ip')),
+            'type_col' => preg_replace('/[^a-zA-Z0-9_]/', '', (string)($_POST['type_col'] ?? 'type')),
+            'time_col' => preg_replace('/[^a-zA-Z0-9_]/', '', (string)($_POST['time_col'] ?? 'time')),
         ];
 
         update_option('vis_config', $config);

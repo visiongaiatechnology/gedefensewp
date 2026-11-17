@@ -33,7 +33,7 @@ final class VIS_Archive_Detector implements VIS_File_Detector {
                 break;
             }
             if (preg_match('/\.(?:php[0-9]?|phtml|phar)$/i', $name) === 1) {
-                $findings[] = new VIS_Scan_Finding('ARCHIVE_EXECUTABLE_PAYLOAD', 55, 100, 'Archive contains server-executable code requiring contextual review.');
+                $findings[] = new VIS_Scan_Finding('ARCHIVE_EXECUTABLE_PAYLOAD', 85, 95, 'Archive contains server-executable PHP payload blocked by upload/scan policy.', true);
             }
         }
         $zip->close();

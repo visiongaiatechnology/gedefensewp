@@ -1,5 +1,26 @@
 # Changelog
 
+## 8.6.0 - 2026-11-17 - Comprehensive Security Hardening & Verification Release
+
+### Security
+
+- **AEGIS & Oracle Policy Integrity:** Removed unauthenticated `REQUEST_URI` substring bypasses (`page=vis-`/`vgt-`), prioritized deterministic `BLOCK` verdicts over `DISTILL_SAFE_RULES`, and restricted trusted page-builder contexts to authenticated WordPress sessions.
+- **Compatibility Bridge Isolation:** Stopped the page-builder bridge from removing global `VIS_Titan` security headers or injecting global Hades/AEGIS bypasses via unverified query flags; checks now require active builder plugins alongside authenticated sessions.
+- **ThroneGuard & Key Vault Access Control:** Prevented `manage_options` admins from reclaiming the `master` role once a master account exists, required `password_verify()` unconditionally in `handle_save()` whenever a Superkey hash is stored, rejected default WordPress placeholder salts in `VIS_Key_Vault`, enforced `is_protected_option()` + registry membership in `delete_key()`, and gated Vault actions behind `MASTER_CAP` when ThroneGuard is active.
+- **Titan Signed CSP Reports:** Added server-signed HMAC `{report_token}` verification and `document-origin` host validation to `/wp-json/visiongaia/v1/titan/csp-report`, preventing unauthenticated enforcement lockouts.
+- **Zeus & XDR Anti-Lockout & Canonicalization:** Evaluated IP allowlists before XDR route containment, protected core WordPress paths (`/`, `/wp-login.php`, `/wp-admin/`, `/wp-cron.php`, `/wp-json`) from autonomous route containment, prevented `//host` open redirects in `vgt_adm`, minted distinct multi-use session cookies instead of re-storing burned entry tokens, and verified physical file existence on static fast-paths.
+- **Styx & Morpheus Network Boundary:** Removed request-controlled `HTTP_HOST` / `SERVER_NAME` headers from own-host allowlists and enforced fail-closed handling on malformed or IPv6 `[::]` targets; fixed Morpheus UI isolation nonces (`visMorpheusConfig`), removed user/meta APIs from Core DB bypass, raised tracer stack depth to 80 frames with single-file plugin support, and isolated audit logs inside Groq AI prompts.
+- **Threat Intel, Gorgon & Prometheus Hardening:** Blocked `/0`–`/7` (IPv4) / `/0`–`/23` (IPv6) and private/reserved CIDRs in Threat Intel feeds, enforced HMAC verification & strict PCRE bounds on Gorgon dynamic regex updates (without halting user traffic on PCRE errors), locked Gorgon Harvester tables to canonical GeDefense logs, masked saved API keys in admin views, fixed `\VIS_Security` namespace resolution in `Gorgon_Config`, and exempted static assets/logged-in sessions before single-IP Prometheus swarm blocking.
+- **Integrity, Ghost Trap, Airlock & Scanner:** Activated periodic runtime `VIS_Module_Integrity::verify_all()` verification across 28 components (including `threat-intel`), restricted Ghost Trap extensions to `.php` with proxy-aware IP resolution, removed SVG from default Airlock uploads alongside hardened DOMXPath checks, raised ZIP `.php` payload score to 85 (blocking), removed the broad `includes/scanner/` path skip on uploads, and added multi-window sampling for large PHP files (>1 MiB).
+- **Dashboard & I18n:** Added `sanitize_html_class` / `esc_attr` escaping in Trinity feed badges and restricted global `vis_config['dashboard_lang']` writes to `manage_options`.
+
+### Changed & Tests
+
+- Bumped product and dashboard version to `8.6.0` (`VIS_VERSION = '8.6.0 OPEN CORE'`, plugin header, views, user-agents, READMEs, manifest).
+- Added [`scripts/audit-fixes-regression.php`](scripts/audit-fixes-regression.php) and wired it into [`.github/workflows/hardening.yml`](.github/workflows/hardening.yml).
+
+---
+
 ## 8.5.1 - 2026-10-27 - Security hardening for the Linux bridge
 
 - Bridge configuration now requires an unlocked ThroneGuard master session; role membership alone is insufficient.

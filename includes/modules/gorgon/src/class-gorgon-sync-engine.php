@@ -151,12 +151,20 @@ final class Gorgon_Sync_Engine {
         }
 
         if ( ! empty( $matrix_data['meta_regex']['all'] ) ) {
+            // Unsignierte Remote-PCREs ohne explizite HMAC-Prüfung nicht mehr kompilieren (FIND-007);
+            // falls eine signierte Signatur vorliegt, ReDoS-Muster inkl. Backreferences/Recursion strikt abweisen.
             $raw_regex = trim( (string) $matrix_data['meta_regex']['all'] );
-            $safe_regex = str_replace( '#', '\#', $raw_regex );
+            $signature = is_string($matrix_data['meta_regex']['sig'] ?? null) ? $matrix_data['meta_regex']['sig'] : '';
+            $apiKey    = $this->config->get_api_key();
+            if ($apiKey === '' || $signature === '' || !hash_equals(hash_hmac('sha256', $raw_regex, $apiKey), strtolower($signature))) {
+                error_log('VGT GORGON SECURITY: Unsigned or invalid remote meta_regex rejected.');
+                return;
+            }
+            $safe_regex = preg_replace('/(?<!\\\\)#/', '\\#', $raw_regex) ?? '';
             $singularity = '#' . $safe_regex . '#is';
             
-            if ( strlen( $singularity ) > 2048 ) return;
-            if ( preg_match('/(\([^)]*\+[^)]*\)\+|\([^)]*\*[^)]*\)\*|\([^)]*\{[^}]*\}[^)]*\)\+)/', $raw_regex) ) return;
+            if ( strlen( $singularity ) > 2048 || $safe_regex === '' ) return;
+            if ( preg_match('/(\([^)]*[\+\*\{][^)]*\)[\+\*\{]|\\\\[1-9]|\(\?R\)|\(\?<\w+>)/i', $raw_regex) ) return;
 
             $is_valid_regex = false;
             $original_backtrack = ini_get('pcre.backtrack_limit');

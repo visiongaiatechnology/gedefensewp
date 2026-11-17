@@ -99,8 +99,7 @@ final class Styx {
         $candidates = [];
         if (function_exists('home_url')) $candidates[] = (string) home_url();
         if (function_exists('site_url')) $candidates[] = (string) site_url();
-        if (!empty($_SERVER['HTTP_HOST'])) $candidates[] = (string) $_SERVER['HTTP_HOST'];
-        if (!empty($_SERVER['SERVER_NAME'])) $candidates[] = (string) $_SERVER['SERVER_NAME'];
+        // Niemals unvalidierte Request-Header ($_SERVER['HTTP_HOST'] / SERVER_NAME) als eigene Hosts annehmen (FIND-006).
         if (!empty($_SERVER['SERVER_ADDR'])) $candidates[] = (string) $_SERVER['SERVER_ADDR'];
 
         $hosts = [];
@@ -121,17 +120,26 @@ final class Styx {
         // MASTER KILL-SWITCH: Absolute Ignoranz, wenn STYX deaktiviert ist
         if (!$this->is_enabled) return $preempt;
 
-        // SSRF-Bypass & Obfuscation Defense (wp_parse_url & Sanitization)
+        // SSRF-Bypass & Obfuscation Defense (wp_parse_url & IPv6-safe Sanitization, FIND-006)
         $decoded_url = urldecode($url);
         $parsed_host = wp_parse_url($decoded_url, PHP_URL_HOST);
         
-        if (!$parsed_host) return $preempt;
+        if (!is_string($parsed_host) || trim($parsed_host) === '') {
+            return new \WP_Error('vgt_styx_blocked', 'VGT STYX: Invalid or missing outbound host rejected.');
+        }
 
-        // Normalisierung gegen Trailing-Dots, Case-Mismatch und Octal/Hex/Null-Byte Injections
-        $host = preg_replace('/[^a-zA-Z0-9.-]/', '', $parsed_host);
-        $host = rtrim(strtolower(trim($host)), '.');
+        $unbracketed = trim($parsed_host, "[] \t\r\n");
+        if (filter_var($unbracketed, FILTER_VALIDATE_IP) !== false) {
+            $host = strtolower($unbracketed);
+        } else {
+            // Normalisierung gegen Trailing-Dots, Case-Mismatch und Octal/Hex/Null-Byte Injections
+            $host = preg_replace('/[^a-zA-Z0-9.-]/', '', $parsed_host);
+            $host = rtrim(strtolower(trim((string)$host)), '.');
+        }
         
-        if (empty($host)) return $preempt;
+        if ($host === '') {
+            return new \WP_Error('vgt_styx_blocked', 'VGT STYX: Host normalization rejected empty/malformed target.');
+        }
 
         $origin = $this->detect_origin();
         $is_allowed = $this->check_host($host, $origin);
@@ -230,8 +238,9 @@ final class Styx {
             
             $file = wp_normalize_path($step['file']);
 
-            // Threat Intelligence Subsystem Erkennung
-            if (str_contains($file, 'class-vis-threat-intel.php') || str_contains($file, 'threat-intel')) {
+            // Threat Intelligence Subsystem Erkennung (exakte Modul-Pfadprüfung, FIND-006)
+            $ti_root = defined('VIS_PATH') ? wp_normalize_path(VIS_PATH) . 'includes/modules/threat-intel/' : '';
+            if ($ti_root !== '' && str_starts_with($file, $ti_root)) {
                 return 'THREAT_INTEL';
             }
             

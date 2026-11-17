@@ -18,8 +18,10 @@ final class VIS_Php_Lexical_Detector implements VIS_File_Detector {
     public function analyzeContent(string $content, VIS_Scan_Context $context): array {
         $relPath = strtolower(str_replace('\\', '/', $context->relativePath));
 
-        // Skip internal scanner pattern definition files to avoid signature self-matching
-        if (str_contains($relPath, 'includes/scanner/')) {
+        // Nur GeDefense-eigene Scanner-Detektordateien unter plugins/*/includes/scanner/ überspringen,
+        // niemals Uploads oder beliebig benannte Unterverzeichnisse (FIND-014).
+        if (!str_starts_with($relPath, 'wp-content/uploads/')
+            && preg_match('~(?:^|/)wp-content/plugins/[^/]+/includes/scanner/(?:detectors/|class-vis-malware-engine\.php$)~', $relPath) === 1) {
             return [];
         }
 
@@ -123,19 +125,27 @@ final class VIS_Php_Lexical_Detector implements VIS_File_Detector {
             return $content;
         }
 
-        // Large file optimization: read first 512KB and last 512KB to catch injected webshells/payloads
-        $half = (int) floor($maxBytes / 2);
-        $head = fread($handle, $half);
-        $head = is_string($head) ? $head : '';
-
-        $tail = '';
-        if (@fseek($handle, -$half, SEEK_END) === 0) {
-            $tail = fread($handle, $half);
-            $tail = is_string($tail) ? $tail : '';
+        // Large file coverage: Kopf, Tail und gleichmäßig verteilte Mittel-Fenster einlesen (FIND-014).
+        $window = max(65536, intdiv($maxBytes, 5));
+        $offsets = [
+            0,
+            max(0, intdiv($fileSize, 4) - intdiv($window, 2)),
+            max(0, intdiv($fileSize, 2) - intdiv($window, 2)),
+            max(0, intdiv($fileSize * 3, 4) - intdiv($window, 2)),
+            max(0, $fileSize - $window),
+        ];
+        $chunks = [];
+        foreach (array_unique($offsets) as $pos) {
+            if (@fseek($handle, $pos, SEEK_SET) === 0) {
+                $slice = fread($handle, $window);
+                if (is_string($slice) && $slice !== '') {
+                    $chunks[] = $slice;
+                }
+            }
         }
         fclose($handle);
 
-        return $head . "\n/* ... VGT_STREAM_GAP ... */\n" . $tail;
+        return implode("\n/* ... VGT_STREAM_WINDOW ... */\n", $chunks);
     }
 
     private function hasHighEntropyPayload(string $content): bool {

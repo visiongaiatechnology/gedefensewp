@@ -69,7 +69,7 @@ final class VIS_Aegis_Oracle {
     ];
 
     private const DISTILL_SAFE_RULES = [
-        ['safe_own_admin', 'Trusted Admin Surface', '~(?:^|[/?&])page=(?:vis|vgt)-[a-z0-9_-]+~i'],
+        ['safe_own_admin', 'Trusted Admin Surface', '~^(?:https?://[^/\s]+)?/wp-admin/[a-z0-9_.-]+\.php\?page=(?:vis|vgt)-[a-z0-9_-]+(?:&[a-z0-9_=&%-]*)?$~i'],
         ['safe_security_txt', 'Public Security Policy', '~\.well-known/security\.txt(?:$|[?\s])~i'],
         ['safe_elementor', 'Trusted Page Builder JSON', '~"(?:get_widgets_config|save_builder|render_widget)"~i'],
     ];
@@ -206,7 +206,7 @@ EOT;
                 'Authorization' => 'Bearer ' . trim($api_key),
                 'Content-Type'  => 'application/json; charset=utf-8',
                 'Accept'        => 'application/json',
-                'User-Agent'    => 'VGT-Sentinel-Aegis/7.4.0',
+                'User-Agent'    => 'VGT-Sentinel-Aegis/8.6.0',
             ],
             'timeout'     => self::MAX_TIMEOUT,
             'limit_response_size' => 262144,
@@ -389,17 +389,18 @@ EOT;
             }
         }
 
-        // A trusted context suppresses medium-confidence matches (page builder
-        // HTML, own admin surface, public security.txt), but never a
-        // high-confidence SQL/RCE/path-traversal finding.
-        if ($best !== null && $best['confidence'] >= 95) {
+        // Deterministische Block-Verdicts haben stets Vorrang vor URI-/Builder-Safe-Markern (FIND-001).
+        // Einzige Ausnahme: reine /wp-admin/*.php?page=vis- Referer gegen Remote-Asset-Hijack-Fehlalarm.
+        if ($best !== null) {
+            if (($best['vector'] ?? '') === 'remote_asset_hijack'
+                && $safe !== null
+                && ($safe['vector'] ?? '') === 'safe_own_admin') {
+                return $safe;
+            }
             return $best;
         }
         if ($safe !== null) {
             return $safe;
-        }
-        if ($best !== null) {
-            return $best;
         }
 
         if ($trusted) {
@@ -430,6 +431,13 @@ EOT;
 
     private static function trusted_payload_context(string $payload, string $context): bool {
         if (str_contains(strtoupper($context), 'ASSESSMENT')) {
+            return false;
+        }
+        // Unauthentifizierte Requests dürfen niemals über Payload-Strings wie "save_builder"
+        // Oracle-Regeln unter Confidence 95 unterdrücken (FIND-001).
+        if (!function_exists('is_user_logged_in') || !is_user_logged_in()
+            || !function_exists('current_user_can')
+            || (!current_user_can('edit_posts') && !current_user_can('manage_options'))) {
             return false;
         }
         if (preg_match('~"(?:get_widgets_config|save_builder|render_widget)"~i', $payload) === 1) {

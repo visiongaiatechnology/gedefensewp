@@ -160,25 +160,53 @@ final class VIS_Airlock_Scanner {
         if (empty($svg_content)) return false;
         if (strlen($svg_content) > $this->config->get_max_size_bytes()) return false;
 
+        // Dekodierte XML-Entities, Namespaces und Processing-Instructions prüfen (FIND-014).
+        $decoded = html_entity_decode($svg_content, ENT_QUOTES | ENT_XML1, 'UTF-8');
         $blacklist = [
-            '/<script\b/i', '/\son[a-z]+\s*=/i', '/javascript\s*:/i',
-            '/<iframe\b/i', '/<object\b/i', '/<embed\b/i', '/<foreignObject\b/i',
-            '/<!ENTITY/i', '/<!DOCTYPE/i', '/xlink:href\s*=\s*[\'"]\s*(?:javascript:|data:)/i'
+            '/<\s*(?:[a-z0-9_-]+:)?(?:script|iframe|object|embed|foreignObject|handler|listener|set|animate)\b/i',
+            '/<\?xml-stylesheet\b/i',
+            '/\son[a-z0-9_-]+\s*=/i',
+            '/(?:javascript|vbscript|data)\s*:/i',
+            '/<!(?:ENTITY|DOCTYPE)/i',
         ];
 
-        foreach ($blacklist as $pattern) {
-            if (preg_match($pattern, $svg_content)) return false;
+        foreach ([$svg_content, $decoded] as $variant) {
+            foreach ($blacklist as $pattern) {
+                if (preg_match($pattern, $variant) === 1) return false;
+            }
         }
 
-        if (class_exists('DOMDocument')) {
-            $previous = libxml_use_internal_errors(true);
-            $dom = new DOMDocument();
-            $loaded = $dom->loadXML($svg_content, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
-            libxml_clear_errors();
-            libxml_use_internal_errors($previous);
+        if (!class_exists('DOMDocument')) {
+            return false;
+        }
+        $previous = libxml_use_internal_errors(true);
+        $dom = new DOMDocument();
+        $loaded = $dom->loadXML($svg_content, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
 
-            if (!$loaded || strtolower($dom->documentElement?->tagName ?? '') !== 'svg') {
+        if (!$loaded || $dom->documentElement === null || strtolower((string)$dom->documentElement->localName) !== 'svg') {
+            return false;
+        }
+
+        $allowedTags = ['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'defs', 'lineargradient', 'radialgradient', 'stop', 'title', 'desc', 'use'];
+        $xpath = new DOMXPath($dom);
+        foreach ($xpath->query('//*') ?: [] as $node) {
+            if (!$node instanceof DOMElement) continue;
+            $tag = strtolower((string)$node->localName);
+            if (!in_array($tag, $allowedTags, true)) {
                 return false;
+            }
+            if ($node->hasAttributes()) {
+                foreach ($node->attributes as $attr) {
+                    $attrName = strtolower((string)$attr->localName);
+                    $attrVal = strtolower(trim((string)$attr->nodeValue));
+                    if (str_starts_with($attrName, 'on')) return false;
+                    if (in_array($attrName, ['href', 'src', 'xlink:href'], true)
+                        && (str_contains($attrVal, 'javascript:') || str_contains($attrVal, 'data:') || str_contains($attrVal, 'vbscript:') || str_starts_with($attrVal, 'http'))) {
+                        return false;
+                    }
+                }
             }
         }
 

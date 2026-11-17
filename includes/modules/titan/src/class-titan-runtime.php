@@ -152,8 +152,18 @@ final class VIS_Titan_Runtime {
     private function effectiveHeaders(): array {
         $headers = is_array($this->policy['headers'] ?? null) ? $this->policy['headers'] : [];
         if (!function_exists('is_ssl') || !is_ssl()) unset($headers['Strict-Transport-Security']);
-        if ($this->nonce !== '') {
-            foreach ($headers as $name => $value) $headers[$name] = str_replace('{nonce}', $this->nonce, (string)$value);
+        $reportToken = class_exists('VIS_Titan_Violation_Collector') ? VIS_Titan_Violation_Collector::issueReportToken($this->surface) : '';
+        foreach ($headers as $name => $value) {
+            $val = (string)$value;
+            if ($this->nonce !== '') {
+                $val = str_replace('{nonce}', $this->nonce, $val);
+            }
+            if ($reportToken !== '') {
+                $val = str_replace('{report_token}', rawurlencode($reportToken), $val);
+            } else {
+                $val = str_replace('&token={report_token}', '', $val);
+            }
+            $headers[$name] = $val;
         }
         return array_map('strval', $headers);
     }

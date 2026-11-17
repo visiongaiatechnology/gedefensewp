@@ -116,7 +116,10 @@ final class ResponseEngine {
             }
             if ($targetRoute === '' && !empty($node['route']) && is_string($node['route']) && str_starts_with($node['route'], '/')) {
                 $r = (string)parse_url($node['route'], PHP_URL_PATH);
-                if (strlen($r) > 1) {
+                $rNorm = rtrim(strtolower($r), '/') ?: '/';
+                if (strlen($r) > 1
+                    && !in_array($rNorm, ['/', '/wp-login.php', '/wp-admin', '/wp-cron.php', '/wp-json', '/index.php'], true)
+                    && !str_starts_with($rNorm, '/wp-admin/')) {
                     $targetRoute = $r;
                 }
             }

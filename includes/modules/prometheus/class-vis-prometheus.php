@@ -322,14 +322,16 @@ final class Prometheus {
             return;
         }
 
-        $this->track_botanical_swarm_fingerprint($ip);
-
         $current_time = (float) ( $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime( true ) );
         $request_uri  = $_SERVER['REQUEST_URI'] ?? '/';
         
-        if ( $this->is_static_asset_request($request_uri) ) {
+        // Statische Assets & eingeloggte Benutzer vor Swarm-/Subnet-Profiling ausnehmen (FIND-015).
+        if ( $this->is_static_asset_request($request_uri)
+            || (function_exists('is_user_logged_in') && is_user_logged_in()) ) {
             return;
         }
+
+        $this->track_botanical_swarm_fingerprint($ip);
 
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         
@@ -785,17 +787,15 @@ final class Prometheus {
         if (self::botanical_swarm_threshold_reached($swarm_data['ips'])) {
             $this->write_telemetry('BOTANICAL_SWARM_DETECTED', "Distributed Swarm Botnet (" . count($swarm_data['ips']) . " IPs)", $ip);
             
-            $subnet = $subnet_scope;
-            if ($subnet !== '') {
-                if (class_exists('\VIS_Cerberus') && method_exists('\VIS_Cerberus', 'instance')) {
-                    try {
-                        $cerberus = \VIS_Cerberus::instance();
-                        if (method_exists($cerberus, 'ban_subnet')) {
-                            $cerberus->ban_subnet($subnet, "PROMETHEUS_SWARM_FINGERPRINT_KILL [FP: " . substr($botanical_fp, 0, 8) . "]");
-                        }
-                    } catch (\Throwable $e) {
-                        // Fail safe
+            // Einzelne Angreifer-IP blocken statt ganzer /24-/64-NAT-Subnetze (FIND-015).
+            if (class_exists('\VIS_Cerberus') && method_exists('\VIS_Cerberus', 'instance')) {
+                try {
+                    $cerberus = \VIS_Cerberus::instance();
+                    if (method_exists($cerberus, 'ban_ip')) {
+                        $cerberus->ban_ip($ip, "PROMETHEUS_SWARM_FINGERPRINT [FP: " . substr($botanical_fp, 0, 8) . "]");
                     }
+                } catch (\Throwable $e) {
+                    // Fail safe
                 }
             }
         }

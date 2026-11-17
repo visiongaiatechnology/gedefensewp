@@ -80,7 +80,8 @@
             return;
         }
 
-        if (!syncUrl || !syncKey) {
+        const hasStoredKey = app.dataset.key === '1';
+        if (!syncUrl || (!syncKey && !hasStoredKey)) {
             updatePill('AUTH REQUIRED', 'pending');
             return;
         }
@@ -132,7 +133,9 @@
         const keyEl = document.getElementById('vgt-nexus-key');
         const url = urlEl instanceof HTMLInputElement ? urlEl.value.trim() : '';
         const key = keyEl instanceof HTMLInputElement ? keyEl.value.trim() : '';
-        if (!url || !key) {
+        const app = getApp();
+        const hasStoredKey = !!(app && app.dataset.key === '1');
+        if (!url || (!key && !hasStoredKey)) {
             alert('URL und Key werden benötigt.');
             return;
         }

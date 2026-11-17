@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 final class VIS_Dashboard_Assets {
 
     public static function enqueue(): void {
-        $base_version = defined('VIS_VERSION') ? VIS_VERSION : 'omega';
+        $base_version = defined('VIS_VERSION') ? VIS_VERSION : '8.6.0';
         $modern_css = defined('VIS_PATH') ? VIS_PATH . 'assets/css/vis-dashboard-modern.css' : '';
         $version = (file_exists($modern_css)) ? $base_version . '.' . filemtime($modern_css) : $base_version;
 
@@ -57,6 +57,21 @@ final class VIS_Dashboard_Assets {
         if (in_array($activeTab, $viewScripts, true)) {
             $viewScriptPath = VIS_PATH . 'includes/dashboard/views/' . $activeTab . '/script.js';
             if (is_file($viewScriptPath)) wp_enqueue_script('vis-dashboard-view-' . $activeTab, VIS_URL . 'includes/dashboard/views/' . $activeTab . '/script.js', ['vis-dashboard-js'], $version, true);
+        }
+        if ($activeTab === 'morpheus') {
+            $morpheusIsoToken = '';
+            try {
+                if (class_exists('\\VisionGaia\\GeDefense\\Modules\\Morpheus\\Morpheus')) {
+                    $morpheusIsoToken = \VisionGaia\GeDefense\Modules\Morpheus\Morpheus::get_instance()->dashboard->generate_isolation_token();
+                }
+            } catch (\Throwable $e) {
+                $morpheusIsoToken = '';
+            }
+            wp_localize_script('vis-dashboard-view-morpheus', 'visMorpheusConfig', [
+                'nonce'          => wp_create_nonce('vgt_morpheus_action'),
+                'isolationToken' => $morpheusIsoToken,
+                'ajaxUrl'        => admin_url('admin-ajax.php'),
+            ]);
         }
         if ($activeTab === 'aegis') {
             wp_enqueue_script('vis-oracle-diagnostics', VIS_URL . 'assets/js/vis-oracle-diagnostics.js', [], $version, true);

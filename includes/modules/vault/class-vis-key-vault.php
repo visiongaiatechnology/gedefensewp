@@ -54,7 +54,11 @@ final class VIS_Key_Vault {
 
         foreach ($keys_to_check as $const) {
             if (defined($const)) {
-                $salts .= constant($const);
+                $val = (string) constant($const);
+                // Reject default WordPress placeholder salts and trivial weak strings (FIND-004).
+                if ($val !== '' && stripos($val, 'put your unique phrase here') === false && strlen($val) >= 16) {
+                    $salts .= $val;
+                }
             }
         }
 
@@ -91,12 +95,24 @@ final class VIS_Key_Vault {
      * Verhindert die gezielte Manipulation oder das Überschreiben sensibler WP-Systemkonfigurationen.
      */
     private static function is_protected_option(string $option): bool {
+        $normalized = strtolower(trim($option));
         $blocklist = [
             'siteurl', 'home', 'blogname', 'admin_email', 'users_can_register',
             'default_role', 'active_plugins', 'template', 'stylesheet', 'current_theme',
-            'vis_vault_registry', 'vgt_sentinel_vault_system_salt', 'vgt_vault_registry_index'
+            'vis_config', 'vis_vault_registry', 'vgt_sentinel_vault_system_salt',
+            'vgt_vault_registry_index', 'vis_throneguard_superkey_hash', 'vis_throneguard_leases',
+            'vis_titan_policy_state', 'vis_titan_violations', 'vis_zeus_xdr_containment',
+            'vgt_learning_regex', 'cron', 'rewrite_rules', 'user_roles',
         ];
-        return in_array(strtolower(trim($option)), $blocklist, true) || str_starts_with(strtolower($option), 'wp_');
+        if (in_array($normalized, $blocklist, true)) {
+            return true;
+        }
+        foreach (['wp_', 'vis_throneguard_', 'vis_titan_', 'vis_zeus_', 'vgt_gorgon_'] as $prefix) {
+            if (str_starts_with($normalized, $prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -356,6 +372,15 @@ final class VIS_Key_Vault {
         if (empty($clean_identifier)) {
             return;
         }
+        if (self::is_protected_option($clean_identifier)) {
+            throw new \RuntimeException("VGT Vault Error: Geschützte Systemoption [{$clean_identifier}] kann nicht gelöscht werden.");
+        }
+
+        $registry = get_option(self::REGISTRY_OPTION, []);
+        $isRegistered = is_array($registry) && (isset($registry[$clean_identifier]) || in_array($clean_identifier, $registry, true));
+        if (!$isRegistered && preg_match('/^(?:vis|vgt)_[a-z0-9_]+(?:_key|_secret|_token)$/i', $clean_identifier) !== 1) {
+            throw new \RuntimeException("VGT Vault Error: Nicht registrierte Option [{$clean_identifier}] kann nicht über den Vault gelöscht werden.");
+        }
 
         delete_option($clean_identifier);
         if (get_option($clean_identifier) !== false) {
@@ -425,6 +450,12 @@ final class VIS_Key_Vault {
      */
     public function handle_vault_actions(): void {
         if (!is_admin() || !current_user_can('manage_options') || empty($_POST['action'])) {
+            return;
+        }
+        // Require Sovereign Master capability when ThroneGuard Master protection is active (FIND-004).
+        if (class_exists('VIS_Throne_Guard')
+            && (VIS_Throne_Guard::master_exists() || (string)get_option('vis_throneguard_superkey_hash', '') !== '')
+            && !current_user_can(VIS_Throne_Guard::MASTER_CAP)) {
             return;
         }
 

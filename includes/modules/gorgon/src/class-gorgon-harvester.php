@@ -101,6 +101,21 @@ final class Gorgon_Harvester {
         
         $raw_config = $this->config->get_raw_config();
         $custom_nodes = $raw_config['gorgon_nodes'] ?? [];
-        return array_merge( $defaults, is_array( $custom_nodes ) ? $custom_nodes : [] );
+        $allowedTables = [
+            $wpdb->prefix . 'vis_omega_logs' => true,
+            $wpdb->prefix . 'vis_oracle_patterns' => true,
+            $wpdb->prefix . 'vis_apex_bans' => true,
+        ];
+        $filteredCustom = [];
+        if (is_array($custom_nodes)) {
+            foreach ($custom_nodes as $nodeId => $nodeCfg) {
+                if (!is_array($nodeCfg)) continue;
+                $tbl = preg_replace('/[^a-zA-Z0-9_]/', '', (string)($nodeCfg['table'] ?? ''));
+                if (isset($allowedTables[$tbl])) {
+                    $filteredCustom[$nodeId] = $nodeCfg;
+                }
+            }
+        }
+        return array_merge( $defaults, $filteredCustom );
     }
 }

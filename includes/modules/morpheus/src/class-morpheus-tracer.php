@@ -75,7 +75,8 @@ final class Morpheus_Tracer {
     }
 
     public function identify_caller(): string {
-        $stack = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 30 ); 
+        // Tieferer Stack & Single-File-Plugins auflösen (FIND-013).
+        $stack = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 80 ); 
         
         // Den Pfad des Sentinel Plugins selbst ermitteln, um es zu ignorieren
         $vis_path = defined('VIS_PATH') ? strtolower( wp_normalize_path( VIS_PATH ) ) : '';
@@ -115,8 +116,8 @@ final class Morpheus_Tracer {
                 
                 $relative = trim( str_replace( $this->cached_plugin_dir, '', $file ), '/' );
                 $folder = explode( '/', $relative )[0];
-                if ( ! empty( $folder ) && ! str_ends_with( $folder, '.php' ) ) {
-                    return $folder;
+                if ( ! empty( $folder ) ) {
+                    return str_ends_with( $folder, '.php' ) ? basename( $folder, '.php' ) : $folder;
                 }
             }
 

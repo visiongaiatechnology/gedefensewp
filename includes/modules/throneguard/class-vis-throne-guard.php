@@ -98,10 +98,20 @@ final class VIS_Throne_Guard {
         }
     }
 
+    public static function master_exists(): bool {
+        return self::get_instance()->has_master();
+    }
+
     public static function provision_current_master(): bool {
         $instance = self::get_instance();
         $user = wp_get_current_user();
         if (!$user->exists() || !$user->has_cap('manage_options')) return false;
+        // Sovereign Master Escalation Guard (FIND-003): Once any Master account exists,
+        // a standard manage_options administrator must never self-promote into MASTER_ROLE.
+        if ($instance->has_master() && !$user->has_cap(self::MASTER_CAP)) {
+            self::log_event('MASTER_ESCALATION_BLOCKED', 'Nicht autorisierte Master-Übernahme durch [' . $user->user_login . '] blockiert.', 'critical');
+            return false;
+        }
         $instance->ensure_master_role();
         $user->set_role(self::MASTER_ROLE);
         $success = $user->has_cap(self::MASTER_CAP);
@@ -605,9 +615,9 @@ final class VIS_Throne_Guard {
         $newKey = isset($_POST['new_superkey']) && is_string($_POST['new_superkey']) ? wp_unslash($_POST['new_superkey']) : '';
         $superkeyVerified = false;
 
-        if ($existingHash !== '' && ($currentKey !== '' || $newKey !== '')) {
-            if (!password_verify($currentKey, $existingHash)) {
-                self::log_event('KEY_UPDATE_FAIL', 'Fehlgeschlagene Superkey-Verifikation: Eingegebener Superkey war falsch.', 'warning');
+        if ($existingHash !== '') {
+            if ($currentKey === '' || !password_verify($currentKey, $existingHash)) {
+                self::log_event('KEY_UPDATE_FAIL', 'Fehlgeschlagene Superkey-Verifikation: Eingegebener Superkey fehlte oder war falsch.', 'warning');
                 wp_safe_redirect($this->dashboard_url(['throne_error' => 'verification']));
                 exit;
             }

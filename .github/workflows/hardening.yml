@@ -53,7 +53,8 @@ jobs:
             namespace \
             dashboard-ui \
             dashboard-telemetry \
-            cerberus-loopback-ban
+            cerberus-loopback-ban \
+            audit-fixes
           do
             echo "::group::${suite}-regression.php"
             php "scripts/${suite}-regression.php"

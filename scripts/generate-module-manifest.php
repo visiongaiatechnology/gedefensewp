@@ -31,6 +31,7 @@ $components = [
     'oracle' => ['directory' => 'includes/modules/oracle'],
     'prometheus' => ['directory' => 'includes/modules/prometheus'],
     'styx' => ['directory' => 'includes/modules/styx'],
+    'threat-intel' => ['directory' => 'includes/modules/threat-intel'],
     'titan' => ['directory' => 'includes/modules/titan'],
     'throneguard' => ['directory' => 'includes/modules/throneguard'],
     'loginpager' => ['directory' => 'includes/modules/loginpager'],

@@ -266,7 +266,40 @@ final class VIS_Bootstrapper {
         if (is_admin() && class_exists('VIS_Dashboard_Core')) {
             new VIS_Dashboard_Core();
         }
-        
+
+        // Runtime Integrity Verification Gate (FIND-011): verify pinned component manifests periodically at runtime.
+        if (class_exists('VIS_Module_Integrity') && method_exists('VIS_Module_Integrity', 'verify_all')) {
+            $verifiedRecently = function_exists('get_transient') ? get_transient('vis_runtime_integrity_verified_v1') : false;
+            if ($verifiedRecently === false) {
+                try {
+                    $integrityResults = \VIS_Module_Integrity::verify_all();
+                    $tampered = [];
+                    foreach ($integrityResults as $compId => $compStatus) {
+                        if (($compStatus['status'] ?? '') !== 'VERIFIED') {
+                            $tampered[] = $compId . ':' . ($compStatus['status'] ?? 'UNKNOWN');
+                        }
+                    }
+                    if ($tampered !== []) {
+                        error_log('[VGT INTEGRITY ALERT] Runtime component verification mismatch: ' . implode(', ', $tampered));
+                        if (class_exists('\\VisionGaia\\GeDefense\\Xdr\\EventFabric')) {
+                            \VisionGaia\GeDefense\Xdr\EventFabric::ingest([
+                                'sensor' => 'INTEGRITY', 'category' => 'INTEGRITY',
+                                'event_type' => 'RUNTIME_COMPONENT_MISMATCH', 'role' => 'CONFIRMATION',
+                                'severity' => 9, 'confidence' => 100, 'score' => 95,
+                                'entity_type' => 'SYSTEM', 'entity_id' => 'module-integrity',
+                                'vector' => 'MANIFEST_TAMPER', 'action_type' => 'ALERT', 'outcome' => 'DETECTED',
+                                'metadata' => ['components' => implode(', ', array_slice($tampered, 0, 10))],
+                            ]);
+                        }
+                    } elseif (function_exists('set_transient')) {
+                        set_transient('vis_runtime_integrity_verified_v1', 1, 300);
+                    }
+                } catch (\Throwable $e) {
+                    error_log('[VGT INTEGRITY ALERT] Runtime check exception: ' . $e->getMessage());
+                }
+            }
+        }
+
         define('VIS_BOOTSTRAP_COMPLETE', true);
     }
 }

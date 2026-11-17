@@ -7,14 +7,13 @@ final class VIS_Airlock_Config {
 
     private array $config;
 
-    // Fallback Immutable Baseline
+    // Fallback Immutable Baseline (SVG entfernt wegen aktivem XSS-Risiko, FIND-014)
     private const BASE_ALLOWED = [
         'jpg'  => 'image/jpeg',
         'jpeg' => 'image/jpeg',
         'png'  => 'image/png',
         'gif'  => 'image/gif',
         'webp' => 'image/webp',
-        'svg'  => 'image/svg+xml',
         'pdf'  => 'application/pdf',
         'zip'  => 'application/zip'
     ];

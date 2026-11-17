@@ -67,8 +67,7 @@ final class Morpheus_Shield_Network {
         $candidates = array();
         if ( function_exists( 'home_url' ) ) $candidates[] = (string) parse_url( (string) home_url(), PHP_URL_HOST );
         if ( function_exists( 'site_url' ) ) $candidates[] = (string) parse_url( (string) site_url(), PHP_URL_HOST );
-        if ( isset( $_SERVER['HTTP_HOST'] ) ) $candidates[] = (string) $_SERVER['HTTP_HOST'];
-        if ( isset( $_SERVER['SERVER_NAME'] ) ) $candidates[] = (string) $_SERVER['SERVER_NAME'];
+        // Niemals unvalidierte HTTP_HOST / SERVER_NAME Header als vertrauenswürdige Hosts akzeptieren (FIND-006).
         if ( isset( $_SERVER['SERVER_ADDR'] ) ) $candidates[] = (string) $_SERVER['SERVER_ADDR'];
 
         foreach ( $candidates as $candidate ) {

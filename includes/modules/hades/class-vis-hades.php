@@ -71,13 +71,19 @@ final class VIS_Hades {
     }
 
     public function enforce_admin_stealth(): void {
-        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
-        
-        if (strpos($request_uri, 'admin-ajax.php') !== false || strpos($request_uri, 'admin-post.php') !== false) {
+        $request_uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+        $parsed_path = parse_url($request_uri, PHP_URL_PATH);
+        $path = is_string($parsed_path) ? strtolower(str_replace('\\', '/', $parsed_path)) : '';
+
+        // Exakte Pfadprüfung verhindert ?admin-ajax.php Query-String-Bypass (FIND-012).
+        if (str_ends_with($path, '/wp-admin/admin-ajax.php')
+            || str_ends_with($path, '/wp-admin/admin-post.php')
+            || $path === '/admin-ajax.php'
+            || $path === '/admin-post.php') {
             return;
         }
 
-        $is_login_attempt = strpos($request_uri, 'wp-login.php') !== false || strpos($request_uri, 'wp-admin') !== false;
+        $is_login_attempt = str_contains($path, 'wp-login.php') || str_contains($path, 'wp-admin');
 
         if ($is_login_attempt) {
             $zeus_config = get_option('vis_zeus_config', []);

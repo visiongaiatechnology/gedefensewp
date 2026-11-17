@@ -122,12 +122,18 @@ final class VIS_Ghost_Trap_Engine {
 
     private function compile_trap_body(): string {
         $tableName = defined('VIS_TABLE_BANS') ? (string)VIS_TABLE_BANS : 'vis_apex_bans';
+        $secRel = 'includes/core/class-vis-security.php';
         return <<<PHP
 define('SHORTINIT', true);
 require_once __DIR__ . '/wp-load.php';
+\$secFile = (defined('VIS_PATH') ? rtrim((string)VIS_PATH, '/') : __DIR__ . '/wp-content/plugins/gedefensewp-main') . '/{$secRel}';
+if (!class_exists('VIS_Security') && is_readable(\$secFile)) {
+    require_once \$secFile;
+}
 global \$wpdb;
-\$ip = isset(\$_SERVER['REMOTE_ADDR']) ? (string)\$_SERVER['REMOTE_ADDR'] : '';
-if (filter_var(\$ip, FILTER_VALIDATE_IP) !== false) {
+// Proxy-sichere IP-Auflösung verhindert Reverse-Proxy-/CDN-Selbstbann (FIND-010).
+\$ip = class_exists('VIS_Security') ? VIS_Security::client_ip() : (isset(\$_SERVER['REMOTE_ADDR']) ? (string)\$_SERVER['REMOTE_ADDR'] : '');
+if (filter_var(\$ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
     \$uri = isset(\$_SERVER['REQUEST_URI']) ? substr((string)\$_SERVER['REQUEST_URI'], 0, 2048) : '';
     \$table = \$wpdb->prefix . '{$tableName}';
     \$query = \$wpdb->prepare("INSERT IGNORE INTO \$table (ip, reason, banned_at, request_uri) VALUES (%s, %s, %s, %s)", \$ip, 'GHOST_TRAP: Signed deception node hit', current_time('mysql'), \$uri);

@@ -1,6 +1,6 @@
 # Architecture
 
-> **Current release: 8.4.5** (2026-10-23). Security-hardening releases 8.4.4/8.4.5:
+> **Current release: 8.6.0** (2026-11-17). Security-hardening releases 8.4.4/8.4.5/8.6.0:
 > fail-closed vault crypto, stricter WAF capability policy, nonce-gated language switching,
 > threat-feed quarantine, bounded resource limits, hardening regression suite, and a
 > corrected platform floor of PHP 8.2 (PHP 8.1 reached end of life).

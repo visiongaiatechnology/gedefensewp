@@ -628,26 +628,27 @@ final class ThreatIntelligence {
             $base_ip = $parts[0];
             $prefix = (int)$parts[1];
 
-            if (filter_var($base_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
-                if ($prefix < 0 || $prefix > 32) return null;
+            if (filter_var($base_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
+                // Verhindert /0..-7 Global-Self-Bans und private Netzbereiche in unsignierten Feeds (FIND-007).
+                if ($prefix < 8 || $prefix > 32) return null;
                 return ['target' => $candidate, 'type' => 'cidr_v4'];
             }
 
-            if (filter_var($base_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
-                if ($prefix < 0 || $prefix > 128) return null;
+            if (filter_var($base_ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
+                if ($prefix < 24 || $prefix > 128) return null;
                 return ['target' => $candidate, 'type' => 'cidr_v6'];
             }
 
             return null;
         }
 
-        // Reines IPv4
-        if (filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+        // Reines IPv4 (keine privaten/Loopback/Reserved Adressen)
+        if (filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
             return ['target' => $candidate, 'type' => 'v4'];
         }
 
-        // Reines IPv6
-        if (filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+        // Reines IPv6 (keine privaten/Loopback/Reserved Adressen)
+        if (filter_var($candidate, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
             return ['target' => $candidate, 'type' => 'v6'];
         }
 

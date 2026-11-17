@@ -26,6 +26,12 @@ final class Zeus_Xdr_Bridge {
         ?string $responseId = null
     ): void {
         $cleanRoute = '/' . ltrim($routePrefix, '/');
+        // Verhindert globale Selbst-Aussperrung auf Core-Admin-/Login-Pfaden (FIND-009).
+        $normalizedCheck = rtrim(strtolower($cleanRoute), '/') ?: '/';
+        if (in_array($normalizedCheck, ['/', '/wp-login.php', '/wp-admin', '/wp-cron.php', '/wp-json', '/index.php'], true)
+            || str_starts_with($normalizedCheck, '/wp-admin/')) {
+            throw new \InvalidArgumentException('Protected core WordPress route cannot be auto-contained: ' . $cleanRoute);
+        }
         $containments = (function_exists('get_option') ? get_option(self::OPTION_CONTAINMENT, []) : []);
         if (!is_array($containments)) $containments = [];
 

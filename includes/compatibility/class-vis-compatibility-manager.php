@@ -97,6 +97,13 @@ class VIS_Compatibility_Manager {
     }
 
     private function is_builder_active() {
-        return isset($_GET['elementor-preview']) || isset($_GET['et_fb']) || isset($_GET['ct_builder']);
+        // Nur echte WP-Admin/Customizer-Kontexte oder aktivierte Builder-Plugins zulassen (FIND-002).
+        if (!function_exists('is_user_logged_in') || !is_user_logged_in()) {
+            return false;
+        }
+        return (function_exists('is_customize_preview') && is_customize_preview())
+            || did_action('elementor/loaded') > 0
+            || defined('ET_BUILDER_VERSION')
+            || defined('SHOW_CT_BUILDER');
     }
 }

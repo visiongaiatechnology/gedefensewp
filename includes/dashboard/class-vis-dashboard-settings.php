@@ -167,10 +167,13 @@ final class VIS_Dashboard_Settings {
         if ($context === 'setup_wizard') {
             update_option('vgt_setup_wizard_completed', 1);
 
-            if (!empty($updated_config['throneguard_enabled']) && class_exists('VIS_Throne_Guard')) {
+            $canManageThroneGuard = class_exists('VIS_Throne_Guard')
+                && (!VIS_Throne_Guard::master_exists() || current_user_can(VIS_Throne_Guard::MASTER_CAP));
+
+            if (!empty($updated_config['throneguard_enabled']) && $canManageThroneGuard) {
                 VIS_Throne_Guard::provision_current_master();
             }
-            if (class_exists('VIS_Throne_Guard')) {
+            if ($canManageThroneGuard) {
                 VIS_Throne_Guard::apply_administrator_policy(!empty($updated_config['throneguard_enabled']) && !empty($updated_config['throneguard_harden_admin']));
             }
 
