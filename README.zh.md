@@ -1,7 +1,7 @@
 > [!WARNING]
 > **公开测试版 / 发布候选 — 禁止在无人值守的生产环境中使用**
 >
-> **VGT GeDefense WP 8.6.0 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
+> **VGT GeDefense WP 8.6.1 Open Core 是公开测试版 / 发布候选，并非 GA 正式版。** 钩子、策略、检测规则、配置格式和安全行为可能随时变更，恕不另行通知。每个构建都必须先在预发布环境验证，以 **observe 模式**启动，保留经过测试的备份和带外恢复通道，不得用于无人值守的生产环境。按 **现状** 提供，不提供任何担保，许可证为 AGPL-3.0-or-later。参见 [`CHANGELOG.md`](CHANGELOG.md) 和 [GitHub Releases](https://github.com/visiongaiatechnology/gedefensewp/releases)。
 
 > [!CAUTION]
 > **ALPHA 测试 — GeDefense WP ↔ Linux Bridge：** 8.5.0 新增，并非生产就绪。被攻陷的 WordPress 可用共享 secret 伪造记录；lease 为两小时、绑定 IP/主机，仅放宽管理界面的 L7 限制/内容模式检查。见下方 8.5.0。
@@ -14,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.6.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.6.0)
+[**🇨🇳 查看更新日志 (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🏷️ GitHub Release v8.6.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.6.1)
 
 </div>
 
@@ -30,7 +30,7 @@
 
 <img width="1536" height="1024" alt="GeDefense_ Real Security, Many Feathers" src="https://github.com/user-attachments/assets/e16f809d-4968-4cbc-9147-7c872b32a2e5" />
 
-[![Version](https://img.shields.io/badge/version-8.6.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.6.1_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -74,6 +74,14 @@ GeDefense 是一套本地优先的安全架构，覆盖 Linux、Windows、Androi
 | [![Android](https://img.shields.io/badge/Android-22D3EE?style=flat-square&logo=android&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefenseandroid) **GeDefense Android** | 原生 Android 安全平台：本地 VPN 执行、端点遥测、XDR/EDR 关联、威胁情报、应用风险分析与加密证据。 |
 | [![WordPress](https://img.shields.io/badge/WordPress-1F8FFF?style=flat-square&logo=wordpress&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewp) **GeDefense WordPress** *（本仓库）* | AGPL-3.0 开源核心 WordPress 套件：ZEUS WAF、AEGIS 深度包检测、TRINITY XDR、ThroneGuard 锁定与 HADES 后台隐藏。 |
 
+
+# 🛠️ 热修复 8.6.1 — 本地 Twemoji 17.0.1 镜像与零外部 CDN 防护（2026-11-21）
+
+> **热修复 8.6.1** 彻底消除前台、WP-Admin 后台、登录页与嵌入内容中的所有 Twemoji / WordPress 外部 CDN 回退（`cdn.jsdelivr.net`、`s.w.org`）。
+
+- **修复根本原因（`VIS_Titan`）：** 移除 `VIS_Titan::source_cleanup()` 中的 `add_filter('emoji_svg_url', '__return_false')`（返回 `false` 会触发 `twemoji.js` 回退至 jsDelivr），并将清理扩展至 `admin_print_scripts`、`admin_print_styles`、`embed_head` 与 `wp_mail`。
+- **优先级 99 强制本地镜像（`VIS_I18n`）：** `VIS_I18n::init()` 以优先级 `99` 将 `emoji_svg_url`、`emoji_url`、`.svg` 与 `wp_resource_hints` 锁定至本地 `assets/twemoji/svg/`。
+- **内置 4,009 个本地 SVG 与内联旗帜：** 本地打包完整 Twemoji `17.0.1` SVG 集合（`assets/twemoji/svg/`，附 `LICENSE.txt` / `NOTICE.txt`），语言切换器改用零外部请求的内联 `<svg>` 旗帜（`VIS_I18n::flag_svg()`）。
 
 # 🚀 安全发布 8.6.0 — 全面安全加固（2026-11-17）
 
@@ -119,6 +127,9 @@ GeDefense 实时威胁雷达和全球攻击向量图由 **100% 自主可控的�
   - **具体样本验证匹配：** 网络子网 `1.0.4.0/22` 分配给 ASN `38803`，机构名称为 `Gtelecom Pty Ltd` (AU)，与上游数据完全一致。
   - **开源许可：** **知识共享署名-相同方式共享 4.0 国际公共许可证 (CC BY-SA 4.0)**
   - **致谢与声明：** *本产品包含来自 iplocate/ip-address-databases 项目的 IP-to-Country 和 IP-to-ASN 数据，遵循 CC BY-SA 4.0 许可。*
+- **3. 本地 Emoji 矢量图形（`assets/twemoji/`）：**
+  - **来源项目：** [`jdecked/twemoji`](https://github.com/jdecked/twemoji)（v17.0.1，本地内置 4,009 个 SVG 文件 + [`LICENSE.txt`](assets/twemoji/LICENSE.txt) / [`NOTICE.txt`](assets/twemoji/NOTICE.txt)）
+  - **许可协议：** **CC-BY 4.0**（图形）与 **MIT License**（代码）
 - **数字主权与隐私保障：** 所有地理坐标、国家旗帜和 ASN 信息均在本地通过纳秒级二进制 `fseek()` 偏移量读取 (~0.25ms - 0.45ms)。系统绝不向任何外部 HTTP 服务器或 DNS 服务器发送逆向解析请求。
 - **带外灾难恢复保证：** 若因规则误配或前置 WAF 导致管理员后台被拦截，只需在 `wp-config.php` 中添加 `define('ZEUS_DISABLE', true);` 或通过 WP-CLI 执行 `wp plugin deactivate gedefense-wp` 即可在数秒内解锁管理权限。
 
@@ -483,7 +494,7 @@ GeDefense WP Open Core 基于 **GNU Affero General Public License v3.0 (AGPL-3.0
 
 <div align="center">
 
-## GeDefense WP 8.6.0 — Open Core
+## GeDefense WP 8.6.1 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

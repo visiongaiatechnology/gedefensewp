@@ -1,7 +1,7 @@
 > [!WARNING]
 > **PUBLIC BETA / RELEASE CANDIDATE — NOT FOR UNSUPERVISED PRODUCTION USE**
 >
-> **VGT GeDefense WP 8.6.0 Open Core is a public beta / release candidate, not a GA release.** Hooks, policies, detection rules, configuration formats and security behavior may change without notice. Validate every build in a staging environment, start in **observe mode**, keep tested backups and out-of-band recovery access, and do not use it for unsupervised production. Provided **as-is**, without warranty, under AGPL-3.0-or-later. See [`CHANGELOG.md`](CHANGELOG.md) and the [GitHub releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.6.1 Open Core is a public beta / release candidate, not a GA release.** Hooks, policies, detection rules, configuration formats and security behavior may change without notice. Validate every build in a staging environment, start in **observe mode**, keep tested backups and out-of-band recovery access, and do not use it for unsupervised production. Provided **as-is**, without warranty, under AGPL-3.0-or-later. See [`CHANGELOG.md`](CHANGELOG.md) and the [GitHub releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 > [!CAUTION]
 > **ALPHA TEST — GeDefense WP ↔ Linux Bridge:** added in 8.5.0, not production-ready. A fully compromised WordPress can forge shared-secret records; the lease is two hours, IP/host-bound and only relaxes L7 limits/content-pattern checks on admin surfaces. See the 8.5.0 section below.
@@ -14,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.6.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.6.0)
+[**🚀 View Full Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🇩🇪 Zum Changelog**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Release v8.6.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.6.1)
 
 </div>
 
@@ -29,7 +29,7 @@
 
 ### Entenprise WordPress Security Fabric & Pre-Boot Admission Kernel
 
-[![Version](https://img.shields.io/badge/version-8.6.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.6.1_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -81,6 +81,14 @@ GeDefense is one local-first security fabric — for Linux, Windows, Android and
 | [![WordPress](https://img.shields.io/badge/WordPress-1F8FFF?style=flat-square&logo=wordpress&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewp) **GeDefense WordPress** *(this repository)* | AGPL-3.0 open-core suite for WordPress: ZEUS WAF, AEGIS deep-packet inspection, TRINITY XDR, ThroneGuard lockdown and HADES admin cloaking. |
 
 
+# 🛠️ Hotfix 8.6.1 — Local Twemoji 17.0.1 Mirror & Zero-CDN Emoji Enforcement (2026-11-21)
+
+> **Hotfix 8.6.1** eliminates every external Twemoji / WordPress emoji CDN fallback (`cdn.jsdelivr.net`, `s.w.org`) across Frontend, WP-Admin, Login, and Embeds.
+
+- **Root Cause Eliminated (`VIS_Titan`):** Removed `add_filter('emoji_svg_url', '__return_false')` in `VIS_Titan::source_cleanup()` (returning `false` caused WP's `wp-emoji.js` / `twemoji.js` to fall back to `https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.1/assets/`), and extended cleanup to `admin_print_scripts`, `admin_print_styles`, `embed_head`, and `wp_mail`.
+- **Priority-99 Local Mirror Pinning (`VIS_I18n`):** `VIS_I18n::init()` pins `emoji_svg_url`, `emoji_url`, `emoji_svg_ext`, `emoji_ext`, and `wp_resource_hints` at priority `99` onto `VIS_URL . 'assets/twemoji/svg/'`, preventing any late theme/plugin or WP default CDN reference.
+- **4,009 Bundled Local SVGs + Inline Flag SVGs:** Added the complete Twemoji `17.0.1` SVG mirror under `assets/twemoji/svg/` (with `LICENSE.txt` / `NOTICE.txt`) and replaced Unicode flag emojis in the language switcher with crisp inline `<svg>` elements (`VIS_I18n::flag_svg()`).
+
 # 🚀 Release 8.6.0 — Comprehensive Security Hardening (2026-11-17)
 
 > **Update 8.6.0** applies multi-layer authorization, WAF/oracle, containment, integrity, and scanner hardening verified by automated negative regression tests (`scripts/audit-fixes-regression.php`, 34 passing CLI suites).
@@ -130,6 +138,9 @@ The GeDefense real-time Threat Radar and global attack vector map operate on a *
   - **Verified Dataset Match:** Subnet `1.0.4.0/22` is assigned to ASN `38803` with organization name `Gtelecom Pty Ltd` (AU), strictly matching the upstream dataset.
   - **License:** **Creative Commons Attribution-ShareAlike 4.0 International Public License (CC BY-SA 4.0)**
   - **Attribution:** *This product includes IP-to-Country and IP-to-ASN data from iplocate/ip-address-databases, licensed under CC BY-SA 4.0.*
+- **3. Local Emoji Vector Graphics (`assets/twemoji/`):**
+  - **Source Project:** [`jdecked/twemoji`](https://github.com/jdecked/twemoji) (v17.0.1, 4,009 locally bundled SVG files + [`LICENSE.txt`](assets/twemoji/LICENSE.txt) / [`NOTICE.txt`](assets/twemoji/NOTICE.txt))
+  - **License:** **CC-BY 4.0** (Graphics) & **MIT License** (Code)
 - **Privacy & Sovereignty Guarantee:** All GeoIP coordinates, country flags, and ASN details are resolved purely via local binary `fseek()` file lookups (~0.25ms - 0.45ms). Zero external HTTP calls, zero DNS reverse queries, and zero cloud leaks.
 - **Disaster Recovery Fail-Safe:** If Zeus or Morpheus locks out the admin interface, bypass immediately by setting `define('ZEUS_DISABLE', true);` in `wp-config.php` or using `wp plugin deactivate gedefense-wp` via WP-CLI.
 
@@ -1025,7 +1036,7 @@ GeDefense WP Open Core is licensed under the **GNU Affero General Public License
 
 <div align="center">
 
-## GeDefense WP 8.6.0 — Open Core
+## GeDefense WP 8.6.1 — Open Core
 
 **SOVEREIGN WORDPRESS SECURITY**
 

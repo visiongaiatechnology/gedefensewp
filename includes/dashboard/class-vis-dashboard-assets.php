@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) exit('VGT_ACCESS_DENIED');
 final class VIS_Dashboard_Assets {
 
     public static function enqueue(): void {
-        $base_version = defined('VIS_VERSION') ? VIS_VERSION : '8.6.0';
+        $base_version = defined('VIS_VERSION') ? VIS_VERSION : '8.6.1';
         $modern_css = defined('VIS_PATH') ? VIS_PATH . 'assets/css/vis-dashboard-modern.css' : '';
         $version = (file_exists($modern_css)) ? $base_version . '.' . filemtime($modern_css) : $base_version;
 

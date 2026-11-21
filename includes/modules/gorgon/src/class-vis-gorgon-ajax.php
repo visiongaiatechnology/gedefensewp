@@ -121,7 +121,7 @@ final class Gorgon_Ajax {
             'headers'   => [
                 'X-VGT-Nexus-Auth'       => $api_key,
                 'X-VGT-Sentinel-Magic'   => defined('VIS_GORGON_NEXUS_MAGIC') ? VIS_GORGON_NEXUS_MAGIC : '',
-                'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '8.6.0',
+                'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '8.6.1',
                 'Content-Type'           => 'application/json',
                 'Connection'             => 'close',
             ],

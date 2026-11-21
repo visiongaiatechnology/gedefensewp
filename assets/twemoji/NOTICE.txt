@@ -1,0 +1,7 @@
+Twemoji 17.0.1 - locally bundled emoji graphics
+=================================================
+Source: https://github.com/jdecked/twemoji (tag v17.0.1)
+Graphics license: CC-BY 4.0 (see LICENSE.txt)
+Bundled by VisionGaiaTechnology for GeDefense WP - Open Core.
+Purpose: no emoji or flag graphic may ever be loaded from a third-party CDN.
+The files are served exclusively from this GeDefense WP installation.

@@ -206,7 +206,7 @@ EOT;
                 'Authorization' => 'Bearer ' . trim($api_key),
                 'Content-Type'  => 'application/json; charset=utf-8',
                 'Accept'        => 'application/json',
-                'User-Agent'    => 'VGT-Sentinel-Aegis/8.6.0',
+                'User-Agent'    => 'VGT-Sentinel-Aegis/8.6.1',
             ],
             'timeout'     => self::MAX_TIMEOUT,
             'limit_response_size' => 262144,

@@ -35,9 +35,14 @@ if (!function_exists('home_url')) { function home_url(string $path = '/'): strin
 if (!function_exists('site_url')) { function site_url(string $path = '/'): string { return 'https://example.test' . (str_starts_with($path, '/') ? $path : '/' . $path); } }
 if (!function_exists('get_site_url')) { function get_site_url(?int $blog_id = null, string $path = '/'): string { return 'https://example.test' . $path; } }
 if (!function_exists('wp_salt')) { function wp_salt(string $scheme = 'auth'): string { return 'vgt-regression-deterministic-salt-value-64chars-0000000000000001'; } }
+$GLOBALS['__vgt_filters'] = [];
+$GLOBALS['__vgt_actions'] = [];
+$GLOBALS['__vgt_removed_hooks'] = [];
 if (!function_exists('apply_filters')) { function apply_filters(string $hook, mixed $value, mixed ...$args): mixed { return $value; } }
-if (!function_exists('add_action')) { function add_action(string $hook, mixed $callback, int $priority = 10, int $accepted_args = 1): bool { return true; } }
-if (!function_exists('add_filter')) { function add_filter(string $hook, mixed $callback, int $priority = 10, int $accepted_args = 1): bool { return true; } }
+if (!function_exists('add_action')) { function add_action(string $hook, mixed $callback, int $priority = 10, int $accepted_args = 1): bool { $GLOBALS['__vgt_actions'][$hook][$priority][] = $callback; return true; } }
+if (!function_exists('add_filter')) { function add_filter(string $hook, mixed $callback, int $priority = 10, int $accepted_args = 1): bool { $GLOBALS['__vgt_filters'][$hook][$priority][] = $callback; return true; } }
+if (!function_exists('remove_action')) { function remove_action(string $hook, mixed $callback, int $priority = 10): bool { $GLOBALS['__vgt_removed_hooks'][] = ['action', $hook, $callback, $priority]; return true; } }
+if (!function_exists('remove_filter')) { function remove_filter(string $hook, mixed $callback, int $priority = 10): bool { $GLOBALS['__vgt_removed_hooks'][] = ['filter', $hook, $callback, $priority]; return true; } }
 if (!function_exists('did_action')) { function did_action(string $hook): int { return 0; } }
 if (!function_exists('is_admin')) { function is_admin(): bool { return false; } }
 if (!function_exists('is_user_logged_in')) { function is_user_logged_in(): bool { return (bool)$GLOBALS['__vgt_logged_in']; } }
@@ -255,10 +260,72 @@ $i18nSrc = file_get_contents($root . '/includes/core/class-vis-i18n.php');
 $assert(is_string($trinityView) && str_contains($trinityView, 'sanitize_html_class'), 'FIND-017: view-trinity attribute missing sanitize_html_class/esc_attr.');
 $assert(is_string($i18nSrc) && str_contains($i18nSrc, "\$canPersistGlobal"), 'FIND-017: VIS_i18n global language write missing capability check.');
 
+// 15. HOTFIX-8.6.1-TWEMOJI: Local 4,009-SVG Twemoji mirror, priority-99 URL pinning, inline flag SVGs, Titan fix
+if (!defined('VIS_URL')) define('VIS_URL', 'https://example.test/wp-content/plugins/gedefense-wp/');
+if (!function_exists('esc_attr')) { function esc_attr(string $v): string { return htmlspecialchars($v, ENT_QUOTES, 'UTF-8'); } }
+if (!function_exists('esc_url')) { function esc_url(string $v): string { return htmlspecialchars($v, ENT_QUOTES, 'UTF-8'); } }
+if (!function_exists('remove_query_arg')) { function remove_query_arg(string $key, ?string $url = null): string { return $url ?? '/wp-admin/admin.php?page=vgt-suite'; } }
+if (!function_exists('add_query_arg')) { function add_query_arg(string $k, string $v, string $u): string { return $u . (str_contains($u, '?') ? '&' : '?') . urlencode($k) . '=' . urlencode($v); } }
+
+$twSvgDir = $root . '/assets/twemoji/svg';
+$assert(is_dir($twSvgDir), 'HOTFIX-8.6.1: assets/twemoji/svg directory missing.');
+$assert(file_exists($twSvgDir . '/1f6e1.svg'), 'HOTFIX-8.6.1: Twemoji shield SVG 1f6e1.svg missing.');
+$assert(file_exists($twSvgDir . '/1f1e9-1f1ea.svg'), 'HOTFIX-8.6.1: Twemoji DE flag SVG 1f1e9-1f1ea.svg missing.');
+$assert(file_exists($root . '/assets/twemoji/LICENSE.txt'), 'HOTFIX-8.6.1: Twemoji LICENSE.txt missing.');
+$assert(file_exists($root . '/assets/twemoji/NOTICE.txt'), 'HOTFIX-8.6.1: Twemoji NOTICE.txt missing.');
+$svgFiles = glob($twSvgDir . '/*.svg') ?: [];
+$assert(count($svgFiles) >= 4009, 'HOTFIX-8.6.1: Expected complete Twemoji 17.0.1 SVG set (>=4009).');
+
+require_once $root . '/includes/core/class-vis-i18n.php';
+$GLOBALS['__vgt_filters'] = [];
+$GLOBALS['__vgt_removed_hooks'] = [];
+// Simulate a conflicting theme/plugin returning false or s.w.org at lower priority
+add_filter('emoji_svg_url', static fn(): bool => false, 10);
+add_filter('emoji_url', static fn(): string => 'https://s.w.org/images/core/emoji/17.0.2/svg/', 10);
+VIS_I18n::init();
+
+$evalFilterChain = static function (string $hook, mixed $initial, mixed ...$extraArgs): mixed {
+    $val = $initial;
+    $buckets = $GLOBALS['__vgt_filters'][$hook] ?? [];
+    ksort($buckets, SORT_NUMERIC);
+    foreach ($buckets as $callbacks) {
+        foreach ($callbacks as $cb) {
+            $val = $cb($val, ...$extraArgs);
+        }
+    }
+    return $val;
+};
+
+$resolvedSvgUrl = $evalFilterChain('emoji_svg_url', 'https://s.w.org/images/core/emoji/17.0.2/svg/');
+$resolvedPngUrl = $evalFilterChain('emoji_url', 'https://s.w.org/images/core/emoji/17.0.2/72x72/');
+$resolvedSvgExt = $evalFilterChain('emoji_svg_ext', '.svg');
+$resolvedExt    = $evalFilterChain('emoji_ext', '.png');
+$assert(is_string($resolvedSvgUrl) && str_starts_with($resolvedSvgUrl, 'https://example.test/') && str_ends_with($resolvedSvgUrl, '/assets/twemoji/svg/'), 'HOTFIX-8.6.1: emoji_svg_url not pinned to local mirror.');
+$assert(!str_contains((string)$resolvedSvgUrl, 'jsdelivr') && !str_contains((string)$resolvedSvgUrl, 's.w.org'), 'HOTFIX-8.6.1: emoji_svg_url still points externally.');
+$assert(is_string($resolvedPngUrl) && str_ends_with($resolvedPngUrl, '/assets/twemoji/svg/'), 'HOTFIX-8.6.1: emoji_url not pinned to local mirror.');
+$assert($resolvedSvgExt === '.svg' && $resolvedExt === '.svg', 'HOTFIX-8.6.1: emoji extensions not pinned to .svg.');
+
+$hints = $evalFilterChain('wp_resource_hints', ['https://s.w.org', '//cdn.jsdelivr.net', 'https://example.test'], 'dns-prefetch');
+$assert($hints === ['https://example.test'], 'HOTFIX-8.6.1: External emoji CDN hosts were not stripped from resource hints.');
+
+$switcherHtml = VIS_I18n::render_language_switcher();
+$assert(str_contains($switcherHtml, '<svg class="vis-flag vis-flag-de"') && str_contains($switcherHtml, 'vis-flag-gb') && str_contains($switcherHtml, 'vis-flag-ru'), 'HOTFIX-8.6.1: Inline flag SVGs missing from language switcher.');
+$assert(!str_contains($switcherHtml, '<img') && !str_contains($switcherHtml, 'jsdelivr'), 'HOTFIX-8.6.1: Language switcher emitted external img tag.');
+
+$titanSrc = (string)file_get_contents($root . '/includes/modules/titan/class-vis-titan.php');
+$assert(!str_contains($titanSrc, "add_filter('emoji_svg_url', '__return_false')"), 'HOTFIX-8.6.1: Titan must not poison emoji_svg_url with __return_false.');
+$assert(str_contains($titanSrc, "admin_print_scripts"), 'HOTFIX-8.6.1: Titan unhook_core_emojis must also remove admin emoji scripts.');
+require_once $root . '/includes/modules/titan/class-vis-titan.php';
+$titanObj = new VIS_Titan(['titan_enabled' => 1, 'titan_cleanup_emojis' => 1]);
+$GLOBALS['__vgt_removed_hooks'] = [];
+$titanObj->source_cleanup();
+$removedPairs = array_map(static fn(array $r): string => $r[0] . ':' . $r[1], $GLOBALS['__vgt_removed_hooks']);
+$assert(in_array('action:admin_print_scripts', $removedPairs, true), 'HOTFIX-8.6.1: Titan source_cleanup failed to remove admin_print_scripts.');
+
 if ($failures !== []) {
     fwrite(STDERR, "VGT AUDIT FIXES REGRESSION: FAILED\n" . implode("\n", $failures) . "\n");
     exit(1);
 }
 
-fwrite(STDOUT, "VGT AUDIT FIXES REGRESSION: PASS (FIND-001..FIND-017 verified)\n");
+fwrite(STDOUT, "VGT AUDIT FIXES REGRESSION: PASS (FIND-001..FIND-017 + HOTFIX-8.6.1-TWEMOJI verified)\n");
 exit(0);

@@ -5,11 +5,11 @@
     "components": {
         "root": {
             "files": 3,
-            "root_hash": "7cc33b0e2e8d86fc16bfdc8d17c02e52ca90e6f219944dd781ad3de2cc12bbff"
+            "root_hash": "66647cc33027da29c79e0663acc957eeae3ca30c176e0fba4f3fefcc4977b0ba"
         },
         "assets": {
-            "files": 12,
-            "root_hash": "428d26ec6e19fe5ff34cc0ac8ade516af45afc041a7435770060052be2614cf2"
+            "files": 4023,
+            "root_hash": "507b65e5acf2973e065745e4784db4351f22f225675dc24614144141dcf59b10"
         },
         "compatibility": {
             "files": 4,
@@ -17,11 +17,11 @@
         },
         "core": {
             "files": 15,
-            "root_hash": "78512738ed757df380d07da4c5d22670c65bbcceb0eda1647f553cfdd2012f14"
+            "root_hash": "1e9a4cac0374dd50358ca46c616f84e4dc74a6027e92a24cf2f254448d625c49"
         },
         "dashboard": {
             "files": 89,
-            "root_hash": "1ff786858da5461a936d611f1723bc417ddfb9d8ac42f726641011ca22ef950b"
+            "root_hash": "41a5a453294e2b5706c675d4b80741cb5b2f3f6e1f616ae08ef1af1cb7eb32bf"
         },
         "xdr": {
             "files": 9,
@@ -33,7 +33,7 @@
         },
         "aegis": {
             "files": 2,
-            "root_hash": "eb8400641556aa5775c951a7eb45c838f8c0a8a92fe22a8788af6a50864d93ef"
+            "root_hash": "166a01da8b51f276e5c358623dc49b20eaae8671454d2a8d437805003896a3ea"
         },
         "airlock": {
             "files": 4,
@@ -57,7 +57,7 @@
         },
         "gorgon": {
             "files": 6,
-            "root_hash": "82be48eac0f7e145bbce2c6be8b9825bf163298e0a3e2b46627db3dc5d601c7b"
+            "root_hash": "b832ac0eeb59c427eb2a2fc246037bb95e7288d1dc905ea1ed93256756192f04"
         },
         "hades": {
             "files": 1,
@@ -69,7 +69,7 @@
         },
         "morpheus": {
             "files": 10,
-            "root_hash": "ff0dabfcbed3e0b5374905971abb7c25d912b55d580129574e36e0b9ed055450"
+            "root_hash": "a26cc783bd5d34500c4540d2ecc0b1bdde4b23d668a04294bdd606e0329974a7"
         },
         "nemesis": {
             "files": 1,
@@ -93,7 +93,7 @@
         },
         "titan": {
             "files": 13,
-            "root_hash": "d646795fc657d706c4b968b816d518884cda16802c12993b192e9a0bd3cb92ee"
+            "root_hash": "95b0dc2ca402de5cd2fb416665510d7db78db740de1eae78aac3571588390cb3"
         },
         "throneguard": {
             "files": 2,
@@ -101,7 +101,7 @@
         },
         "loginpager": {
             "files": 1,
-            "root_hash": "2773a9d99f674db29f758d70fc8ca8bc0f4549df884d88999710f545c48ef0d8"
+            "root_hash": "7e54763014364a9cfe42d9c1b5645cab895674b0db0b0c8d9275118dcabfcf24"
         },
         "trap": {
             "files": 4,

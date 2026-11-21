@@ -1,7 +1,7 @@
 > [!WARNING]
 > **PUBLIC BETA / RELEASE CANDIDATE — NICHT FÜR UNBEAUFSICHTIGTEN PRODUKTIVBETRIEB**
 >
-> **VGT GeDefense WP 8.6.0 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
+> **VGT GeDefense WP 8.6.1 Open Core ist eine Public Beta / ein Release Candidate, kein GA-Release.** Hooks, Richtlinien, Erkennungsregeln, Konfigurationsformate und Sicherheitsverhalten können sich ohne Vorankündigung ändern. Jeden Build zuerst in einer Staging-Umgebung validieren, im **Observe-Modus** starten, getestete Backups und einen Out-of-Band-Recovery-Zugang bereithalten und nicht für unbeaufsichtigten Produktivbetrieb einsetzen. Bereitstellung **wie besehen**, ohne Gewährleistung, unter AGPL-3.0-or-later. Siehe [`CHANGELOG.md`](CHANGELOG.md) und die [GitHub-Releases](https://github.com/visiongaiatechnology/gedefensewp/releases).
 
 > [!CAUTION]
 > **ALPHA-TEST — GeDefense WP ↔ Linux Bridge:** eingeführt in 8.5.0, nicht produktionsreif. Ein kompromittiertes WordPress kann Datensätze mit dem gemeinsamen Secret fälschen; die Lease ist 2 Std., IP/Host-gebunden und lockert nur L7-Limits/Content-Pattern-Prüfungen auf Admin-Oberflächen. Siehe 8.5.0 unten.
@@ -14,7 +14,7 @@
 <br/>
 
 📜 **Changelog / Zum Changelog / К журналу изменений / 查看更新日志**:  
-[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.6.0**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.6.0)
+[**🇩🇪 Zum Changelog (CHANGELOG.md)**](CHANGELOG.md) • [**🚀 View Full Changelog (EN)**](CHANGELOG.md) • [**🇷🇺 К журналу изменений**](CHANGELOG.md) • [**🇨🇳 查看更新日志**](CHANGELOG.md) • [**🏷️ Neuestes GitHub Release v8.6.1**](https://github.com/visiongaiatechnology/gedefensewp/releases/tag/V8.6.1)
 
 </div>
 
@@ -30,7 +30,7 @@
 
 <img width="1536" height="1024" alt="GeDefense_ Real Security, Many Feathers" src="https://github.com/user-attachments/assets/e16f809d-4968-4cbc-9147-7c872b32a2e5" />
 
-[![Version](https://img.shields.io/badge/version-8.6.0_Open_Core-D4AF37?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/version-8.6.1_Open_Core-D4AF37?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/status-public_beta-yellow?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-0B5FFF?style=for-the-badge)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.2--8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
@@ -74,6 +74,14 @@ GeDefense ist eine lokal-first Security-Fabric – für Linux, Windows, Android 
 | [![Android](https://img.shields.io/badge/Android-22D3EE?style=flat-square&logo=android&logoColor=0B1220)](https://github.com/visiongaiatechnology/gedefenseandroid) **GeDefense Android** | Native Android-Sicherheitsplattform: lokale VPN-Durchsetzung, Endpoint-Telemetrie, XDR/EDR-Korrelation, Threat Intelligence, App-Risikoanalyse und verschlüsselte Evidenz. |
 | [![WordPress](https://img.shields.io/badge/WordPress-1F8FFF?style=flat-square&logo=wordpress&logoColor=ffffff)](https://github.com/visiongaiatechnology/gedefensewp) **GeDefense WordPress** *(dieses Repository)* | AGPL-3.0-Open-Core-Suite für WordPress: ZEUS-WAF, AEGIS-Deep-Packet-Inspection, TRINITY-XDR, ThroneGuard-Lockdown und HADES-Admin-Cloaking. |
 
+
+# 🛠️ Hotfix 8.6.1 — Lokaler Twemoji-17.0.1-Spiegel & Zero-CDN-Schutz (21.11.2026)
+
+> **Hotfix 8.6.1** unterbindet jeden externen Twemoji-/Emoji-CDN-Fallback (`cdn.jsdelivr.net`, `s.w.org`) im Frontend, WP-Admin, Login und in Embeds.
+
+- **Ursache behoben (`VIS_Titan`):** `add_filter('emoji_svg_url', '__return_false')` in `VIS_Titan::source_cleanup()` entfernt (`false` führte bei `twemoji.js` zum Rückfall auf `https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.1/assets/`); Bereinigung um `admin_print_scripts`, `admin_print_styles`, `embed_head` und `wp_mail` erweitert.
+- **Priorität-99-Spiegel (`VIS_I18n`):** `VIS_I18n::init()` pinnt `emoji_svg_url`, `emoji_url`, `.svg`-Endungen und `wp_resource_hints` mit Priorität `99` hart auf `VIS_URL . 'assets/twemoji/svg/'` — unabhängig von Themes oder Hooks.
+- **4.009 lokale SVGs & Inline-Flaggen:** Vollständigen Twemoji-17.0.1-SVG-Satz unter `assets/twemoji/svg/` (inkl. `LICENSE.txt` / `NOTICE.txt`) gebündelt und Sprachumschalter-Flaggen auf Inline-`<svg>` (`VIS_I18n::flag_svg()`) umgestellt.
 
 # 🚀 Release 8.6.0 — Umfassendes Security-Hardening (17.11.2026)
 
@@ -124,6 +132,9 @@ Das GeDefense Echtzeit-Bedrohungsradar und die globale Angriffsvektoren-Karte ba
   - **Konkreter Verifikations-Match:** Subnetz `1.0.4.0/22` wird mit ASN `38803` und Organisationsname `Gtelecom Pty Ltd` geführt – exakt übereinstimmend mit unserer CSV.
   - **Lizenz:** **Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)**
   - **Quellenangabe:** *Dieses Produkt enthält IP-to-Country- und IP-to-ASN-Daten aus dem Projekt iplocate/ip-address-databases, lizenziert unter CC BY-SA 4.0.*
+- **3. Lokale Emoji-Vektorgrafiken (`assets/twemoji/`):**
+  - **Quellprojekt:** [`jdecked/twemoji`](https://github.com/jdecked/twemoji) (v17.0.1, 4.009 lokal gebündelte SVG-Dateien + [`LICENSE.txt`](assets/twemoji/LICENSE.txt) / [`NOTICE.txt`](assets/twemoji/NOTICE.txt))
+  - **Lizenz:** **CC-BY 4.0** (Grafiken) & **MIT License** (Code)
 - **Souveränitäts- & Datenschutz-Garantie:** Sämtliche GeoIP-Koordinaten, Landesflaggen und ASN-Details werden über lokale binäre `fseek()`-Offsets (~0,25ms - 0,45ms) ermittelt. Keine externen HTTP- oder DNS-Reverse-Abfragen, 0 Cloud-Leaks, DSGVO-konform.
 - **Notfall-Wiederherstellung (Fail-Safe):** Sollte ein WAF-Fehler oder Admin-Lockout auftreten, kann das System sofort über `define('ZEUS_DISABLE', true);` in der `wp-config.php` oder per WP-CLI (`wp plugin deactivate gedefense-wp`) entsperrt werden.
 
@@ -483,7 +494,7 @@ GeDefense WP Open Core steht unter der **GNU Affero General Public License v3.0 
 
 <div align="center">
 
-## GeDefense WP 8.6.0 — Open Core
+## GeDefense WP 8.6.1 — Open Core
 
 **SOUVERÄNE WORDPRESS SICHERHEIT**
 

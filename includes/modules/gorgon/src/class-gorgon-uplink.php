@@ -46,7 +46,7 @@ final class Gorgon_Uplink {
             'body'    => $encrypted_payload,
             'headers' => [ 
                 'X-VGT-Nexus-Auth'       => $api_key,
-                'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '8.6.0',
+                'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '8.6.1',
                 'X-VGT-Sentinel-Magic'   => defined('VIS_GORGON_NEXUS_MAGIC') ? VIS_GORGON_NEXUS_MAGIC : '',
                 'Content-Type'           => 'application/json',
                 'Connection'             => 'close' 
@@ -95,7 +95,7 @@ final class Gorgon_Uplink {
             'body'    => $json_payload,
             'headers' => [ 
                 'X-VGT-Nexus-Auth'       => $api_key,
-                'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '8.6.0',
+                'X-VGT-Sentinel-Version' => defined('VIS_VERSION') ? VIS_VERSION : '8.6.1',
                 'X-VGT-Sentinel-Magic'   => defined('VIS_GORGON_NEXUS_MAGIC') ? VIS_GORGON_NEXUS_MAGIC : '',
                 'Content-Type'           => 'application/json',
                 'Connection'             => 'close',

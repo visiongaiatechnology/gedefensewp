@@ -224,7 +224,7 @@ EOT;
             'headers'     => [
                 'Authorization' => 'Bearer ' . $api_key,
                 'Content-Type'  => 'application/json',
-                'User-Agent'    => 'VGT-Sentinel-Morpheus/8.6.0',
+                'User-Agent'    => 'VGT-Sentinel-Morpheus/8.6.1',
             ],
             'timeout'     => 30, // Timeout bleibt erhöht für absolute Resilienz
             'limit_response_size' => 262144,

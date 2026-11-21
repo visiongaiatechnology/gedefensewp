@@ -1905,7 +1905,7 @@ return [
     'TRAPPED' => 'TRAPPED',
     'TRINITY ECHTZEIT-VERZAHNUNGS-TOPOLOGIE' => 'ТОПОЛОГИЯ ВЗАИМОДЕЙСТВИЯ TRINITY В РЕАЛЬНОМ ВРЕМЕНИ',
     'TRINITY GRID' => 'СЕТЬ TRINITY',
-    'TRINITY GRID V8.6.0' => 'СЕТЬ TRINITY V8.6.0',
+    'TRINITY GRID V8.6.1' => 'СЕТЬ TRINITY V8.6.1',
     'TRINITY LOCKOUTS' => 'БЛОКИРОВКИ TRINITY',
     'TRINITY REAL-TIME INTERLOCK TOPOLOGY' => 'ТОПОЛОГИЯ ВЗАИМОДЕЙСТВИЯ TRINITY В РЕАЛЬНОМ ВРЕМЕНИ',
     'TRINITY SPERREN' => 'БЛОКИРОВКИ TRINITY',

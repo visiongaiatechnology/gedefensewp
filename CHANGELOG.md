@@ -1,5 +1,21 @@
 # Changelog
 
+## 8.6.1 - 2026-11-21 - Local Twemoji 17.0.1 Mirror & Zero-CDN Emoji Hotfix
+
+### Security & Privacy
+
+- **Eliminated External Twemoji / CDN Leakage Across Frontend & Admin:** WordPress core (`_print_emoji_detection_script()`) falls back to `twemoji.js`'s built-in `https://cdn.jsdelivr.net/gh/jdecked/twemoji@17.0.1/assets/` vendor default whenever `emoji_svg_url` returns `false` or a non-string, and defaults to `https://s.w.org/images/core/emoji/.../svg/`. Additionally, `VIS_Titan::source_cleanup()` previously set `add_filter('emoji_svg_url', '__return_false')` and missed `admin_print_scripts` / `admin_print_styles` hooks registered later by `wp-admin/includes/admin-filters.php`.
+- **Priority-99 Local Mirror Enforcement (`VIS_I18n`):** `VIS_I18n::init()` now bundles and registers `local_emoji_base_url()`, `filter_emoji_base_url()`, and `filter_emoji_resource_hints()` pinning `emoji_svg_url` and `emoji_url` at priority `99` (both immediately and on `init`) to `VIS_URL . 'assets/twemoji/svg/'`, pins `emoji_svg_ext` / `emoji_ext` to `.svg`, removes `s.w.org` and `cdn.jsdelivr.net` from `dns-prefetch`/`preconnect` resource hints, and disables staticized emoji image conversion in feeds and e-mail.
+- **Bundled Complete Local SVG Set (`assets/twemoji/`):** Bundled all `4,009` Twemoji `17.0.1` SVGs locally under `assets/twemoji/svg/` alongside `assets/twemoji/LICENSE.txt` (MIT) and `assets/twemoji/NOTICE.txt` (CC-BY 4.0 graphics attribution for `jdecked/twemoji` v17.0.1), so every emoji (`1f6e1.svg`, etc.) resolves strictly from the local origin (`HTTP 200 image/svg+xml`) without any fallback to external CDNs.
+- **Inline SVG Language Switcher Flags:** Replaced raw Unicode flag emojis (`🇩🇪`, `🇬🇧`, `🇷🇺`) in `VIS_I18n::render_language_switcher()` with crisp inline `<svg class="vis-flag ...">` markup requiring zero external HTTP requests and no Twemoji DOM rewrite.
+- **Titan Emoji Cleanup Fix (`VIS_Titan`):** Removed `add_filter('emoji_svg_url', '__return_false')` from `VIS_Titan::source_cleanup()` and added `VIS_Titan::unhook_core_emojis()` across `wp_head`, `wp_print_styles`, `wp_enqueue_scripts`, `admin_print_scripts`, `admin_print_styles`, `admin_enqueue_scripts`, `embed_head`, feeds, and `wp_mail` (additionally scheduled on `admin_init` priority `99`).
+
+### Changed & Tests
+
+- Bumped product and dashboard version to `8.6.1` (`VIS_VERSION = '8.6.1 OPEN CORE'`, plugin header, views, i18n, user-agents, READMEs, manifest).
+- Extended [`scripts/audit-fixes-regression.php`](scripts/audit-fixes-regression.php) (`HOTFIX-8.6.1-TWEMOJI`) verifying the 4,009-SVG local mirror, priority-99 override of `__return_false`/`s.w.org`, resource-hint stripping, inline SVG flags, and Titan cleanup hook behavior.
+
+---
 ## 8.6.0 - 2026-11-17 - Comprehensive Security Hardening & Verification Release
 
 ### Security
